@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #000;
+      color: #fff;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .status {
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+    }
+    .success { border-left: 4px solid #10b981; }
+    .error { border-left: 4px solid #ef4444; }
+    .warning { border-left: 4px solid #f59e0b; }
+    button {
+      background: #06b6d4;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #0891b2;
+    }
+    pre {
+      background: rgba(255,255,255,0.05);
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Tekunik Frontend Diagnostic</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="runTests()">Run Tests</button>
+    <button onclick="checkBackend()">Check Backend</button>
+    <button onclick="location.reload()">Reload Page</button>
+    <button onclick="clearCache()">Clear Cache</button>
+  </div>
+
+  <script>
+    const results = document.getElementById('results');
+    
+    function log(message, type = 'success') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.innerHTML = message;
+      results.appendChild(div);
+    }
+    
+    function clearResults() {
+      results.innerHTML = '';
+    }
+    
+    async function runTests() {
+      clearResults();
+      log('<h3>Running Frontend Tests...</h3>', 'warning');
+      
+      // Test 1: Check if React is loaded
+      try {
+        if (typeof React !== 'undefined') {
+          log('✅ React is loaded', 'success');
+        } else {
+          log('⚠️ React is not loaded', 'warning');
+        }
+      } catch (e) {
+        log('⚠️ React check failed: ' + e.message, 'warning');
+      }
+      
+      // Test 2: Check localStorage
+      try {
+        localStorage.setItem('test', 'value');
+        localStorage.removeItem('test');
+        log('✅ localStorage is working', 'success');
+      } catch (e) {
+        log('❌ localStorage failed: ' + e.message, 'error');
+      }
+      
+      // Test 3: Check console for errors
+      log('✅ Check browser console (F12) for any errors', 'warning');
+      
+      // Test 4: Check if main.jsx exists
+      try {
+        const response = await fetch('/src/main.jsx');
+        if (response.ok) {
+          log('✅ main.jsx is accessible', 'success');
+        } else {
+          log('❌ main.jsx returned status: ' + response.status, 'error');
+        }
+      } catch (e) {
+        log('❌ Failed to fetch main.jsx: ' + e.message, 'error');
+      }
+      
+      // Test 5: Check Vite
+      log('✅ Vite dev server is running (you can see this page)', 'success');
+      
+      log('<h3>Next Steps:</h3>', 'warning');
+      log('1. Open browser console (F12) and check for errors<br>2. Click "Check Backend" to test API connection<br>3. Try clearing cache and reloading', 'warning');
+    }
+    
+    async function checkBackend() {
+      clearResults();
+      log('<h3>Checking Backend Connection...</h3>', 'warning');
+      
+      try {
+        const response = await fetch('http://localhost:8787/health');
+        const data = await response.json();
+        
+        if (data.success) {
+          log('✅ Backend is running!', 'success');
+          log('<pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+        } else {
+          log('⚠️ Backend responded but with error', 'warning');
+          log('<pre>' + JSON.stringify(data, null, 2) + '</pre>', 'warning');
+        }
+      } catch (e) {
+        log('❌ Cannot connect to backend: ' + e.message, 'error');
+        log('Make sure backend is running on port 8787', 'error');
+      }
+    }
+    
+    function clearCache() {
+      if (confirm('This will clear localStorage and reload the page. Continue?')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload(true);
+      }
+    }
+    
+    // Auto-run tests on load
+    window.addEventListener('load', () => {
+      setTimeout(runTests, 500);
+    });
+  </script>
+</body>
+</html>

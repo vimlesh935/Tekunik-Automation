@@ -1,0 +1,250 @@
+# 🎯 VISUAL STEP-BY-STEP GUIDE
+
+## Fix "backend stopped with code 1" Error
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    STEP 1: START MYSQL                      │
+└─────────────────────────────────────────────────────────────┘
+
+    1. Open XAMPP Control Panel
+       ┌──────────────────────────────────┐
+       │  XAMPP Control Panel v3.3.0      │
+       ├──────────────────────────────────┤
+       │  Module    │ Status  │ Actions   │
+       ├──────────────────────────────────┤
+       │  Apache    │ Running │ [Stop]    │
+       │  MySQL     │ ⚠️ Not  │ [Start] ← Click this!
+       │            │ Running │           │
+       └──────────────────────────────────┘
+
+    2. Wait for green "Running" status
+       ┌──────────────────────────────────┐
+       │  MySQL     │ ✅ Running │ [Stop] │
+       └──────────────────────────────────┘
+
+    ✅ MySQL is now running!
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                 STEP 2: CREATE DATABASE                     │
+└─────────────────────────────────────────────────────────────┘
+
+    1. Open browser: http://localhost/phpmyadmin
+
+    2. Click "New" in left sidebar
+       ┌────────────────────────────────────┐
+       │  phpMyAdmin                        │
+       ├────────────────────────────────────┤
+       │  [New] ← Click here                │
+       │  information_schema                │
+       │  mysql                             │
+       │  performance_schema                │
+       └────────────────────────────────────┘
+
+    3. Create database
+       ┌────────────────────────────────────┐
+       │  Database name: [Technique____]    │
+       │  Collation: utf8mb4_general_ci     │
+       │  [Create] ← Click                  │
+       └────────────────────────────────────┘
+
+    4. Import SQL file
+       ┌────────────────────────────────────┐
+       │  Database: Technique               │
+       │  [Import] ← Click this tab         │
+       │                                    │
+       │  File to import:                   │
+       │  [Choose File] database.sql        │
+       │                                    │
+       │  [Go] ← Click to import            │
+       └────────────────────────────────────┘
+
+    ✅ Database created and tables imported!
+
+
+┌─────────────────────────────────────────────────────────────┐
+│              STEP 3: INSTALL DEPENDENCIES                   │
+└─────────────────────────────────────────────────────────────┘
+
+    Open terminal in project folder:
+
+    ┌────────────────────────────────────┐
+    │  C:\...\Tekunik\Automation>       │
+    │                                    │
+    │  > cd backend                      │
+    │  > npm install                     │
+    │                                    │
+    │  Installing dependencies...        │
+    │  ✅ express@5.2.1                 │
+    │  ✅ mysql2@3.22.3                 │
+    │  ✅ bcrypt@6.0.0                  │
+    │  ✅ jsonwebtoken@9.0.2            │
+    │  ... (more packages)               │
+    │                                    │
+    │  ✅ Dependencies installed!       │
+    └────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                 STEP 4: RUN DIAGNOSTICS                     │
+└─────────────────────────────────────────────────────────────┘
+
+    ┌────────────────────────────────────┐
+    │  C:\...\backend>                   │
+    │                                    │
+    │  > node diagnose.js                │
+    │                                    │
+    │  ╔══════════════════════════════╗  │
+    │  ║ BACKEND DIAGNOSTIC TOOL      ║  │
+    │  ╚══════════════════════════════╝  │
+    │                                    │
+    │  ✅ .env file exists              │
+    │  ✅ node_modules exists           │
+    │  ✅ All packages installed        │
+    │  ✅ MySQL server reachable        │
+    │  ✅ Database "Technique" exists   │
+    │  ✅ Found 20 tables               │
+    │                                    │
+    │  ╔══════════════════════════════╗  │
+    │  ║ ✅ ALL CHECKS PASSED!        ║  │
+    │  ╚══════════════════════════════╝  │
+    └────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                  STEP 5: START SERVER                       │
+└─────────────────────────────────────────────────────────────┘
+
+    ┌────────────────────────────────────┐
+    │  C:\...\backend>                   │
+    │                                    │
+    │  > npm run dev                     │
+    │                                    │
+    │  ╔══════════════════════════════╗  │
+    │  ║ SERVER STARTUP SEQUENCE      ║  │
+    │  ╚══════════════════════════════╝  │
+    │                                    │
+    │  [STARTUP] Testing MySQL...        │
+    │  ✅ MySQL connection successful   │
+    │                                    │
+    │  [STARTUP] Database schema...      │
+    │  ✅ Database schema verified      │
+    │                                    │
+    │  ╔══════════════════════════════╗  │
+    │  ║ 🚀 SERVER RUNNING ON 8787    ║  │
+    │  ╚══════════════════════════════╝  │
+    │                                    │
+    │  Frontend: http://localhost:5173   │
+    │  API: http://localhost:8787/health │
+    └────────────────────────────────────┘
+
+    ✅ Backend is running successfully!
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                  STEP 6: START FRONTEND                     │
+└─────────────────────────────────────────────────────────────┘
+
+    Open NEW terminal:
+
+    ┌────────────────────────────────────┐
+    │  C:\...\Automation>                │
+    │                                    │
+    │  > cd frontend                     │
+    │  > npm run dev                     │
+    │                                    │
+    │  VITE v5.x.x ready in 1234 ms     │
+    │                                    │
+    │  ➜  Local:   http://localhost:5173│
+    │  ➜  Network: use --host to expose │
+    │                                    │
+    │  ✅ Frontend is running!          │
+    └────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                    ✅ SUCCESS!                              │
+└─────────────────────────────────────────────────────────────┘
+
+    Your application is now running!
+
+    🌐 Open browser: http://localhost:5173
+
+    ┌────────────────────────────────────┐
+    │  🎉 Tekunik Automation             │
+    │  ─────────────────────────────     │
+    │  ✅ Home page loads                │
+    │  ✅ Products display               │
+    │  ✅ Login/Register works           │
+    │  ✅ Cart functions                 │
+    │  ✅ Admin panel accessible         │
+    └────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                  QUICK TROUBLESHOOTING                      │
+└─────────────────────────────────────────────────────────────┘
+
+    ❌ Error: ECONNREFUSED
+    ✅ Fix: Start MySQL in XAMPP
+
+    ❌ Error: ER_BAD_DB_ERROR
+    ✅ Fix: Create "Technique" database
+
+    ❌ Error: EADDRINUSE
+    ✅ Fix: Kill process on port 8787
+       netstat -ano | findstr :8787
+       taskkill /PID <PID> /F
+
+    ❌ Error: Cannot find module
+    ✅ Fix: npm install
+
+    ❌ Error: bcrypt
+    ✅ Fix: npm rebuild bcrypt
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                    EASY MODE (RECOMMENDED)                  │
+└─────────────────────────────────────────────────────────────┘
+
+    Just double-click this file:
+
+    📁 start-servers.bat
+
+    It will:
+    ✅ Check if MySQL is running
+    ✅ Install dependencies if needed
+    ✅ Run diagnostics
+    ✅ Start both servers automatically
+
+    That's it! 🎉
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                      NEED MORE HELP?                        │
+└─────────────────────────────────────────────────────────────┘
+
+    📖 Read these files:
+    
+    1. README.md - Complete setup guide
+    2. QUICK-START.md - Fast setup
+    3. TROUBLESHOOTING.md - Detailed solutions
+
+    🔧 Run these tools:
+    
+    1. check-system.bat - Quick check
+    2. node diagnose.js - Full diagnostics
+    3. start-servers.bat - Auto start
+
+
+═══════════════════════════════════════════════════════════════
+
+                    🎯 YOU'RE ALL SET!
+
+    Your Tekunik Automation website is now running perfectly!
+
+    Happy coding! 🚀
+
+═══════════════════════════════════════════════════════════════
+```
