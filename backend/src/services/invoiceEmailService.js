@@ -1,49 +1,32 @@
-const nodemailer = require("nodemailer");
-const fs = require("node:fs");
-const path = require("node:path");
 const env = require("../config/env");
-
-let transporter;
-
-const getTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: env.smtp.user,
-        pass: env.smtp.pass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-  }
-  return transporter;
-};
+const { createTransporter } = require("./mailService");
 
 const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
   const customerName = order.guest_name || "Valued Customer";
   const totalVal = parseFloat(order.total_amount);
-  const taxAmount = (totalVal - (totalVal / 1.18)).toFixed(2);
+  const taxAmount = (totalVal - totalVal / 1.18).toFixed(2);
   const baseAmount = (totalVal / 1.18).toFixed(2);
 
-  const itemsRows = items.map((item, index) => {
-    const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
-    return `
+  const itemsRows = items
+    .map((item, index) => {
+      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+      return `
       <tr>
         <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 13px;">${index + 1}</td>
         <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ffffff; font-size: 13px; font-weight: 500;">${item.product_name}</td>
         <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 13px; text-align: center;">${item.quantity}</td>
-        <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 13px; text-align: right;">₹${parseFloat(item.price).toLocaleString('en-IN')}</td>
-        <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #06b6d4; font-size: 13px; font-weight: 600; text-align: right;">₹${parseFloat(itemTotal).toLocaleString('en-IN')}</td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 13px; text-align: right;">₹${parseFloat(item.price).toLocaleString("en-IN")}</td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #06b6d4; font-size: 13px; font-weight: 600; text-align: right;">₹${parseFloat(itemTotal).toLocaleString("en-IN")}</td>
       </tr>
     `;
-  }).join("");
+    })
+    .join("");
 
   const deliveryAddress = order.delivery_address || "N/A";
-  const city = [order.guest_city, order.guest_state, order.guest_pincode].filter(Boolean).join(", ") || "N/A";
+  const city =
+    [order.guest_city, order.guest_state, order.guest_pincode]
+      .filter(Boolean)
+      .join(", ") || "N/A";
 
   return `
     <!DOCTYPE html>
@@ -163,7 +146,7 @@ const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
           <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); text-align: right;">
             <div style="display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0;">
               <span style="color: #94a3b8; font-size: 14px;">Base Amount:</span>
-              <span style="color: #f1f5f9; font-size: 14px; font-weight: 600; min-width: 100px; display: inline-block; text-align: right;">₹${parseFloat(baseAmount).toLocaleString('en-IN')}</span>
+              <span style="color: #f1f5f9; font-size: 14px; font-weight: 600; min-width: 100px; display: inline-block; text-align: right;">₹${parseFloat(baseAmount).toLocaleString("en-IN")}</span>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0;">
               <span style="color: #94a3b8; font-size: 14px;">Shipping:</span>
@@ -171,11 +154,11 @@ const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0;">
               <span style="color: #94a3b8; font-size: 14px;">GST (18% Incl.):</span>
-              <span style="color: #f1f5f9; font-size: 14px; min-width: 100px; display: inline-block; text-align: right;">₹${parseFloat(taxAmount).toLocaleString('en-IN')}</span>
+              <span style="color: #f1f5f9; font-size: 14px; min-width: 100px; display: inline-block; text-align: right;">₹${parseFloat(taxAmount).toLocaleString("en-IN")}</span>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 40px; padding: 8px 0; margin-top: 8px; border-top: 2px solid #06b6d4;">
               <span style="color: #06b6d4; font-size: 18px; font-weight: 700;">Grand Total:</span>
-              <span style="color: #06b6d4; font-size: 22px; font-weight: 800; min-width: 120px; display: inline-block; text-align: right;">₹${totalVal.toLocaleString('en-IN')}</span>
+              <span style="color: #06b6d4; font-size: 22px; font-weight: 800; min-width: 120px; display: inline-block; text-align: right;">₹${totalVal.toLocaleString("en-IN")}</span>
             </div>
           </div>
         </div>
@@ -189,8 +172,8 @@ const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
 
         <!-- Footer -->
         <div class="footer">
-          <p style="font-size: 14px; color: #94a3b8;">Thank you for choosing <strong style="color: #06b6d4;">Tekunik</strong>!</p>
-          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Tekunik Technologies • Email: vimleshnew29@gmail.com</p>
+          <p style="font-size: 14px; color: #94a3b8;">Thank you for choosing <strong style="color: #06b6d4;">Tek Node</strong>!</p>
+          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Tek Node Technologies • Email: vimleshnew29@gmail.com</p>
           <p style="font-size: 11px; color: #475569; margin-top: 4px;">This is an automated invoice. No signature required.</p>
         </div>
       </div>
@@ -201,7 +184,7 @@ const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
 
 const sendInvoiceEmail = async ({ order, items, pdfPath, invoiceNumber }) => {
   try {
-    const smtp = getTransporter();
+    const smtp = createTransporter();
     const customerName = order.guest_name || "Valued Customer";
     const totalAmount = parseFloat(order.total_amount).toFixed(2);
     const htmlContent = buildInvoiceEmailHTML(order, items, invoiceNumber);
@@ -218,9 +201,9 @@ const sendInvoiceEmail = async ({ order, items, pdfPath, invoiceNumber }) => {
     const recipientEmails = [...new Set(recipients)].join(", ");
 
     const mailOptions = {
-      from: `"Tekunik" <${env.smtp.user}>`,
+      from: `"Tek Node" <${env.smtp.user}>`,
       to: recipientEmails,
-      subject: `Invoice #${invoiceNumber} - Your Order from Tekunik`,
+      subject: `Invoice #${invoiceNumber} - Your Order from Tek Node`,
       html: htmlContent,
       attachments: pdfPath
         ? [
@@ -242,9 +225,16 @@ const sendInvoiceEmail = async ({ order, items, pdfPath, invoiceNumber }) => {
       invoiceNumber,
     });
 
-    return { success: true, messageId: info.messageId, recipients: recipientEmails };
+    return {
+      success: true,
+      messageId: info.messageId,
+      recipients: recipientEmails,
+    };
   } catch (error) {
-    console.error("❌ [InvoiceEmail] Failed to send invoice email:", error.message);
+    console.error(
+      "❌ [InvoiceEmail] Failed to send invoice email:",
+      error.message,
+    );
     console.error("   Stack:", error.stack);
     // Don't throw - we don't want to break the order flow if email fails
     return { success: false, error: error.message };

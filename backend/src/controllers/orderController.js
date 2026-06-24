@@ -5,7 +5,12 @@ const { success } = require("../utils/response");
 const { normalizeImageUrl } = require("../utils/uploadPaths");
 const { generateInvoicePDF } = require("../services/pdfService");
 const { sendInvoiceEmail } = require("../services/invoiceEmailService");
-const { ensureOrderTrackingTable, getTrackingSteps, getEstimatedDelivery, generateTrackingNumber } = require("../config/orderMigration");
+const {
+  ensureOrderTrackingTable,
+  getTrackingSteps,
+  getEstimatedDelivery,
+  generateTrackingNumber,
+} = require("../config/orderMigration");
 
 const normalizeOrderItemImages = (items) =>
   items.map((item) => ({
@@ -28,7 +33,9 @@ const PHONE_REGEX = /^[+()\-\.\s\d]{7,20}$/;
 
 const normalizeCustomer = (customer = {}) => ({
   full_name: String(customer.full_name || "").trim(),
-  email: String(customer.email || "").trim().toLowerCase(),
+  email: String(customer.email || "")
+    .trim()
+    .toLowerCase(),
   phone: String(customer.phone || "").trim(),
   address: String(customer.address || "").trim(),
   city: String(customer.city || "").trim(),
@@ -38,33 +45,67 @@ const normalizeCustomer = (customer = {}) => ({
 
 const validateCheckoutRequest = (items, customer, payment_method) => {
   if (!Array.isArray(items) || items.length === 0) {
-    throw new AppError("items array is required and cannot be empty", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "items array is required and cannot be empty",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   if (!customer || typeof customer !== "object") {
-    throw new AppError("customer details are required", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "customer details are required",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   const normalizedCustomer = normalizeCustomer(customer);
-  const requiredFields = ["full_name", "email", "phone", "address", "city", "state", "pincode"];
+  const requiredFields = [
+    "full_name",
+    "email",
+    "phone",
+    "address",
+    "city",
+    "state",
+    "pincode",
+  ];
 
   for (const field of requiredFields) {
     if (!normalizedCustomer[field]) {
-      throw new AppError("Please complete all required checkout fields", 400, "VALIDATION_ERROR");
+      throw new AppError(
+        "Please complete all required checkout fields",
+        400,
+        "VALIDATION_ERROR",
+      );
     }
   }
 
   if (!EMAIL_REGEX.test(normalizedCustomer.email)) {
-    throw new AppError("Please enter a valid email address", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "Please enter a valid email address",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   if (!PHONE_REGEX.test(normalizedCustomer.phone)) {
-    throw new AppError("Please enter a valid phone number", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "Please enter a valid phone number",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
-  const normalizedPaymentMethod = String(payment_method || "cod").trim().toLowerCase();
+  const normalizedPaymentMethod = String(payment_method || "cod")
+    .trim()
+    .toLowerCase();
   if (!ALLOWED_PAYMENT_METHODS.includes(normalizedPaymentMethod)) {
-    throw new AppError("Please select a valid payment method", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "Please select a valid payment method",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   return {
@@ -79,17 +120,31 @@ const validateCheckoutRequest = (items, customer, payment_method) => {
  * Create a new order, generate invoice, send email
  */
 const createOrder = asyncHandler(async (req, res) => {
-  const user_id = req.user?.id || null;
+  let user_id = req.user?.id || null;
   const { items, customer, payment_method } = req.body;
 
-  const { customer: normalizedCustomer, payment_method: normalizedPaymentMethod } = validateCheckoutRequest(
-    items,
-    customer,
-    payment_method
-  );
+  const {
+    customer: normalizedCustomer,
+    payment_method: normalizedPaymentMethod,
+  } = validateCheckoutRequest(items, customer, payment_method);
 
   try {
     await ensureOrderTrackingTable();
+
+    // If no authenticated user, check if a registered user exists with this email.
+    // If so, link the order to that user instead of leaving user_id = null.
+    if (!user_id && normalizedCustomer.email) {
+      const [existingUser] = await query(
+        "SELECT id FROM users WHERE email = ? LIMIT 1",
+        [normalizedCustomer.email],
+      );
+      if (existingUser) {
+        user_id = existingUser.id;
+        console.log(
+          `[ORDER] Guest email matched existing user_id=${user_id}. Linking order.`,
+        );
+      }
+    }
 
     const validatedItems = [];
     let totalAmount = 0;
@@ -98,10 +153,16 @@ const createOrder = asyncHandler(async (req, res) => {
       const { product_id, quantity } = item;
 
       if (!product_id || !quantity || quantity < 1) {
-        throw new AppError("Invalid product_id or quantity for item", 400, "VALIDATION_ERROR");
+        throw new AppError(
+          "Invalid product_id or quantity for item",
+          400,
+          "VALIDATION_ERROR",
+        );
       }
 
-      const [product] = await query("SELECT * FROM products WHERE id = ?", [product_id]);
+      const [product] = await query("SELECT * FROM products WHERE id = ?", [
+        product_id,
+      ]);
       if (!product) {
         throw new AppError(`Product ${product_id} not found`, 404, "NOT_FOUND");
       }
@@ -110,7 +171,7 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new AppError(
           `Product "${product.name}" has insufficient stock. Available: ${product.stock_quantity}, Requested: ${quantity}`,
           400,
-          "INSUFFICIENT_STOCK"
+          "INSUFFICIENT_STOCK",
         );
       }
 
@@ -130,7 +191,7 @@ const createOrder = asyncHandler(async (req, res) => {
     const invoiceNumber = `INV-${timestamp}${randomStr}`;
     const trackingNumber = generateTrackingNumber();
     const estimatedDelivery = getEstimatedDelivery();
-    const userEmail = typeof req.user?.email === "string" ? req.user.email : normalizedCustomer.email || null;
+    const userEmail = req.user?.email || normalizedCustomer.email || null;
 
     const result = await query(
       `INSERT INTO orders (
@@ -151,7 +212,7 @@ const createOrder = asyncHandler(async (req, res) => {
         guest_pincode,
         user_email,
         estimated_delivery
-      ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+      ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user_id,
         orderNumber,
@@ -168,21 +229,31 @@ const createOrder = asyncHandler(async (req, res) => {
         normalizedCustomer.pincode,
         userEmail,
         estimatedDelivery,
-      ]
+      ],
     );
 
     const orderId = result.insertId;
 
-    console.log(`✅ [ORDER] Created order ${orderNumber} for user_id=${user_id || "guest"}`);
+    console.log(
+      `✅ [ORDER] Created order ${orderNumber} for user_id=${user_id || "guest"}`,
+    );
 
     for (const item of validatedItems) {
       await query(
         `INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
          VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.product_name, item.price, item.quantity]
+        [
+          orderId,
+          item.product_id,
+          item.product_name,
+          item.price,
+          item.quantity,
+        ],
       );
 
-      const [product] = await query("SELECT * FROM products WHERE id = ?", [item.product_id]);
+      const [product] = await query("SELECT * FROM products WHERE id = ?", [
+        item.product_id,
+      ]);
       const oldStock = product.stock_quantity;
       const newStock = oldStock - item.quantity;
 
@@ -197,20 +268,23 @@ const createOrder = asyncHandler(async (req, res) => {
         `UPDATE products
          SET stock_quantity = ?, stock_status = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [newStock, stockStatus, newStock, item.product_id]
+        [newStock, stockStatus, newStock, item.product_id],
       );
 
       await query(
         `INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes)
          VALUES (?, ?, ?, 'order_purchase', ?, ?)`,
-        [item.product_id, oldStock, newStock, user_id, `Order #${orderNumber}`]
+        [item.product_id, oldStock, newStock, user_id, `Order #${orderNumber}`],
       );
 
       if (newStock === 0) {
         await query(
           `INSERT INTO inventory_alerts (product_id, alert_type, message)
            VALUES (?, 'out_of_stock', ?)`,
-          [item.product_id, `Product "${product.name}" is now OUT OF STOCK after purchase`]
+          [
+            item.product_id,
+            `Product "${product.name}" is now OUT OF STOCK after purchase`,
+          ],
         );
       }
     }
@@ -218,25 +292,29 @@ const createOrder = asyncHandler(async (req, res) => {
     await query(
       `INSERT INTO order_tracking (order_id, status, label, description)
        VALUES (?, 'pending', 'Order Confirmed', 'Your order has been placed and is awaiting confirmation')`,
-      [orderId]
+      [orderId],
     );
 
     await clearUserCart(user_id);
 
-    const [createdOrder] = await query("SELECT * FROM orders WHERE id = ?", [orderId]);
+    const [createdOrder] = await query("SELECT * FROM orders WHERE id = ?", [
+      orderId,
+    ]);
     const orderItems = await query(
       `SELECT oi.*, p.image_url AS product_image
        FROM order_items oi
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
-      [orderId]
+      [orderId],
     );
 
     const normalizedItems = normalizeOrderItemImages(orderItems);
 
     generateInvoicePDF(createdOrder, orderItems)
       .then(async (invoiceResult) => {
-        console.log(`✅ [ORDER] Invoice generated for order #${orderNumber}: ${invoiceResult.fileName}`);
+        console.log(
+          `✅ [ORDER] Invoice generated for order #${orderNumber}: ${invoiceResult.fileName}`,
+        );
 
         try {
           const emailResult = await sendInvoiceEmail({
@@ -247,25 +325,39 @@ const createOrder = asyncHandler(async (req, res) => {
           });
 
           if (emailResult.success) {
-            console.log(`✅ [ORDER] Invoice email sent for order #${orderNumber}`);
+            console.log(
+              `✅ [ORDER] Invoice email sent for order #${orderNumber}`,
+            );
           } else {
-            console.warn(`⚠️ [ORDER] Invoice email failed for order #${orderNumber}: ${emailResult.error}`);
+            console.warn(
+              `⚠️ [ORDER] Invoice email failed for order #${orderNumber}: ${emailResult.error}`,
+            );
           }
         } catch (emailError) {
-          console.error(`❌ [ORDER] Email error for order #${orderNumber}:`, emailError.message);
+          console.error(
+            `❌ [ORDER] Email error for order #${orderNumber}:`,
+            emailError.message,
+          );
         }
       })
       .catch((pdfError) => {
-        console.error(`❌ [ORDER] PDF generation failed for order #${orderNumber}:`, pdfError.message);
+        console.error(
+          `❌ [ORDER] PDF generation failed for order #${orderNumber}:`,
+          pdfError.message,
+        );
       });
 
     return success(
       res,
       "Order created successfully",
       {
-        order: { ...createdOrder, items: normalizedItems, estimated_delivery: estimatedDelivery },
+        order: {
+          ...createdOrder,
+          items: normalizedItems,
+          estimated_delivery: estimatedDelivery,
+        },
       },
-      201
+      201,
     );
   } catch (error) {
     console.error("❌ [ORDER] createOrder failed", {
@@ -279,31 +371,66 @@ const createOrder = asyncHandler(async (req, res) => {
 
 /**
  * ✅ POST /api/guest/orders/track
- * Track an order by order_number (or tracking_number) and contact (email or phone)
+ * Track an order by tracking_number (or order_number)
+ * If tracking_number is provided, no contact is needed.
+ * If order_number is provided, contact (email or phone) is still required for verification.
  */
 const trackOrder = asyncHandler(async (req, res) => {
   const { order_number, tracking_number, contact } = req.body;
 
   const identifier = order_number || tracking_number;
-  if (!identifier || !contact) {
-    throw new AppError("order_number or tracking_number and contact are required", 400, "VALIDATION_ERROR");
+  if (!identifier) {
+    throw new AppError(
+      "order_number or tracking_number is required",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
-  const [order] = await query(
-    `SELECT o.*, 
-            COALESCE(CONCAT(up.first_name, ' ', up.last_name), o.guest_name, 'Guest') AS customer_name,
-            COALESCE(u.email, o.guest_email) AS customer_email
-     FROM orders o
-     LEFT JOIN users u ON o.user_id = u.id
-     LEFT JOIN user_profiles up ON u.id = up.user_id
-     WHERE (o.order_number = ? OR o.tracking_number = ?)
-       AND (o.guest_email = ? OR o.guest_phone = ? OR u.email = ?)
-     LIMIT 1`,
-    [identifier, identifier, contact, contact, contact]
-  );
+  let order;
+
+  // If tracking_number is provided, lookup by tracking_number only (no contact needed)
+  if (tracking_number) {
+    [order] = await query(
+      `SELECT o.*,
+              COALESCE(CONCAT(up.first_name, ' ', up.last_name), o.guest_name, 'Guest') AS customer_name,
+              COALESCE(u.email, o.guest_email) AS customer_email
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE o.tracking_number = ?
+       LIMIT 1`,
+      [tracking_number],
+    );
+  } else {
+    // If order_number is provided, require contact for security
+    if (!contact) {
+      throw new AppError(
+        "contact (email or phone) is required when using order number",
+        400,
+        "VALIDATION_ERROR",
+      );
+    }
+    [order] = await query(
+      `SELECT o.*,
+              COALESCE(CONCAT(up.first_name, ' ', up.last_name), o.guest_name, 'Guest') AS customer_name,
+              COALESCE(u.email, o.guest_email) AS customer_email
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE o.order_number = ?
+         AND (o.guest_email = ? OR o.guest_phone = ? OR u.email = ?)
+       LIMIT 1`,
+      [identifier, contact, contact, contact],
+    );
+  }
 
   if (!order) {
-    throw new AppError("Order not found. Please check your order/tracking number and contact details.", 404, "ORDER_NOT_FOUND");
+    throw new AppError(
+      "Order not found. Please check your tracking/order number.",
+      404,
+      "ORDER_NOT_FOUND",
+    );
   }
 
   const items = await query(
@@ -311,46 +438,74 @@ const trackOrder = asyncHandler(async (req, res) => {
      FROM order_items oi
      LEFT JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = ?`,
-    [order.id]
+    [order.id],
   );
 
   // Get tracking timeline
   const trackingHistory = await query(
     `SELECT * FROM order_tracking WHERE order_id = ? ORDER BY timestamp ASC`,
-    [order.id]
+    [order.id],
   );
 
   const trackingSteps = getTrackingSteps(order.status);
 
-  return success(res, "Order found", { 
-    order: { ...order, items: normalizeOrderItemImages(items), trackingHistory, trackingSteps } 
+  return success(res, "Order found", {
+    order: {
+      ...order,
+      items: normalizeOrderItemImages(items),
+      trackingHistory,
+      trackingSteps,
+    },
   });
 });
 
 /** GET /api/user/orders - Get authenticated user's orders */
 const getUserOrders = asyncHandler(async (req, res) => {
   const user_id = req.user.id;
+  const user_email = req.user.email;
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, parseInt(req.query.limit) || 20);
   const offset = (page - 1) * limit;
 
+  // First, retroactively link any orphaned guest orders to this user
+  if (user_email) {
+    await query(
+      `UPDATE orders SET user_id = ? WHERE user_id IS NULL AND (guest_email = ? OR user_email = ?)`,
+      [user_id, user_email, user_email],
+    );
+  }
+
   const [totalRow] = await query(
     `SELECT COUNT(*) AS count FROM orders WHERE user_id = ?`,
-    [user_id]
+    [user_id],
   );
 
   const orders = await query(
-    `SELECT o.*, 
-            (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count
+    `SELECT o.*,
+            (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count,
+            (SELECT oi.product_name FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS first_product_name,
+            (
+              SELECT p.image_url
+              FROM order_items oi
+              LEFT JOIN products p ON p.id = oi.product_id
+              WHERE oi.order_id = o.id
+              ORDER BY oi.id ASC
+              LIMIT 1
+            ) AS first_product_image
      FROM orders o
      WHERE o.user_id = ?
      ORDER BY o.created_at DESC
      LIMIT ? OFFSET ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
 
+  const normalizedOrders = orders.map((order) => ({
+    ...order,
+    first_product_image: normalizeImageUrl(order.first_product_image),
+  }));
+
   return success(res, "Orders fetched", {
-    orders,
+    orders: normalizedOrders,
     pagination: {
       total: Number(totalRow.count),
       page,
@@ -368,7 +523,7 @@ const getUserOrder = asyncHandler(async (req, res) => {
     `SELECT o.*
      FROM orders o
      WHERE o.id = ? AND o.user_id = ?`,
-    [req.params.id, user_id]
+    [req.params.id, user_id],
   );
 
   if (!order) throw new AppError("Order not found", 404, "NOT_FOUND");
@@ -378,19 +533,24 @@ const getUserOrder = asyncHandler(async (req, res) => {
      FROM order_items oi
      LEFT JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = ?`,
-    [req.params.id]
+    [req.params.id],
   );
 
   // Get tracking timeline
   const trackingHistory = await query(
     `SELECT * FROM order_tracking WHERE order_id = ? ORDER BY timestamp ASC`,
-    [req.params.id]
+    [req.params.id],
   );
 
   const trackingSteps = getTrackingSteps(order.status);
 
-  return success(res, "Order fetched", { 
-    order: { ...order, items: normalizeOrderItemImages(items), trackingHistory, trackingSteps } 
+  return success(res, "Order fetched", {
+    order: {
+      ...order,
+      items: normalizeOrderItemImages(items),
+      trackingHistory,
+      trackingSteps,
+    },
   });
 });
 
@@ -409,12 +569,16 @@ const listOrders = asyncHandler(async (req, res) => {
     params.push(status);
   }
   if (search) {
-    where += " AND (o.order_number LIKE ? OR o.tracking_number LIKE ? OR o.guest_name LIKE ? OR o.guest_email LIKE ? OR o.guest_phone LIKE ?)";
+    where +=
+      " AND (o.order_number LIKE ? OR o.tracking_number LIKE ? OR o.guest_name LIKE ? OR o.guest_email LIKE ? OR o.guest_phone LIKE ?)";
     const like = `%${search}%`;
     params.push(like, like, like, like, like);
   }
 
-  const [totalRow] = await query(`SELECT COUNT(*) AS count FROM orders o ${where}`, params);
+  const [totalRow] = await query(
+    `SELECT COUNT(*) AS count FROM orders o ${where}`,
+    params,
+  );
 
   const orders = await query(
     `SELECT o.*,
@@ -427,7 +591,7 @@ const listOrders = asyncHandler(async (req, res) => {
      ${where}
      ORDER BY o.created_at DESC
      LIMIT ? OFFSET ?`,
-    [...params, limit, offset]
+    [...params, limit, offset],
   );
 
   return success(res, "Orders fetched", {
@@ -451,7 +615,7 @@ const getOrder = asyncHandler(async (req, res) => {
      LEFT JOIN users u ON o.user_id = u.id
      LEFT JOIN user_profiles up ON u.id = up.user_id
      WHERE o.id = ?`,
-    [req.params.id]
+    [req.params.id],
   );
   if (!order) throw new AppError("Order not found", 404, "NOT_FOUND");
 
@@ -460,19 +624,24 @@ const getOrder = asyncHandler(async (req, res) => {
      FROM order_items oi
      LEFT JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = ?`,
-    [req.params.id]
+    [req.params.id],
   );
 
   // Get tracking timeline
   const trackingHistory = await query(
     `SELECT * FROM order_tracking WHERE order_id = ? ORDER BY timestamp ASC`,
-    [req.params.id]
+    [req.params.id],
   );
 
   const trackingSteps = getTrackingSteps(order.status);
 
-  return success(res, "Order fetched", { 
-    order: { ...order, items: normalizeOrderItemImages(items), trackingHistory, trackingSteps } 
+  return success(res, "Order fetched", {
+    order: {
+      ...order,
+      items: normalizeOrderItemImages(items),
+      trackingHistory,
+      trackingSteps,
+    },
   });
 });
 
@@ -481,16 +650,46 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, payment_status, admin_notes } = req.body;
 
-  const validStatuses = ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered", "cancelled"];
+  const validStatuses = [
+    "pending",
+    "confirmed",
+    "processing",
+    "packed",
+    "shipped",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ];
   const validPaymentStatuses = ["pending", "paid", "failed", "refunded"];
   const trackingLabels = {
-    confirmed: { label: "Confirmed", description: "Your order has been confirmed and is being processed" },
-    processing: { label: "Processing", description: "Your order is being processed" },
-    packed: { label: "Packed", description: "Your items are packed and ready for shipping" },
-    shipped: { label: "Shipped", description: "Your package has been shipped and is on its way" },
-    out_for_delivery: { label: "Out for Delivery", description: "Your package is out for delivery today" },
-    delivered: { label: "Delivered", description: "Your package has been delivered successfully" },
-    cancelled: { label: "Cancelled", description: "Your order has been cancelled" },
+    confirmed: {
+      label: "Confirmed",
+      description: "Your order has been confirmed and is being processed",
+    },
+    processing: {
+      label: "Processing",
+      description: "Your order is being processed",
+    },
+    packed: {
+      label: "Packed",
+      description: "Your items are packed and ready for shipping",
+    },
+    shipped: {
+      label: "Shipped",
+      description: "Your package has been shipped and is on its way",
+    },
+    out_for_delivery: {
+      label: "Out for Delivery",
+      description: "Your package is out for delivery today",
+    },
+    delivered: {
+      label: "Delivered",
+      description: "Your package has been delivered successfully",
+    },
+    cancelled: {
+      label: "Cancelled",
+      description: "Your order has been cancelled",
+    },
   };
 
   if (status && !validStatuses.includes(status))
@@ -501,23 +700,50 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const existing = await query("SELECT * FROM orders WHERE id = ?", [id]);
   if (!existing.length) throw new AppError("Order not found", 404, "NOT_FOUND");
 
+  // 🔒 LOCK: Delivered is the final status — no status changes allowed
+  if (existing[0].status === "delivered" && status) {
+    throw new AppError(
+      "Delivered orders cannot be modified. This is a final status.",
+      400,
+      "DELIVERED_LOCK",
+    );
+  }
+
   const updates = [];
   const params = [];
-  if (status) { updates.push("status = ?"); params.push(status); }
-  if (payment_status) { updates.push("payment_status = ?"); params.push(payment_status); }
-  if (admin_notes !== undefined) { updates.push("admin_notes = ?"); params.push(admin_notes); }
+  if (status) {
+    updates.push("status = ?");
+    params.push(status);
+  }
+  if (payment_status) {
+    updates.push("payment_status = ?");
+    params.push(payment_status);
+  }
+  if (admin_notes !== undefined) {
+    updates.push("admin_notes = ?");
+    params.push(admin_notes);
+  }
 
-  if (!updates.length) throw new AppError("No update fields provided", 400, "VALIDATION_ERROR");
+  if (!updates.length)
+    throw new AppError("No update fields provided", 400, "VALIDATION_ERROR");
 
   params.push(id);
-  await query(`UPDATE orders SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, params);
+  await query(
+    `UPDATE orders SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    params,
+  );
 
   // Add tracking entry if status changed
   if (status && trackingLabels[status]) {
     await query(
       `INSERT INTO order_tracking (order_id, status, label, description)
        VALUES (?, ?, ?, ?)`,
-      [id, status, trackingLabels[status].label, trackingLabels[status].description]
+      [
+        id,
+        status,
+        trackingLabels[status].label,
+        trackingLabels[status].description,
+      ],
     );
   }
 
@@ -537,12 +763,12 @@ const regenerateInvoice = asyncHandler(async (req, res) => {
      FROM order_items oi
      LEFT JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = ?`,
-    [id]
+    [id],
   );
 
   // Generate invoice
   const invoiceResult = await generateInvoicePDF(order, items);
-  
+
   // Send email
   await sendInvoiceEmail({
     order,
@@ -568,7 +794,7 @@ const downloadInvoice = asyncHandler(async (req, res) => {
      FROM order_items oi
      LEFT JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = ?`,
-    [id]
+    [id],
   );
 
   const invoiceResult = await generateInvoicePDF(order, items);
@@ -582,10 +808,92 @@ const downloadInvoice = asyncHandler(async (req, res) => {
   });
 });
 
+/** GET /api/user/orders/:id/invoice - Download own invoice */
+const downloadUserInvoice = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user_id = req.user.id;
+
+  const [order] = await query(
+    "SELECT * FROM orders WHERE id = ? AND user_id = ?",
+    [id, user_id],
+  );
+  if (!order) throw new AppError("Order not found", 404, "NOT_FOUND");
+
+  const items = await query(
+    `SELECT oi.*, p.image_url AS product_image
+     FROM order_items oi
+     LEFT JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = ?`,
+    [id],
+  );
+
+  const invoiceResult = await generateInvoicePDF(order, items);
+  const fileName = `${invoiceResult.invoiceNumber}.pdf`;
+
+  res.download(invoiceResult.filePath, fileName, (err) => {
+    if (err) {
+      console.error("❌ [Invoice] User download error:", err);
+      throw new AppError("Failed to download invoice", 500, "DOWNLOAD_ERROR");
+    }
+  });
+});
+
+/** GET /api/guest/orders/download-invoice?order_number=...&email=... - Download guest invoice securely */
+const downloadGuestInvoice = asyncHandler(async (req, res) => {
+  const orderNumber = String(
+    req.query.order_number || req.params.orderNumber || "",
+  ).trim();
+  const email = String(req.query.email || "")
+    .trim()
+    .toLowerCase();
+
+  if (!orderNumber || !email) {
+    throw new AppError(
+      "order number and email are required",
+      400,
+      "VALIDATION_ERROR",
+    );
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    throw new AppError("Please provide a valid email", 400, "VALIDATION_ERROR");
+  }
+
+  const [order] = await query(
+    `SELECT * FROM orders
+     WHERE order_number = ?
+       AND (LOWER(guest_email) = ? OR LOWER(user_email) = ?)
+     LIMIT 1`,
+    [orderNumber, email, email],
+  );
+
+  if (!order) {
+    throw new AppError("Order not found", 404, "NOT_FOUND");
+  }
+
+  const items = await query(
+    `SELECT oi.*, p.image_url AS product_image
+     FROM order_items oi
+     LEFT JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = ?`,
+    [order.id],
+  );
+
+  const invoiceResult = await generateInvoicePDF(order, items);
+  const fileName = `${invoiceResult.invoiceNumber}.pdf`;
+
+  res.download(invoiceResult.filePath, fileName, (err) => {
+    if (err) {
+      console.error("❌ [Invoice] Guest download error:", err);
+      throw new AppError("Failed to download invoice", 500, "DOWNLOAD_ERROR");
+    }
+  });
+});
+
 /** GET /api/admin/orders/stats - Order dashboard stats */
 const getOrderStats = asyncHandler(async (req, res) => {
   const stats = await query(`
-    SELECT 
+    SELECT
       COUNT(*) AS total_orders,
       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
       SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed_count,
@@ -595,7 +903,8 @@ const getOrderStats = asyncHandler(async (req, res) => {
       SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count,
       SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled_count,
       COALESCE(SUM(total_amount), 0) AS total_revenue,
-      COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END), 0) AS paid_revenue
+      COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END), 0) AS paid_revenue,
+      COALESCE(SUM(CASE WHEN status = 'delivered' THEN total_amount ELSE 0 END), 0) AS delivered_revenue
     FROM orders
   `);
 
@@ -610,21 +919,93 @@ const getOrderStats = asyncHandler(async (req, res) => {
     LIMIT 10
   `);
 
-  return success(res, "Order stats fetched", {
-    stats: stats[0],
+  console.log('[STATS] Query result:', stats[0]);
+  console.log('[STATS] Delivered revenue raw:', stats[0]?.delivered_revenue, typeof stats[0]?.delivered_revenue);
+  console.log('[STATS] Total orders:', stats[0]?.total_orders);
+  console.log('[STATS] Delivered count:', stats[0]?.delivered_count);
+
+  const responseData = {
+    stats: {
+      ...stats[0],
+      delivered_revenue: parseFloat(stats[0]?.delivered_revenue || 0),
+      total_revenue: parseFloat(stats[0]?.total_revenue || 0),
+    },
     recentOrders,
-  });
+  };
+  
+  // Log the exact response being sent
+  console.log('[STATS] Response data:', JSON.stringify(responseData));
+
+  return success(res, "Order stats fetched", responseData);
 });
 
-module.exports = { 
-  createOrder, 
-  listOrders, 
-  getOrder, 
-  updateOrderStatus, 
+const cancelOrder = asyncHandler(async (req, res) => {
+  const orderId = req.params.id;
+
+  const [order] = await query(
+    "SELECT * FROM orders WHERE id = ? AND user_id = ? LIMIT 1",
+    [orderId, req.user.id],
+  );
+
+  if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+
+  const allowedStatuses = ["pending", "confirmed", "processing"];
+  if (!allowedStatuses.includes(order.status)) {
+    throw new AppError(
+      "Order can no longer be cancelled because shipment processing has started.",
+      400,
+      "ORDER_NOT_CANCELLABLE",
+    );
+  }
+
+  await query(
+    "UPDATE orders SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = 'customer', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [orderId],
+  );
+
+  await query(
+    "INSERT INTO order_tracking (order_id, status, label, description) VALUES (?, 'cancelled', 'Order Cancelled', 'Customer cancelled this order')",
+    [orderId],
+  );
+
+  const items = await query(
+    "SELECT oi.*, p.stock_quantity, p.low_stock_limit FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?",
+    [orderId],
+  );
+
+  for (const item of items) {
+    const newStock = (item.stock_quantity || 0) + item.quantity;
+    let stockStatus = "in_stock";
+    if (newStock === 0) stockStatus = "out_of_stock";
+    else if (newStock <= item.low_stock_limit) stockStatus = "limited_stock";
+
+    await query(
+      "UPDATE products SET stock_quantity = ?, stock_status = ?, stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [newStock, stockStatus, newStock, item.product_id],
+    );
+
+    await query(
+      "INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes) VALUES (?, ?, ?, 'order_cancel', ?, ?)",
+      [item.product_id, item.stock_quantity, newStock, req.user.id, `Cancelled order #${order.order_number}`],
+    );
+  }
+
+  const [updated] = await query("SELECT * FROM orders WHERE id = ?", [orderId]);
+  return success(res, "Order cancelled", { order: updated });
+});
+
+module.exports = {
+  createOrder,
+  listOrders,
+  getOrder,
+  updateOrderStatus,
   trackOrder,
   getUserOrders,
   getUserOrder,
   regenerateInvoice,
   downloadInvoice,
+  downloadUserInvoice,
+  downloadGuestInvoice,
   getOrderStats,
+  cancelOrder,
 };

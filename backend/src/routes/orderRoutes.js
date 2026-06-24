@@ -1,9 +1,20 @@
 const express = require("express");
 const { requireAuth } = require("../middleware/authMiddleware");
 const { requireAdmin } = require("../middleware/adminMiddleware");
-const { 
-  createOrder, listOrders, getOrder, updateOrderStatus, trackOrder,
-  getUserOrders, getUserOrder, regenerateInvoice, downloadInvoice, getOrderStats
+const {
+  createOrder,
+  listOrders,
+  getOrder,
+  updateOrderStatus,
+  trackOrder,
+  getUserOrders,
+  getUserOrder,
+  regenerateInvoice,
+  downloadInvoice,
+  downloadUserInvoice,
+  downloadGuestInvoice,
+  getOrderStats,
+  cancelOrder,
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -14,10 +25,13 @@ router.post("/api/orders", requireAuth, createOrder);
 /** Guest order endpoints (no auth required) */
 router.post("/api/guest/orders", createOrder);
 router.post("/api/guest/orders/track", trackOrder);
+router.get("/api/guest/orders/download-invoice", downloadGuestInvoice);
 
 /** User's own orders (authenticated) */
 router.get("/api/user/orders", requireAuth, getUserOrders);
 router.get("/api/user/orders/:id", requireAuth, getUserOrder);
+router.get("/api/user/orders/:id/download-invoice", requireAuth, downloadUserInvoice);
+router.post("/api/user/orders/:id/cancel", requireAuth, cancelOrder);
 
 /** Admin routes */
 router.get("/api/admin/orders", requireAdmin, listOrders);

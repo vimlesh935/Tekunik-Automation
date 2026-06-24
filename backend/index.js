@@ -4,7 +4,13 @@ const { execSync } = require("child_process");
 const express = require("express");
 const env = require("./src/config/env");
 const { testConnection, pool } = require("./src/config/db");
-const { ensureUsersOtpColumns, ensureAdminTables } = require("./src/config/migrate");
+const {
+  ensureUsersOtpColumns,
+  ensureReviewsTable,
+  ensureAdminTables,
+} = require("./src/config/migrate");
+const { ensureProductUpgradeTables } = require("./src/config/productMigration");
+const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -28,6 +34,9 @@ const inventoryRoutes = require("./src/routes/inventoryRoutes");
 const discountRoutes = require("./src/routes/discountRoutes");
 const cartRoutes = require("./src/routes/cartRoutes");
 const userRoutes = require("./src/routes/userRoutes");
+const reviewRoutes = require("./src/routes/reviewRoutes");
+const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
+const demoEnquiryRoutes = require("./src/routes/demoEnquiryRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -45,7 +54,7 @@ const killPort = async (port) => {
   try {
     const psCommand = `powershell -Command "$procs = Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($procs) { $procs | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } }"`;
     execSync(psCommand, { stdio: "ignore" });
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   } catch (error) {
     // Port already free
   }
@@ -55,30 +64,50 @@ const app = express();
 const distDir = path.join(__dirname, "..", "frontend", "dist");
 
 // Security & Performance
-if (helmet) app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+if (helmet)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
 if (compression) app.use(compression());
 
 // CORS
 if (cors) {
-  app.use(cors({
-    origin: function(origin, callback) {
-      const allowedOrigins = [env.frontendUrl, "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"];
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all in development
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }));
+  app.use(
+    cors({
+      origin: function (origin, callback) {
+        const allowedOrigins = [
+          env.frontendUrl,
+          "http://localhost:5173",
+          "http://localhost:3000",
+          "http://127.0.0.1:5173",
+        ];
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Allow all in development
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    }),
+  );
 } else {
   app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", req.headers.origin || env.frontendUrl);
+    res.header(
+      "Access-Control-Allow-Origin",
+      req.headers.origin || env.frontendUrl,
+    );
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    );
     if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
   });
@@ -135,14 +164,20 @@ app.use(userAdminRoutes);
 app.use(inventoryRoutes);
 app.use(discountRoutes);
 app.use(cartRoutes);
+app.use(reviewRoutes);
+app.use(websiteReviewRoutes);
+app.use(demoEnquiryRoutes);
 app.use("/api/admin/upload", uploadRoutes);
 
 // Static files
 const uploadDir = ensureUploadsDir();
-app.use("/uploads", express.static(uploadDir, {
-  fallthrough: false,
-  maxAge: env.nodeEnv === "production" ? "7d" : 0,
-}));
+app.use(
+  "/uploads",
+  express.static(uploadDir, {
+    fallthrough: false,
+    maxAge: env.nodeEnv === "production" ? "7d" : 0,
+  }),
+);
 
 const logsDir = path.join(__dirname, "logs");
 if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
@@ -166,7 +201,7 @@ app.use(errorHandler);
 // Server startup
 const startServer = async () => {
   console.log("\n╔════════════════════════════════════════╗");
-  console.log("║   TEKUNIK SERVER STARTUP             ║");
+  console.log("║   TEK NODE SERVER STARTUP            ║");
   console.log("╚════════════════════════════════════════╝\n");
 
   // Kill port first
@@ -188,7 +223,10 @@ const startServer = async () => {
   try {
     console.log("[2/4] Verifying database schema...");
     await ensureUsersOtpColumns();
+    await ensureReviewsTable();
     await ensureAdminTables();
+    await ensureDemoEnquiriesTable();
+    await ensureProductUpgradeTables();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
@@ -243,7 +281,7 @@ const startServer = async () => {
 
   if (startupErrors.length > 0) {
     console.log(`\n⚠️  Warnings: ${startupErrors.length}`);
-    startupErrors.forEach(err => console.log(`   - ${err}`));
+    startupErrors.forEach((err) => console.log(`   - ${err}`));
   }
 
   console.log(`\n💡 Server ready - Press Ctrl+C to stop\n`);

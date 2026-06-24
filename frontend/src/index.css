@@ -144,6 +144,11 @@ html[data-theme="light"] .bg-gray-900\/50 {
   background-color: rgba(255, 255, 255, 0.92) !important;
 }
 
+/* ── Hide scrollbar but keep scroll functionality (for horizontal carousels) ── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; }
@@ -220,20 +225,6 @@ html[data-theme="light"] .bg-gray-900\/50 {
 .marquee-track:hover,
 .marquee-track-reverse:hover {
   animation-play-state: paused;
-}
-
-/* ── Glass card ── */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-}
-.glass-strong {
-  background: var(--glass-strong-bg);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  border: 1px solid var(--glass-border);
 }
 
 /* ── Responsive admin shell ── */
@@ -352,4 +343,14 @@ html[data-theme="light"] .bg-gray-900\/50 {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.625rem; }
   h3 { font-size: 1.25rem; }
+}
+
+/* ── Card glass utility replacement (replaces @theme bg-card) ── */
+@layer utilities {
+  .bg-card {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+  .border-border-color {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
 }

@@ -14,8 +14,8 @@ const cleanEmail = (value) => String(value || "").trim().toLowerCase();
 const cleanText = (value) => String(value || "").trim();
 
 const requirePassword = (password) => {
-  if (!password || String(password).length < 6) {
-    throw new AppError("Password must be at least 6 characters", 400, "WEAK_PASSWORD");
+  if (!password || String(password).length < 8) {
+    throw new AppError("Password must be at least 8 characters", 400, "WEAK_PASSWORD");
   }
 };
 
@@ -267,7 +267,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   const confirmPassword = String(req.body.confirmPassword || "");
 
   if (!email || !resetToken) throw new AppError("Invalid reset request", 400, "VALIDATION_ERROR");
-  if (newPassword.length < 6) throw new AppError("Password must be at least 6 characters", 400, "WEAK_PASSWORD");
+  if (newPassword.length < 8) throw new AppError("Password must be at least 8 characters", 400, "WEAK_PASSWORD");
   if (newPassword !== confirmPassword) throw new AppError("Passwords do not match", 400, "PASSWORD_MISMATCH");
 
   // Verify reset token

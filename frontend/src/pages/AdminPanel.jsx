@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { formatCurrency } from "../utils/currency.js";
-import { adminUserService } from "../services/api";
+import { useAuth } from "../context/AuthContext.jsx";
+import { adminUserService, adminDemoEnquiryService } from "../services/api";
 import {
   LayoutDashboard,
   Package,
@@ -35,9 +36,12 @@ import {
   ToggleRight,
   Eye,
   Loader2,
+  Star,
+
 } from "lucide-react";
 import { categoryService, getApiUrl } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
+import DashboardAnalytics from "../components/admin/DashboardAnalytics.jsx";
 
 const ImageUploadField = React.memo(({ target, currentUrl, previewUrl, uploading, uploadTarget, onSelectFile, onUploadFile, onClearSelection }) => (
   <div className="space-y-3">
@@ -335,6 +339,23 @@ function ProductModal({ show, editingProduct, productForm, productError, product
             </label></div>
           <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Product Image</label>
             <ImageUploadField target="product" currentUrl={productForm.image_url} previewUrl={productImagePreview} uploading={uploadingImage} uploadTarget={uploadTarget} onSelectFile={(file) => onSelectImage(file, "product")} onUploadFile={() => onUploadImage(productImageFile, "product")} onClearSelection={onClearImage} /></div>
+          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Application Usage</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {["Smart Home", "Office Automation", "Hotel Solutions", "Hospital Automation", "School & College Solutions", "Industrial Automation"].map((app) => {
+                const selected = (productForm.applications || []).includes(app);
+                return (
+                  <label key={app} className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition ${selected ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-gray-800 border-gray-700 hover:border-gray-600'}`}>
+                    <input type="checkbox" checked={selected} onChange={() => {
+                      const current = productForm.applications || [];
+                      const updated = selected ? current.filter(a => a !== app) : [...current, app];
+                      onFieldChange("applications", updated);
+                    }} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
+                    <span className="text-sm text-gray-300">{app}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <div className="flex gap-3 pt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition font-semibold">Cancel</button>
@@ -410,7 +431,8 @@ function DiscountModal({ show, editingDiscount, discountForm, discountError, dis
   );
 }
 
-export default function AdminPanel({ token, onLogout }) {
+export default function AdminPanel() {
+  const { token, logout: onLogout } = useAuth();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState(null);
@@ -426,6 +448,10 @@ export default function AdminPanel({ token, onLogout }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [demoEnquiries, setDemoEnquiries] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewFilter, setReviewFilter] = useState("");
+  const [reviewTotal, setReviewTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -446,7 +472,8 @@ export default function AdminPanel({ token, onLogout }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
     name: "", description: "", price: "", stock: "", category_id: "",
-    image_url: "", status: "active", featured: false, brand: "", features: ""
+    image_url: "", status: "active", featured: false, brand: "", features: "",
+    applications: []
   });
   const [productSaving, setProductSaving] = useState(false);
   const [productError, setProductError] = useState("");
@@ -506,7 +533,7 @@ export default function AdminPanel({ token, onLogout }) {
   useEffect(() => {
     const segments = location.pathname.split("/").filter(Boolean);
     const lastSegment = segments[segments.length - 1];
-    const validTabs = ["dashboard", "products", "categories", "inventory", "discounts", "orders", "users"];
+    const validTabs = ["dashboard", "products", "categories", "inventory", "discounts", "orders", "users", "demobooking", "reviews"];
     if (validTabs.includes(lastSegment)) {
       setActiveTab(lastSegment);
     }
@@ -633,11 +660,7 @@ export default function AdminPanel({ token, onLogout }) {
     setLoading(true);
     try {
       if (activeTab === "dashboard") {
-        const res = await apiCall("/api/admin/dashboard/stats");
-        const p = res.data;
-        setStats(p?.stats || null);
-        setRecentOrders(p?.recentOrders || []);
-        setRecentUsers(p?.recentUsers || []);
+        // DashboardAnalytics handles its own data fetching independently
       } else if (activeTab === "inventory") {
         const dr = await apiCall("/api/admin/inventory/dashboard");
         const dp = dr.data;
@@ -679,6 +702,20 @@ export default function AdminPanel({ token, onLogout }) {
         const p = res.data;
         setDiscounts(p?.discounts || []);
         setDiscountTotalPages(p?.pagination?.pages || 1);
+      } else if (activeTab === "demobooking") {
+        const res = await adminDemoEnquiryService.list(page, 50);
+        setDemoEnquiries(res.data || []);
+        setTotalPages(res.pagination?.totalPages || 1);
+      } else if (activeTab === "reviews") {
+        const params = new URLSearchParams();
+        params.set("page", page);
+        params.set("limit", 20);
+        if (reviewFilter) params.set("status", reviewFilter);
+        const res = await apiCall(`/api/admin/reviews?${params.toString()}`);
+        const p = res.data;
+        setReviews(p?.reviews || []);
+        setReviewTotal(p?.total || 0);
+        setTotalPages(p?.totalPages || 1);
       }
     } catch (err) {
       console.error("Admin fetchData error:", err);
@@ -748,7 +785,8 @@ export default function AdminPanel({ token, onLogout }) {
     setEditingProduct(null);
     setProductForm({
       name: "", description: "", price: "", stock: "", category_id: "",
-      image_url: "", status: "active", featured: false, brand: "", features: ""
+      image_url: "", status: "active", featured: false, brand: "", features: "",
+      applications: []
     });
     setProductImagePreview("");
     setProductImageFile(null);
@@ -761,11 +799,20 @@ export default function AdminPanel({ token, onLogout }) {
       const res = await apiCall(`/api/admin/products/${product.id}`);
       const p = res.data?.product || product;
       setEditingProduct(p);
+      // Parse existing applications from product
+      let existingApps = [];
+      if (p.applications) {
+        try {
+          existingApps = typeof p.applications === "string" ? JSON.parse(p.applications) : p.applications;
+          if (!Array.isArray(existingApps)) existingApps = [];
+        } catch (e) { existingApps = []; }
+      }
       setProductForm({
         name: p.name || "", description: p.description || "", price: p.price || "",
         stock: p.stock || p.stock_quantity || "", category_id: p.category_id || "",
         image_url: p.image_url || "", status: p.status || "active",
         featured: p.featured ? true : false, brand: p.brand || "", features: p.features || "",
+        applications: existingApps,
       });
       setProductError("");
       setShowProductModal(true);
@@ -817,6 +864,7 @@ export default function AdminPanel({ token, onLogout }) {
         featured: productForm.featured ? 1 : 0,
         brand: productForm.brand?.trim() || "",
         features: productForm.features?.trim() || null,
+        applications: productForm.applications || [],
       };
 
       console.log("[ADMIN] Prepared body for API:", body);
@@ -849,11 +897,12 @@ export default function AdminPanel({ token, onLogout }) {
         "success"
       );
       
-      setShowProductModal(false);
-      setProductForm({
-        name: "", description: "", price: "", stock: "", category_id: "",
-        image_url: "", status: "active", featured: false, brand: "", features: ""
-      });
+            setShowProductModal(false);
+            setProductForm({
+              name: "", description: "", price: "", stock: "", category_id: "",
+              image_url: "", status: "active", featured: false, brand: "", features: "",
+              applications: []
+            });
       setProductImageFile(null);
       setProductImagePreview("");
       
@@ -950,6 +999,27 @@ export default function AdminPanel({ token, onLogout }) {
     setSelectedProduct(p);
     setStockData({ stock_quantity: p.stock_quantity, action_type: "manual_adjust", notes: "" });
     setShowStockModal(true);
+  };
+
+  const updateDemoStatus = async (id, status) => {
+    try {
+      const res = await adminDemoEnquiryService.updateStatus(id, status);
+      showToast(res.message || "Status updated", "success");
+      fetchData();
+    } catch (err) {
+      showToast(err.message || "Failed to update status", "error");
+    }
+  };
+
+  const deleteDemoEnquiry = async (id) => {
+    if (!window.confirm("Delete this demo enquiry?")) return;
+    try {
+      await adminDemoEnquiryService.delete(id);
+      showToast("Enquiry deleted", "success");
+      fetchData();
+    } catch (err) {
+      showToast(err.message || "Failed to delete", "error");
+    }
   };
 
   const updateOrderStatus = async (id, status) => {
@@ -1075,7 +1145,7 @@ export default function AdminPanel({ token, onLogout }) {
       {/* Sidebar - Restored internal stable version */}
       <div className="w-full lg:w-64 bg-black border-b lg:border-b-0 lg:border-r border-gray-800 p-6 flex flex-col z-20">
         <div className="mb-8 px-2">
-          <h2 className="text-xl font-bold tracking-wider text-white">TEKUNIK <span className="text-cyan-400 text-xs">PRO</span></h2>
+          <h2 className="text-xl font-bold tracking-wider text-white">TEK<span className="text-cyan-400 ">NODE</span></h2>
           <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Management System</p>
         </div>
         <nav className="flex-1 space-y-1">
@@ -1086,6 +1156,8 @@ export default function AdminPanel({ token, onLogout }) {
           <NavItem id="discounts" label="Discounts" icon={Percent} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="orders" label="Orders" icon={ShoppingCart} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="users" label="Users" icon={Users} activeTab={activeTab} onClick={setActiveTab} />
+          <NavItem id="demobooking" label="Demo Bookings" icon={Calendar} activeTab={activeTab} onClick={setActiveTab} />
+          <NavItem id="reviews" label="Reviews" icon={Star} activeTab={activeTab} onClick={setActiveTab} />
         </nav>
         <button onClick={onLogout}
           className="mt-auto w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition font-semibold text-sm border border-red-500/20">
@@ -1144,22 +1216,8 @@ export default function AdminPanel({ token, onLogout }) {
             </div>
           ) : (
             <>
-              {activeTab === "dashboard" && stats && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { label: "Total Revenue", value: `₹${(stats?.revenue || 0).toLocaleString()}`, clr: "text-emerald-400" },
-                      { label: "Total Orders", value: stats?.totalOrders || 0, clr: "text-blue-400" },
-                      { label: "Active Products", value: stats?.totalProducts || 0, clr: "text-cyan-400" },
-                      { label: "Total Users", value: stats?.totalUsers || 0, clr: "text-purple-400" },
-                    ].map((s, i) => (
-                      <div key={i} className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 backdrop-blur-sm">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-bold">{s.label}</p>
-                        <h3 className={`text-3xl font-bold font-mono ${s.clr}`}>{s.value}</h3>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {activeTab === "dashboard" && (
+                <DashboardAnalytics toast={toast} fetchData={fetchData} refreshInterval={30000} />
               )}
 
               {activeTab === "products" && (
@@ -1385,6 +1443,154 @@ export default function AdminPanel({ token, onLogout }) {
                 </div>
               )}
 
+              {activeTab === "demobooking" && (
+                <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-black/50 border-b border-gray-800 text-xs uppercase tracking-wider text-gray-400">
+                        <th className="p-4 font-semibold">Name</th>
+                        <th className="p-4 font-semibold">Email</th>
+                        <th className="p-4 font-semibold">Phone</th>
+                        <th className="p-4 font-semibold">Date</th>
+                        <th className="p-4 font-semibold">Time</th>
+                        <th className="p-4 font-semibold text-center">Status</th>
+                        <th className="p-4 font-semibold text-center">Created</th>
+                        <th className="p-4 font-semibold text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/50">
+                      {demoEnquiries.map(e => (
+                        <tr key={e.id} className="hover:bg-gray-800/20 transition">
+                          <td className="p-4"><p className="font-semibold text-sm text-white">{e.full_name}</p>{e.message && <p className="text-xs text-gray-500 truncate max-w-[150px]">{e.message}</p>}</td>
+                          <td className="p-4 text-sm text-gray-300">{e.email}</td>
+                          <td className="p-4 text-sm text-gray-300">{e.phone}</td>
+                          <td className="p-4 text-sm text-gray-300">{e.preferred_date || "-"}</td>
+                          <td className="p-4 text-sm text-gray-300">{e.preferred_time || "-"}</td>
+                          <td className="p-4 text-center">
+                            <select
+                              value={e.status}
+                              onChange={(ev) => updateDemoStatus(e.id, ev.target.value)}
+                              className="bg-black border border-gray-700 text-xs rounded px-2 py-1.5 outline-none text-white focus:border-cyan-400 cursor-pointer"
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Contacted">Contacted</option>
+                              <option value="Scheduled">Scheduled</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Cancelled">Cancelled</option>
+                              <option value="Email Failed">Email Failed</option>
+                            </select>
+                          </td>
+                          <td className="p-4 text-center text-xs text-gray-500">
+                            {e.created_at ? new Date(e.created_at).toLocaleDateString() : "-"}
+                          </td>
+                          <td className="p-4 text-center">
+                            <button onClick={() => deleteDemoEnquiry(e.id)}
+                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition" title="Delete">
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {demoEnquiries.length === 0 && (
+                        <tr><td colSpan={8} className="p-8 text-center text-gray-500">No demo enquiries found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 p-4 border-t border-gray-800">
+                      <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Previous</button>
+                      <span className="px-4 py-2 text-gray-300 text-sm">Page {page} of {totalPages}</span>
+                      <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Next</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "reviews" && (
+                <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-3 p-4 border-b border-gray-800">
+                    <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Status:</span>
+                    {["", "pending", "approved", "rejected"].map(s => (
+                      <button key={s} onClick={() => { setPage(1); setReviewFilter(s); fetchData(); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${reviewFilter === s ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "text-gray-400 hover:text-white bg-gray-800/50 border border-gray-700/50"}`}>
+                        {s === "" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <table className="w-full text-left border-collapse">
+                    <thead><tr className="bg-black/50 border-b border-gray-800 text-xs uppercase tracking-wider text-gray-400">
+                      <th className="p-4 font-semibold">Review</th>
+                      <th className="p-4 font-semibold">Customer</th>
+                      <th className="p-4 font-semibold">Product</th>
+                      <th className="p-4 font-semibold text-center">Rating</th>
+                      <th className="p-4 font-semibold text-center">Status</th>
+                      <th className="p-4 font-semibold text-center">Date</th>
+                      <th className="p-4 font-semibold text-center">Actions</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-gray-800/50">
+                      {reviews.map(r => (
+                        <tr key={r.id} className="hover:bg-gray-800/20 transition">
+                          <td className="p-4">
+                            <p className="font-semibold text-sm text-white line-clamp-1">{r.review_title || "Untitled"}</p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mt-1">{r.review_message || ""}</p>
+                            <p className="text-[10px] text-gray-600 mt-1 font-mono">#{r.order_number}</p>
+                          </td>
+                          <td className="p-4 text-sm text-gray-300">{r.customer_name || "N/A"}</td>
+                          <td className="p-4 text-sm text-gray-300">{r.product_name || r.product_id}</td>
+                          <td className="p-4 text-center">
+                            <span className="text-xs font-bold text-amber-400">
+                              {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${r.review_status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : r.review_status === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {r.review_status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center text-xs text-gray-500">
+                            {r.created_at ? new Date(r.created_at).toLocaleDateString() : "-"}
+                          </td>
+                          <td className="p-4 text-center">
+                            <div className="flex justify-center gap-1.5">
+                              {r.review_status === 'pending' && (
+                                <>
+                                  <button onClick={async () => { await apiCall(`/api/admin/reviews/${r.id}/approve`, { method: "POST" }); fetchData(); }}
+                                    className="p-1.5 text-gray-500 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-md transition" title="Approve">
+                                    <CheckCircle size={15} />
+                                  </button>
+                                  <button onClick={async () => { await apiCall(`/api/admin/reviews/${r.id}/reject`, { method: "POST" }); fetchData(); }}
+                                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition" title="Reject">
+                                    <XCircle size={15} />
+                                  </button>
+                                </>
+                              )}
+                              <button onClick={async () => { if (window.confirm("Delete this review?")) { await apiCall(`/api/admin/reviews/${r.id}`, { method: "DELETE" }); fetchData(); } }}
+                                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition" title="Delete">
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {reviews.length === 0 && (
+                        <tr><td colSpan={7} className="p-8 text-center text-gray-500">No reviews found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 p-4 border-t border-gray-800">
+                      <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Previous</button>
+                      <span className="px-4 py-2 text-gray-300 text-sm">Page {page} of {totalPages}</span>
+                      <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Next</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeTab === "orders" && (
                 <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
                   {/* Order status filter */}
@@ -1425,16 +1631,23 @@ export default function AdminPanel({ token, onLogout }) {
                             </span>
                           </td>
                           <td className="p-4 text-center">
-                            <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                              className="bg-black border border-gray-700 text-xs rounded px-2 py-1.5 outline-none text-white focus:border-cyan-400 cursor-pointer">
-                              <option value="pending">Pending</option>
-                              <option value="confirmed">Confirmed</option>
-                              <option value="processing">Processing</option>
-                              <option value="shipped">Shipped</option>
-                              <option value="out_for_delivery">Out for Delivery</option>
-                              <option value="delivered">Delivered</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
+                            {o.status === "delivered" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                Delivered (Final Status)
+                              </span>
+                            ) : (
+                              <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                                className="bg-black border border-gray-700 text-xs rounded px-2 py-1.5 outline-none text-white focus:border-cyan-400 cursor-pointer">
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="out_for_delivery">Out for Delivery</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                            )}
                           </td>
                           <td className="p-4 text-center text-xs text-gray-500">
                             {o.created_at ? new Date(o.created_at).toLocaleDateString() : "-"}

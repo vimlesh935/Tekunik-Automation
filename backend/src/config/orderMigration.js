@@ -67,29 +67,27 @@ const ensureOrderTrackingTable = async () => {
 };
 
 /**
- * Generate a user-friendly tracking number like TEK-1A2B3C
+ * Generate a tracking number like TRK-2026-874521
+ * Format: TRK-YYYY-XXXXXX (year + random digits)
  */
 const generateTrackingNumber = () => {
-  const prefix = "TEK";
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0, O, I to avoid confusion
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `${prefix}${code}`;
+  const year = new Date().getFullYear();
+  const randomPart = Math.floor(100000 + Math.random() * 900000);
+  return `TRK-${year}-${randomPart}`;
 };
 
 const getTrackingSteps = (status) => {
   const steps = [
     { status: "pending", label: "Order Confirmed", description: "Your order has been placed and is awaiting confirmation", icon: "check" },
     { status: "confirmed", label: "Confirmed", description: "Your order has been confirmed and is being processed", icon: "check" },
-    { status: "processing", label: "Packed", description: "Your items are being packed and prepared for shipping", icon: "package" },
+    { status: "processing", label: "Processing", description: "Your items are being processed", icon: "package" },
+    { status: "packed", label: "Packed", description: "Your items are packed and ready for shipping", icon: "package" },
     { status: "shipped", label: "Shipped", description: "Your package has been shipped and is on its way", icon: "truck" },
     { status: "out_for_delivery", label: "Out for Delivery", description: "Your package is out for delivery today", icon: "map-pin" },
     { status: "delivered", label: "Delivered", description: "Your package has been delivered successfully", icon: "check-circle" },
   ];
 
-  const statusOrder = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered"];
+  const statusOrder = ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered"];
   const currentIndex = statusOrder.indexOf(status);
 
   return steps.map((step, index) => ({

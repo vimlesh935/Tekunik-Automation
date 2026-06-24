@@ -23,6 +23,23 @@ const requireAuth = (req, res, next) => {
   }
 };
 
+const requireAdmin = (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) throw new AppError("Authentication required", 401, "AUTH_REQUIRED");
+
+    const decoded = verifyToken(token);
+    if (decoded.role !== "admin") {
+      throw new AppError("Admin access required", 403, "ADMIN_FORBIDDEN");
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    next(new AppError("Invalid or expired session", 401, "INVALID_SESSION"));
+  }
+};
+
 module.exports = {
   requireAuth,
+  requireAdmin,
 };

@@ -5,11 +5,18 @@
     "frontend": "npm run dev --prefix frontend",
     "backend": "npm run dev --prefix backend",
     "build": "npm run build --prefix frontend",
-    "start": "npm run start --prefix backend"
+    "start": "npm run start --prefix backend",
+    "setup": "npm install && npm install --prefix frontend && npm install --prefix backend",
+    "clean:cache": "rmdir /s /q frontend\\.vite 2>nul",
+    "fix:all": "call START-FULL-STACK.bat"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.14",
     "tailwindcss": "3.4.17"
+  },
+  "dependencies": {
+    "framer-motion": "^12.40.0",
+    "swiper": "^12.2.0"
   }
 }

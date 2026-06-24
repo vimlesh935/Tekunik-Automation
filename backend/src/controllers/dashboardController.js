@@ -9,7 +9,7 @@ const getStats = asyncHandler(async (req, res) => {
   const [totalUsersRow] = await query("SELECT COUNT(*) AS count FROM users");
   const [totalOrdersRow] = await query("SELECT COUNT(*) AS count FROM orders");
   const [revenueRow] = await query(
-    "SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE payment_status = 'paid'"
+    "SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE status = 'delivered'"
   );
   const [pendingOrdersRow] = await query(
     "SELECT COUNT(*) AS count FROM orders WHERE status = 'pending'"
@@ -54,42 +54,97 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
+/** GET /api/admin/dashboard/order-analytics — Enhanced order analytics with real-time stats */
+const getOrderAnalytics = asyncHandler(async (req, res) => {
+  // Total Orders
+  const [totalRow] = await query("SELECT COUNT(*) AS count FROM orders");
+
+  // Delivered Orders
+  const [deliveredRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'delivered'"
+  );
+
+  // Cancelled Orders
+  const [cancelledRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'cancelled'"
+  );
+
+  // Pending Orders (pending + confirmed + processing)
+  const [pendingRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status IN ('pending', 'confirmed', 'processing')"
+  );
+
+  // Out For Delivery
+  const [outForDeliveryRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'out_for_delivery'"
+  );
+
+  // Revenue from Delivered orders only
+  const [revenueRow] = await query(
+    "SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE status = 'delivered'"
+  );
+
+  // Last 30 Days Analytics
+  const [last30DeliveredRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'delivered' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+  );
+  const [last30CancelledRow] = await query(
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'cancelled' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+  );
+  const [last30RevenueRow] = await query(
+    "SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE status = 'delivered' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+  );
+
+  return success(res, "Order analytics fetched", {
+    totalOrders: Number(totalRow.count),
+    deliveredOrders: Number(deliveredRow.count),
+    cancelledOrders: Number(cancelledRow.count),
+    pendingOrders: Number(pendingRow.count),
+    outForDelivery: Number(outForDeliveryRow.count),
+    revenue: parseFloat(revenueRow.total),
+    last30Days: {
+      deliveredOrders: Number(last30DeliveredRow.count),
+      cancelledOrders: Number(last30CancelledRow.count),
+      revenue: parseFloat(last30RevenueRow.total),
+    },
+  });
+});
+
 /** GET /api/admin/dashboard/revenue-analytics — Detailed revenue breakdown */
 const getRevenueAnalytics = asyncHandler(async (req, res) => {
   const period = req.query.period || "all";
 
   let dateFilter = "";
-  const params = [];
-
   if (period === "today") {
-    dateFilter = "WHERE DATE(o.created_at) = CURDATE()";
+    dateFilter = "WHERE DATE(created_at) = CURDATE() AND status = 'delivered'";
   } else if (period === "week") {
-    dateFilter = "WHERE YEARWEEK(o.created_at) = YEARWEEK(CURDATE())";
+    dateFilter = "WHERE YEARWEEK(created_at) = YEARWEEK(CURDATE()) AND status = 'delivered'";
   } else if (period === "month") {
-    dateFilter = "WHERE MONTH(o.created_at) = MONTH(CURDATE()) AND YEAR(o.created_at) = YEAR(CURDATE())";
+    dateFilter = "WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE()) AND status = 'delivered'";
+  } else {
+    dateFilter = "WHERE status = 'delivered'";
   }
 
   // Revenue by payment method
   const paymentMethodRevenue = await query(`
     SELECT payment_method, COUNT(*) AS order_count, COALESCE(SUM(total_amount), 0) AS total
-    FROM orders o
-    ${dateFilter ? dateFilter.replace("o.", "") : ""}
+    FROM orders
+    ${dateFilter}
     GROUP BY payment_method
   `);
-  if (period !== "all") params.length;
 
   // Daily revenue for chart (last 14 days)
   const dailyRevenue = await query(`
     SELECT DATE(created_at) AS date, COALESCE(SUM(total_amount), 0) AS revenue,
            COUNT(*) AS order_count
     FROM orders
-    WHERE payment_status = 'paid'
+    WHERE status = 'delivered'
       AND created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
     GROUP BY DATE(created_at)
     ORDER BY date ASC
   `);
 
-  // Recent transactions
+  // Recent transactions (last 30 days)
   const recentTransactions = await query(`
     SELECT o.id, o.order_number, o.total_amount, o.payment_method, o.payment_status,
            o.status, o.created_at,
@@ -97,6 +152,8 @@ const getRevenueAnalytics = asyncHandler(async (req, res) => {
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     LEFT JOIN user_profiles up ON u.id = up.user_id
+    WHERE status = 'delivered'
+      AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
     ORDER BY o.created_at DESC
     LIMIT 20
   `);
@@ -108,7 +165,7 @@ const getRevenueAnalytics = asyncHandler(async (req, res) => {
            COALESCE(AVG(total_amount), 0) AS avg_order_value,
            COUNT(DISTINCT DATE(created_at)) AS active_days
     FROM orders
-    ${dateFilter ? dateFilter.replace("o.", "") : ""}
+    WHERE status = 'delivered'
   `);
 
   return success(res, "Revenue analytics fetched", {
@@ -159,4 +216,4 @@ const getActiveProducts = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getStats, getRevenueAnalytics, getActiveProducts };
+module.exports = { getStats, getOrderAnalytics, getRevenueAnalytics, getActiveProducts };

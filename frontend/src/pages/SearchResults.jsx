@@ -21,7 +21,7 @@ export default function SearchResults({ token }) {
     if (!query) {
       setProducts([]);
       setLoading(false);
-      return;
+      return;     
     }
 
     setSearchTerm(query);

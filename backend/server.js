@@ -4,7 +4,7 @@ const express = require("express");
 const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
 const { ensureUsersOtpColumns, ensureAdminTables } = require("./src/config/migrate");
-const { ensureGuestOrderColumns } = require("./src/config/migrate");
+const { ensureGuestOrderColumns, ensureEnquiriesTable } = require("./src/config/migrate");
 const { ensureOrderTrackingTable } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -22,6 +22,7 @@ const orderRoutes = require("./src/routes/orderRoutes");
 const userAdminRoutes = require("./src/routes/userAdminRoutes");
 const uploadRoutes = require("./src/routes/uploadRoutes");
 const inventoryRoutes = require("./src/routes/inventoryRoutes");
+const demoEnquiryRoutes = require("./src/routes/demoEnquiryRoutes");
 const discountRoutes = require("./src/routes/discountRoutes");
 const cartRoutes = require("./src/routes/cartRoutes");
 const userRoutes = require("./src/routes/userRoutes");
@@ -95,6 +96,7 @@ app.use(inventoryRoutes);
 app.use(discountRoutes);
 app.use(cartRoutes);
 app.use('/api/admin/upload', uploadRoutes);
+app.use(demoEnquiryRoutes);
 
 // Ensure uploads dir exists and serve static files
 const uploadDir = ensureUploadsDir();
@@ -164,6 +166,14 @@ const startServer = async () => {
   }
 
   try {
+    console.log("[STARTUP] Ensuring demo enquiries table...");
+    await ensureEnquiriesTable();
+    console.log("✅ [STARTUP] Demo enquiries table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Demo enquiries table setup failed:", error.message, "\n");
+  }
+
+  try {
     console.log("[STARTUP] Ensuring order tracking tables...");
     await ensureOrderTrackingTable();
     console.log("✅ [STARTUP] Order tracking tables ready\n");
@@ -171,17 +181,7 @@ const startServer = async () => {
     console.error("❌ [STARTUP] Order tracking setup failed:", error.message, "\n");
   }
 
-  // Verify Gmail SMTP (non-blocking - server starts regardless)
-  try {
-    console.log("[STARTUP] Verifying Gmail SMTP configuration...");
-    await verifyTransporter();
-    console.log("✅ [STARTUP] Gmail SMTP transporter ready\n");
-  } catch (error) {
-    console.error("❌ [STARTUP] Gmail SMTP verification failed!\n");
-    console.error("   Error details:", error.message, "\n");
-  }
-
-  // Start HTTP server
+  // Start HTTP server immediately
   const server = app.listen(env.port, () => {
     console.log("╔════════════════════════════════════════╗");
     console.log(`║  🚀 SERVER RUNNING ON PORT ${env.port}       ║`);
@@ -189,6 +189,14 @@ const startServer = async () => {
     console.log(`Frontend URL: ${env.frontendUrl}`);
     console.log(`API Health: http://localhost:${env.port}/health\n`);
   });
+
+  // Verify Gmail SMTP in background (non-blocking)
+  verifyTransporter()
+    .then(() => console.log("✅ [STARTUP] Gmail SMTP transporter ready\n"))
+    .catch((error) => {
+      console.error("❌ [STARTUP] Gmail SMTP verification failed!\n");
+      console.error("   Error details:", error.message, "\n");
+    });
 
   // Handle server errors gracefully
   server.on("error", (error) => {

@@ -2,7 +2,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const uploadsDir = path.resolve(__dirname, "..", "..", "uploads");
+const productUploadsDir = path.join(uploadsDir, "products");
 const uploadsUrlPrefix = "/uploads";
+const productUploadsUrlPrefix = `${uploadsUrlPrefix}/products`;
 
 const allowedImageMimeTypes = new Set([
   "image/jpeg",
@@ -14,12 +16,23 @@ const allowedImageMimeTypes = new Set([
 
 const allowedImageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
 
-const ensureUploadsDir = () => {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log(`[UPLOADS] Created uploads directory: ${uploadsDir}`);
+const ensureDirectory = (dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`[UPLOADS] Created uploads directory: ${dir}`);
   }
+  return dir;
+};
+
+const ensureUploadsDir = () => {
+  ensureDirectory(uploadsDir);
+  ensureDirectory(productUploadsDir);
   return uploadsDir;
+};
+
+const ensureProductUploadsDir = () => {
+  ensureUploadsDir();
+  return productUploadsDir;
 };
 
 const getSafeUploadExtension = (file) => {
@@ -49,12 +62,24 @@ const createUploadFilename = (file) => {
   return `${Date.now()}-${Math.round(Math.random() * 1e9)}-${baseName}${ext}`;
 };
 
-const imageUrlForFilename = (filename) => `${uploadsUrlPrefix}/${path.basename(filename)}`;
+const imageUrlForFilename = (filename, target = "product") => {
+  const prefix = target === "product" ? productUploadsUrlPrefix : uploadsUrlPrefix;
+  return `${prefix}/${path.basename(filename)}`;
+};
+
+const normalizeSlashes = (value) => {
+  if (typeof value !== "string") return value;
+  const protocolMatch = value.match(/^([a-zA-Z]+:)(\/\/+)/);
+  if (!protocolMatch) return value.replace(/\/\/+/g, "/");
+  const [, protocol, separator] = protocolMatch;
+  const rest = value.slice(protocolMatch[0].length).replace(/\/\/+/g, "/");
+  return `${protocol}${separator}${rest}`;
+};
 
 const normalizeImageUrl = (value) => {
   if (!value || typeof value !== "string") return null;
 
-  const cleaned = value.trim().replace(/\\/g, "/");
+  const cleaned = normalizeSlashes(value.trim().replace(/\\/g, "/"));
   if (!cleaned || cleaned === "null" || cleaned === "undefined") return null;
   if (/^(https?:|data:|blob:)/i.test(cleaned)) return cleaned;
 
@@ -71,7 +96,7 @@ const normalizeImageUrl = (value) => {
 
   const ext = path.extname(cleaned).toLowerCase();
   if (allowedImageExtensions.has(ext)) {
-    return imageUrlForFilename(cleaned);
+    return imageUrlForFilename(cleaned, "product");
   }
 
   return cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
@@ -89,9 +114,11 @@ module.exports = {
   allowedImageMimeTypes,
   allowedImageExtensions,
   createUploadFilename,
+  ensureProductUploadsDir,
   ensureUploadsDir,
   imageUrlForFilename,
   normalizeImageUrl,
+  productUploadsDir,
   uploadsDir,
   withNormalizedImageUrl,
 };

@@ -1,7 +1,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const envPath = path.join(__dirname, "..", "..", ".env");
+const projectRoot = path.join(__dirname, "..", "..");
+
+const envPath = path.join(projectRoot, ".env");
 const legacyEnvPath = path.join(__dirname, "..", "..", "..", ".env");
 
 const loadEnv = () => {
@@ -27,7 +29,10 @@ const loadEnv = () => {
       if (separatorIndex === -1) return;
 
       const key = trimmed.slice(0, separatorIndex).trim();
-      const value = trimmed.slice(separatorIndex + 1).trim().replace(/^["']|["']$/g, "");
+      const value = trimmed
+        .slice(separatorIndex + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
       if (key && !process.env[key]) process.env[key] = value;
     });
 };
@@ -51,8 +56,25 @@ module.exports = {
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
     from: process.env.OTP_FROM || process.env.SMTP_USER || "",
+    host: process.env.SMTP_HOST || "",
+    port: Number(process.env.SMTP_PORT || 0),
+    secure: process.env.SMTP_SECURE
+      ? process.env.SMTP_SECURE === "true"
+      : undefined,
     tlsRejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false",
+    allowSelfSignedFallback: process.env.SMTP_ALLOW_SELF_SIGNED
+      ? process.env.SMTP_ALLOW_SELF_SIGNED === "true"
+      : process.env.NODE_ENV !== "production",
+    caCertPath: process.env.SMTP_CA_CERT_PATH
+      ? path.isAbsolute(process.env.SMTP_CA_CERT_PATH)
+        ? process.env.SMTP_CA_CERT_PATH
+        : path.join(projectRoot, process.env.SMTP_CA_CERT_PATH)
+      : "",
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 10000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 10000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000),
   },
-  adminEmail: process.env.ADMIN_EMAIL || "admin@tekunik.com",
-  adminSecretKey: process.env.ADMIN_SECRET_KEY || "change-this-secret-key-in-env",
+  adminEmail: process.env.ADMIN_EMAIL || "admin@teknode.com",
+  adminSecretKey:
+    process.env.ADMIN_SECRET_KEY || "change-this-secret-key-in-env",
 };

@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const CART_STORAGE_KEY = "tekunik_guest_cart";
+const CART_STORAGE_KEY = "teknode_guest_cart";
 const CartContext = createContext(null);
 
 const loadCartItems = () => {
@@ -22,8 +28,14 @@ const saveCartItems = (items) => {
 };
 
 const calculateCart = (items) => {
-  const totalQuantity = items.reduce((sum, item) => sum + Number(item.quantity), 0);
-  const totalAmount = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+  const totalQuantity = items.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0,
+  );
+  const totalAmount = items.reduce(
+    (sum, item) => sum + Number(item.price) * Number(item.quantity),
+    0,
+  );
   return {
     itemCount: items.length,
     totalQuantity,
@@ -61,15 +73,23 @@ export function CartProvider({ children }) {
     if (!product || !product.id) return;
 
     const normalizedItem = normalizeCartItem(product, quantity);
-    const existingIndex = items.findIndex((item) => item.product_id === normalizedItem.product_id);
+    const existingIndex = items.findIndex(
+      (item) => item.product_id === normalizedItem.product_id,
+    );
     const nextItems = [...items];
 
     if (existingIndex >= 0) {
       const existingItem = nextItems[existingIndex];
-      const newQuantity = Math.min(existingItem.max_quantity, existingItem.quantity + normalizedItem.quantity);
+      const newQuantity = Math.min(
+        existingItem.max_quantity,
+        existingItem.quantity + normalizedItem.quantity,
+      );
       nextItems[existingIndex] = { ...existingItem, quantity: newQuantity };
     } else {
-      const quantityToAdd = Math.min(normalizedItem.max_quantity, normalizedItem.quantity);
+      const quantityToAdd = Math.min(
+        normalizedItem.max_quantity,
+        normalizedItem.quantity,
+      );
       nextItems.push({ ...normalizedItem, quantity: quantityToAdd });
     }
 

@@ -4,6 +4,46 @@ const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { withNormalizedImageUrl } = require("../utils/uploadPaths");
 
+const toCategorySlug = (value) =>
+  String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+const resolvePublicCategoryFilter = async (queryParams) => {
+  const rawCategoryId = String(queryParams.category_id || "").trim();
+  const rawCategory = String(queryParams.category || "").trim();
+  const rawCategoryName = String(queryParams.category_name || "").trim();
+  const rawFilter = rawCategoryId || rawCategory || rawCategoryName;
+
+  if (!rawFilter) {
+    return { categoryId: null, categoryName: "All" };
+  }
+
+  const numericId = Number(rawFilter);
+  if (Number.isInteger(numericId) && numericId > 0) {
+    const [category] = await query(
+      "SELECT id, name FROM product_categories WHERE id = ?",
+      [numericId]
+    );
+
+    if (!category) {
+      throw new AppError("Invalid category selected", 400, "VALIDATION_ERROR");
+    }
+
+    return { categoryId: category.id, categoryName: category.name };
+  }
+
+  const slug = toCategorySlug(rawFilter);
+  const [category] = await query(
+    "SELECT id, name FROM product_categories WHERE LOWER(name) = LOWER(?) OR slug = ?",
+    [rawFilter, slug]
+  );
+
+  if (!category) {
+    throw new AppError("Invalid category selected", 400, "VALIDATION_ERROR");
+  }
+
+  return { categoryId: category.id, categoryName: category.name };
+};
+
 /**
  * ✅ GET /api/admin/inventory
  * Dashboard: Total products, available, out of stock, low stock, recent updates
@@ -344,7 +384,7 @@ const getPublicProducts = asyncHandler(async (req, res) => {
   const limit = Math.min(100, parseInt(req.query.limit) || 12);
   const offset = (page - 1) * limit;
   const search = req.query.search ? `%${req.query.search}%` : null;
-  const categoryId = req.query.category || null;
+  const { categoryId, categoryName: selectedCategoryName } = await resolvePublicCategoryFilter(req.query);
 
   let where = "WHERE p.status = 'active'";
   const params = [];
@@ -359,6 +399,10 @@ const getPublicProducts = asyncHandler(async (req, res) => {
     params.push(categoryId);
   }
 
+  console.log("[PRODUCT FILTER] Selected Category ID:", categoryId || "ALL");
+  console.log("[PRODUCT FILTER] Selected Category Name:", selectedCategoryName);
+  console.log("[PRODUCT FILTER] API URL:", req.originalUrl);
+
   const [totalRow] = await query(
     `SELECT COUNT(*) AS count FROM products p ${where}`,
     params
@@ -366,7 +410,7 @@ const getPublicProducts = asyncHandler(async (req, res) => {
 
   const products = await query(
     `SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity, 
-            p.stock_status, p.image_url, p.featured, pc.name AS category_name
+            p.stock_status, p.image_url, p.featured, p.category_id, pc.name AS category_name
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
      ${where}
@@ -374,6 +418,11 @@ const getPublicProducts = asyncHandler(async (req, res) => {
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
+
+  console.log("[PRODUCT FILTER] Returned Products Count:", products.length);
+  products.forEach((product) => {
+    console.log("[PRODUCT FILTER] Product:", product.name, "Category ID:", product.category_id);
+  });
 
   return success(res, "Products fetched", {
     products: products.map(p => ({
@@ -394,7 +443,7 @@ const getPublicProducts = asyncHandler(async (req, res) => {
 const getPublicProductById = asyncHandler(async (req, res) => {
   const [product] = await query(
     `SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity,
-            p.stock_status, p.image_url, p.featured, p.status, pc.name AS category_name
+            p.stock_status, p.image_url, p.featured, p.status, p.category_id, pc.name AS category_name
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
      WHERE p.id = ? AND p.status = 'active'`,

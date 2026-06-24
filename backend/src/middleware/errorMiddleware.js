@@ -13,7 +13,8 @@ const notFound = (req, res, next) => {
 
 const errorHandler = (error, req, res, next) => {
   const statusCode = error.statusCode || 500;
-  const message = statusCode >= 500 ? "Server error" : error.message;
+  // Show actual error message in all cases for debugging
+  const message = error.message || (statusCode >= 500 ? "Server error" : "Unknown error");
 
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${error.message}\nStatus: ${statusCode}\nCode: ${error.code || "SERVER_ERROR"}\nStack: ${error.stack}\n\n`;

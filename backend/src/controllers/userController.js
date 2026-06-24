@@ -71,16 +71,30 @@ const getUserOrders = asyncHandler(async (req, res) => {
     [userId]
   );
 
-  // Get order items for each order
+  // Get order items and tracking for each order
   for (const order of orders) {
     const items = await query(
-      `SELECT oi.*, p.image_url AS product_image
+      `SELECT oi.*, p.image_url AS product_image, p.sku AS product_sku
        FROM order_items oi
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
       [order.id]
     );
     order.items = normalizeOrderItemImages(items);
+
+    // Compute total_products (distinct product count) and total_quantity (sum of qty)
+    order.total_products = items.length;
+    order.total_quantity = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+
+    // Fetch tracking history
+    const tracking = await query(
+      `SELECT status, label, description, timestamp, created_at
+       FROM order_tracking
+       WHERE order_id = ?
+       ORDER BY timestamp ASC, id ASC`,
+      [order.id]
+    );
+    order.trackingHistory = tracking;
   }
 
   return success(res, "Orders fetched", { orders });
@@ -110,6 +124,20 @@ const getUserOrder = asyncHandler(async (req, res) => {
     [orderId]
   );
   order.items = normalizeOrderItemImages(items);
+
+  // Compute counts
+  order.total_products = items.length;
+  order.total_quantity = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+
+  // Fetch tracking history
+  const tracking = await query(
+    `SELECT status, label, description, timestamp, created_at
+     FROM order_tracking
+     WHERE order_id = ?
+     ORDER BY timestamp ASC, id ASC`,
+    [orderId]
+  );
+  order.trackingHistory = tracking;
 
   return success(res, "Order fetched", { order });
 });

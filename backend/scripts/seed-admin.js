@@ -1,11 +1,11 @@
 /**
  * Admin Seed Script
- * 
+ *
  * This script verifies that the admin credentials in .env are valid and
  * ensures the admin JWT flow works correctly.
- * 
+ *
  * Usage: node scripts/seed-admin.js
- * 
+ *
  * The admin system uses environment variables (ADMIN_EMAIL, ADMIN_SECRET_KEY)
  * stored in backend/.env rather than a database table. This ensures:
  * 1. No passwords are stored in the database
@@ -24,9 +24,15 @@ console.log("╚═════════════════════�
 const adminEmail = env.adminEmail;
 const adminSecretKey = env.adminSecretKey;
 
-if (!adminEmail || adminEmail === "admin@tekunik.com" && adminSecretKey === "change-this-secret-key-in-env") {
+if (
+  !adminEmail ||
+  (adminEmail === "admin@teknode.com" &&
+    adminSecretKey === "change-this-secret-key-in-env")
+) {
   console.log("⚠️  Admin credentials appear to be using default values.");
-  console.log("   For better security, update backend/.env with custom values.\n");
+  console.log(
+    "   For better security, update backend/.env with custom values.\n",
+  );
 } else {
   console.log("✅ Admin email configured:", adminEmail);
   console.log("✅ Admin secret key is set (hidden for security)\n");

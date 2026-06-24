@@ -90,4 +90,63 @@ const toggleUser = asyncHandler(async (req, res) => {
   return success(res, newStatus ? "User activated" : "User deactivated", { is_verified: !!newStatus });
 });
 
-module.exports = { listUsers, getUser, toggleUser };
+/** GET /api/admin/users/duplicate-report — Find duplicate emails */
+const getDuplicateReport = asyncHandler(async (req, res) => {
+  const duplicates = await query(
+    `SELECT email, COUNT(*) AS duplicate_count, GROUP_CONCAT(id ORDER BY id ASC) AS user_ids
+     FROM users
+     GROUP BY email
+     HAVING COUNT(*) > 1
+     ORDER BY duplicate_count DESC`
+  );
+
+  return success(res, "Duplicate report generated", {
+    total_duplicate_emails: duplicates.length,
+    duplicates: duplicates.map((row) => ({
+      email: row.email,
+      duplicate_count: row.duplicate_count,
+      user_ids: row.user_ids.split(",").map(Number),
+    })),
+  });
+});
+
+/** POST /api/admin/users/merge — Merge duplicate users into the oldest account */
+// Body: { email } — merges all dupes into lowest user id for that email
+const mergeDuplicateUser = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  if (!email) throw new AppError("email is required", 400, "VALIDATION_ERROR");
+
+  const users = await query(
+    `SELECT id FROM users WHERE email = ? ORDER BY id ASC`,
+    [email]
+  );
+
+  if (users.length < 2) {
+    return success(res, "No duplicates found for this email", { merged: 0 });
+  }
+
+  const primaryId = users[0].id;
+  const duplicateIds = users.slice(1).map((u) => u.id);
+
+  // Re-link all orders from duplicate accounts to the primary account
+  for (const dupId of duplicateIds) {
+    await query(`UPDATE orders SET user_id = ? WHERE user_id = ?`, [primaryId, dupId]);
+    await query(`UPDATE orders SET user_id = ? WHERE user_id IS NULL AND guest_email = ?`, [primaryId, email]);
+  }
+
+  // Delete duplicate user records (orders are now safely re-linked)
+  for (const dupId of duplicateIds) {
+    await query(`DELETE FROM user_profiles WHERE user_id = ?`, [dupId]);
+    await query(`DELETE FROM users WHERE id = ?`, [dupId]);
+  }
+
+  console.log(`[admin] Merged ${duplicateIds.length} duplicate(s) for ${email} into user_id=${primaryId}`);
+
+  return success(res, `Merged ${duplicateIds.length} duplicate account(s) into user_id=${primaryId}`, {
+    primary_user_id: primaryId,
+    removed_user_ids: duplicateIds,
+    merged: duplicateIds.length,
+  });
+});
+
+module.exports = { listUsers, getUser, toggleUser, getDuplicateReport, mergeDuplicateUser };

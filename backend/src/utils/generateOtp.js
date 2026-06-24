@@ -1,6 +1,6 @@
 const crypto = require("node:crypto");
 
-const OTP_TTL_MINUTES = 5;
+const OTP_TTL_MINUTES = 10;
 
 const generateOtp = () => String(crypto.randomInt(100000, 1000000));
 
