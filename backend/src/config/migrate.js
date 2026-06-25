@@ -122,6 +122,7 @@ const ensureReviewsTable = async () => {
         { name: "admin_notes", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS admin_notes TEXT NULL AFTER review_status" },
         { name: "approved_at", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL AFTER admin_notes" },
         { name: "updated_at", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER approved_at" },
+        { name: "website_visibility", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS website_visibility ENUM('visible','hidden') NOT NULL DEFAULT 'visible' AFTER updated_at" },
       ];
 
       for (const col of checks) {

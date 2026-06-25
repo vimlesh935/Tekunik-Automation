@@ -8,6 +8,8 @@ const {
   approveReview,
   rejectReview,
   deleteReview,
+  getReviewCounts,
+  toggleReviewVisibility,
 } = require("../controllers/reviewController");
 
 const router = express.Router();
@@ -25,8 +27,10 @@ router.get("/api/user/orders/:orderId/products/:productId/review", requireAuth, 
 // ─────────────────────────────────────────────────────────────
 
 router.get("/api/admin/reviews", requireAdmin, getAllReviewsAdmin);
+router.get("/api/admin/reviews/counts", requireAdmin, getReviewCounts);
 router.post("/api/admin/reviews/:id/approve", requireAdmin, approveReview);
 router.post("/api/admin/reviews/:id/reject", requireAdmin, rejectReview);
+router.patch("/api/admin/reviews/:id/visibility", requireAdmin, toggleReviewVisibility);
 router.delete("/api/admin/reviews/:id", requireAdmin, deleteReview);
 
 module.exports = router;

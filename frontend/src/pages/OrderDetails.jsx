@@ -10,18 +10,12 @@ import {
   Package,
   MapPin,
   CreditCard,
-  Clock,
-  CheckCircle,
   Loader2,
-  Truck,
-  Trash2,
   Copy,
   Check,
   Phone,
   Mail,
   Calendar,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 
 export default function OrderDetails() {
@@ -32,7 +26,6 @@ export default function OrderDetails() {
   const [order, setOrder] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(true);
 
   useEffect(() => {
     console.debug("[OrderDetails] Auth state:", {
@@ -59,11 +52,8 @@ export default function OrderDetails() {
     };
     document.addEventListener("visibilitychange", onVisible);
 
-    const interval = setInterval(() => fetchOrderDetails(), 30000);
-
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
-      clearInterval(interval);
     };
   }, [id]);
 
@@ -123,81 +113,6 @@ export default function OrderDetails() {
     }
   };
 
-  const formatShortDate = (dateStr) => {
-    if (!dateStr) return "";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  // Timeline tracking steps
-  const trackingSteps = [
-    {
-      key: "pending",
-      label: "Order Confirmed",
-      icon: CheckCircle,
-      desc: "Your order has been placed",
-    },
-    {
-      key: "confirmed",
-      label: "Confirmed",
-      icon: CheckCircle,
-      desc: "Order has been confirmed",
-    },
-    {
-      key: "processing",
-      label: "Processing",
-      icon: Package,
-      desc: "Items are being processed",
-    },
-    {
-      key: "packed",
-      label: "Packed",
-      icon: Package,
-      desc: "Items are packed and ready",
-    },
-    {
-      key: "shipped",
-      label: "Shipped",
-      icon: Truck,
-      desc: "Package is on its way",
-    },
-    {
-      key: "out_for_delivery",
-      label: "Out for Delivery",
-      icon: Truck,
-      desc: "Out for delivery today",
-    },
-    {
-      key: "delivered",
-      label: "Delivered",
-      icon: CheckCircle,
-      desc: "Package delivered",
-    },
-  ];
-
-  const getCurrentStepIndex = () => {
-    if (!order) return 0;
-    if (order.status === "cancelled") return -1;
-    const statusOrder = [
-      "pending",
-      "confirmed",
-      "processing",
-      "packed",
-      "shipped",
-      "out_for_delivery",
-      "delivered",
-    ];
-    return statusOrder.indexOf(order.status);
-  };
-
   if (fetchLoading) {
     return (
       <div className="min-h-screen bg-page text-primary flex items-center justify-center">
@@ -210,9 +125,6 @@ export default function OrderDetails() {
   }
 
   if (!order) return null;
-
-  const currentStep = getCurrentStepIndex();
-  const isCancelled = order.status === "cancelled";
 
   return (
     <div className="min-h-screen bg-page text-primary transition-colors duration-300 py-14">
@@ -274,136 +186,7 @@ export default function OrderDetails() {
             </div>
           </div>
 
-          {/* Tracking Timeline */}
-          <div className="mt-8 rounded-3xl border border-white/10 bg-gray-900/70 overflow-hidden">
-            <button
-              onClick={() => setShowTimeline(!showTimeline)}
-              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition"
-            >
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Truck size={18} className="text-cyan-400" />
-                Order Tracking
-              </h2>
-              {showTimeline ? (
-                <ChevronUp size={18} className="text-gray-400" />
-              ) : (
-                <ChevronDown size={18} className="text-gray-400" />
-              )}
-            </button>
-
-            {showTimeline && (
-              <div className="px-5 pb-8">
-                {isCancelled ? (
-                  <div className="text-center py-8">
-                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 mb-4">
-                      <Package size={28} className="text-red-400" />
-                    </div>
-                    <p className="text-xl font-bold text-white">
-                      Order Cancelled
-                    </p>
-                    <p className="mt-2 text-gray-400">
-                      This order has been cancelled.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    {/* Timeline line */}
-                    <div className="absolute left-[19px] top-0 bottom-0 w-[2px] bg-white/10" />
-
-                    <div className="space-y-0">
-                      {trackingSteps.map((step, index) => {
-                        const StepIcon = step.icon;
-                        const isCompleted = currentStep >= index;
-                        const isCurrent = currentStep === index;
-
-                        // Find tracking entry for this step
-                        const trackingEntry = order.trackingHistory?.find(
-                          (t) => t.status === step.key,
-                        );
-
-                        return (
-                          <div
-                            key={step.key}
-                            className="relative flex gap-4 pb-6 last:pb-0"
-                          >
-                            {/* Timeline dot */}
-                            <div className="relative z-10 flex-shrink-0">
-                              <div
-                                className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                                  isCompleted
-                                    ? "bg-cyan-500 border-cyan-500 shadow-lg shadow-cyan-500/30"
-                                    : "bg-gray-900 border-white/10"
-                                } ${isCurrent ? "scale-110 ring-2 ring-cyan-500/30" : ""}`}
-                              >
-                                <StepIcon
-                                  size={16}
-                                  className={
-                                    isCompleted ? "text-black" : "text-gray-600"
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            {/* Step content */}
-                            <div className="flex-1 min-w-0 pt-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <p
-                                  className={`text-sm font-semibold ${
-                                    isCompleted ? "text-white" : "text-gray-500"
-                                  }`}
-                                >
-                                  {step.label}
-                                </p>
-                                {trackingEntry && (
-                                  <span className="text-xs text-gray-500 flex-shrink-0">
-                                    {formatShortDate(
-                                      trackingEntry.timestamp ||
-                                        trackingEntry.created_at,
-                                    )}
-                                  </span>
-                                )}
-                              </div>
-                              <p
-                                className={`text-xs mt-0.5 ${
-                                  isCompleted
-                                    ? "text-gray-400"
-                                    : "text-gray-600"
-                                }`}
-                              >
-                                {trackingEntry?.description || step.desc}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Estimated delivery */}
-                    {order.estimated_delivery &&
-                      currentStep < 5 &&
-                      currentStep >= 0 && (
-                        <div className="mt-4 rounded-2xl bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border border-cyan-500/10 p-4 text-center">
-                          <p className="text-sm text-cyan-300 font-semibold">
-                            🚚 Estimated Delivery
-                          </p>
-                          <p className="text-lg font-bold text-white mt-1">
-                            {new Date(
-                              order.estimated_delivery,
-                            ).toLocaleDateString("en-US", {
-                              weekday: "long",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
-                        </div>
-                      )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
               {/* Shipping details */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6">
@@ -516,30 +299,6 @@ export default function OrderDetails() {
             </div>
 
             <div className="space-y-4">
-              {/* Track this order */}
-              <Link
-                to="/track-order"
-                state={{
-                  order_number: order.order_number,
-                  contact: order.guest_email,
-                }}
-                className="flex items-center justify-between rounded-3xl border border-cyan-500/20 bg-cyan-500/10 px-6 py-5 text-sm font-semibold text-cyan-100 hover:bg-cyan-500/15 hover:border-cyan-500/40 transition group"
-              >
-                <div className="flex items-center gap-3">
-                  <MapPin size={18} className="text-cyan-400" />
-                  <div>
-                    <p className="text-white">Track this order</p>
-                    <p className="text-xs font-normal text-gray-400 mt-0.5">
-                      Use your order number
-                    </p>
-                  </div>
-                </div>
-                <ArrowLeft
-                  size={18}
-                  className="rotate-180 group-hover:translate-x-1 transition-transform"
-                />
-              </Link>
-
               {/* Payment info */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6 space-y-3">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -578,29 +337,41 @@ export default function OrderDetails() {
                 )}
               </div>
 
-              {/* Order timeline */}
+              {/* Order information */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6 space-y-3">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Clock size={16} className="text-cyan-400" />
-                  Order Timeline
+                  <Calendar size={16} className="text-cyan-400" />
+                  Order Information
                 </h3>
-                <div className="text-xs text-gray-500 space-y-2">
-                  <p>Created: {formatDate(order.created_at)}</p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-gray-400">Order Date</span>
+                    <span className="text-right text-white">
+                      {formatDate(order.created_at)}
+                    </span>
+                  </div>
                   {order.updated_at && (
-                    <p>Last updated: {formatDate(order.updated_at)}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-400">Last Updated</span>
+                      <span className="text-right text-white">
+                        {formatDate(order.updated_at)}
+                      </span>
+                    </div>
                   )}
                   {order.estimated_delivery && (
-                    <p>
-                      Estimated delivery:{" "}
-                      {new Date(order.estimated_delivery).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        },
-                      )}
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-400">Estimated Delivery</span>
+                      <span className="text-right text-white">
+                        {new Date(order.estimated_delivery).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>

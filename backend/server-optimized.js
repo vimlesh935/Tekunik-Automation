@@ -23,6 +23,8 @@ const inventoryRoutes = require("./src/routes/inventoryRoutes");
 const discountRoutes = require("./src/routes/discountRoutes");
 const cartRoutes = require("./src/routes/cartRoutes");
 const userRoutes = require("./src/routes/userRoutes");
+const reviewRoutes = require("./src/routes/reviewRoutes");
+const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -202,6 +204,8 @@ app.use(inventoryRoutes);
 app.use(discountRoutes);
 app.use(cartRoutes);
 app.use('/api/admin/upload', uploadRoutes);
+app.use(reviewRoutes);
+app.use(websiteReviewRoutes);
 
 // ═══════════════════════════════════════════════════════════════
 // STATIC FILES & UPLOADS

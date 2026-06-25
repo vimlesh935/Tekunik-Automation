@@ -27,7 +27,7 @@ import {
   Star,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
-import apiCall, { productService, orderService } from "../services/api";
+import apiCall, { productService, orderService, userService, reviewService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
 import { useCart } from "../context/CartContext.jsx";
 
@@ -73,6 +73,15 @@ export default function Dashboard() {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [notifType, setNotifType] = useState("success");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewOrder, setReviewOrder] = useState(null);
+  const [reviewProducts, setReviewProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
 useEffect(() => {
      loadDashboardData();
@@ -214,6 +223,49 @@ useEffect(() => {
       showNotification(error?.message || "Failed to cancel order", "error");
     } finally {
       setCancellingOrderId(null);
+    }
+  };
+
+  const openReviewModal = async (order) => {
+    setReviewOrder(order);
+    setRating(0);
+    setHoverRating(0);
+    setReviewTitle("");
+    setReviewMessage("");
+    setSelectedProduct(null);
+    setReviewProducts([]);
+    setShowReviewModal(true);
+
+    try {
+      const res = await userService.getOrder(order.id);
+      const items = res.data?.order?.items || order.items || [];
+      setReviewProducts(items);
+      if (items.length > 0) setSelectedProduct(items[0].product_id);
+    } catch (error) {
+      const items = order.items || [];
+      setReviewProducts(items);
+      if (items.length > 0) setSelectedProduct(items[0].product_id);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedProduct || !rating || !reviewOrder) return;
+    setSubmittingReview(true);
+
+    try {
+      await reviewService.createReview({
+        order_id: reviewOrder.id,
+        product_id: selectedProduct,
+        rating,
+        review_title: reviewTitle.trim() || null,
+        review_message: reviewMessage.trim() || null,
+      });
+      showNotification("Review submitted successfully and is pending approval.", "success");
+      setShowReviewModal(false);
+    } catch (error) {
+      showNotification(error?.message || "Failed to submit review", "error");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -675,7 +727,7 @@ useEffect(() => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      navigate(`/orders/${order.id}`);
+                                      openReviewModal(order);
                                     }}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20 transition-colors"
                                   >
@@ -879,6 +931,153 @@ useEffect(() => {
           />
         </Link>
       </motion.div>
+
+      <AnimatePresence>
+        {showReviewModal && reviewOrder && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setShowReviewModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-lg rounded-[20px] border border-slate-800 bg-slate-900 p-6 shadow-2xl sm:p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black tracking-tight text-white">
+                    Rate Your Experience
+                  </h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    {reviewOrder.order_number}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {reviewProducts.length > 1 && (
+                <div className="mb-5">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Select Product
+                  </label>
+                  <select
+                    value={selectedProduct || ""}
+                    onChange={(e) => setSelectedProduct(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+                  >
+                    {reviewProducts.map((item) => (
+                      <option key={item.product_id} value={item.product_id}>
+                        {item.product_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {reviewProducts.length === 0 ? (
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
+                  No reviewable products were found for this order.
+                </div>
+              ) : (
+                <>
+                  <div className="mb-5">
+                    <label className="mb-3 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Rating
+                    </label>
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setRating(star === rating ? 0 : star)}
+                          className="transition-all duration-150 hover:scale-110 active:scale-95"
+                        >
+                          <Star
+                            size={32}
+                            className={`transition-colors duration-150 ${
+                              star <= (hoverRating || rating)
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-600"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Review Title
+                    </label>
+                    <input
+                      type="text"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                      placeholder="Great product!"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Review Message
+                    </label>
+                    <textarea
+                      value={reviewMessage}
+                      onChange={(e) => setReviewMessage(e.target.value)}
+                      placeholder="Share your experience with this product..."
+                      rows={4}
+                      className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-amber-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 rounded-[12px] border border-slate-700 bg-slate-800 py-3 text-sm font-bold text-slate-300 transition hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitReview}
+                  disabled={!rating || !selectedProduct || submittingReview || reviewProducts.length === 0}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-[12px] bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(245,158,11,0.2)] transition-all duration-300 hover:from-amber-400 hover:to-orange-400 hover:shadow-[0_6px_28px_rgba(245,158,11,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700"
+                >
+                  {submittingReview ? (
+                    <>
+                      <Loader size={16} className="animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Star size={15} className="fill-white" />
+                      Submit Review
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

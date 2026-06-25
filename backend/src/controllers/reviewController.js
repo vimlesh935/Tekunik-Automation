@@ -96,7 +96,7 @@ const getProductReviews = asyncHandler(async (req, res) => {
   const { rating, limit = 50, page = 1 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
-  let whereClause = "WHERE pr.product_id = ? AND pr.review_status = 'approved'";
+  let whereClause = "WHERE pr.product_id = ? AND pr.review_status = 'approved' AND pr.website_visibility = 'visible'";
   const params = [productId];
 
   if (rating) {
@@ -134,7 +134,7 @@ const getProductReviews = asyncHandler(async (req, res) => {
       SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) AS two_star,
       SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS one_star
     FROM product_reviews
-    WHERE product_id = ? AND review_status = 'approved'
+    WHERE product_id = ? AND review_status = 'approved' AND website_visibility = 'visible'
   `, [productId]);
 
   return success(res, "Reviews fetched", {
@@ -303,6 +303,54 @@ const deleteReview = asyncHandler(async (req, res) => {
   return success(res, "Review deleted successfully");
 });
 
+// ─────────────────────────────────────────────────────────────
+// ADMIN: Get Live Review Counts
+// ─────────────────────────────────────────────────────────────
+
+const getReviewCounts = asyncHandler(async (req, res) => {
+  const [counts] = await query(
+    `SELECT
+       COUNT(*) AS total,
+       SUM(CASE WHEN review_status = 'pending' THEN 1 ELSE 0 END) AS pending,
+       SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved,
+       SUM(CASE WHEN review_status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+     FROM product_reviews`
+  );
+
+  return success(res, "Review counts fetched", {
+    total: Number(counts.total),
+    pending: Number(counts.pending),
+    approved: Number(counts.approved),
+    rejected: Number(counts.rejected),
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN: Toggle Website Visibility
+// ─────────────────────────────────────────────────────────────
+
+const toggleReviewVisibility = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  const { visibility } = req.body;
+
+  if (!visibility || !["visible", "hidden"].includes(visibility)) {
+    throw new AppError("Visibility must be 'visible' or 'hidden'", 400);
+  }
+
+  const [existing] = await query(
+    "SELECT id, review_status, website_visibility FROM product_reviews WHERE id = ?",
+    [reviewId]
+  );
+  if (!existing) throw new AppError("Review not found", 404);
+
+  await query(
+    `UPDATE product_reviews SET website_visibility = ?, updated_at = ? WHERE id = ?`,
+    [visibility, new Date().toISOString().slice(0, 19).replace("T", " "), reviewId]
+  );
+
+  return success(res, `Review is now ${visibility} on website`);
+});
+
 module.exports = {
   createReview,
   getProductReviews,
@@ -311,4 +359,6 @@ module.exports = {
   approveReview,
   rejectReview,
   deleteReview,
+  getReviewCounts,
+  toggleReviewVisibility,
 };
