@@ -109,14 +109,16 @@ export default function Shop({ token }) {
           normalizedCategoryId,
         );
       }
-      const { data } = response;
-      const nextProducts = Array.isArray(data?.products) ? data.products : [];
+      console.log("[Shop] API response:", JSON.stringify(response).slice(0, 500));
+      const data = response?.data || response;
+      const nextProducts = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
+      console.log(`[Shop] Products found: ${nextProducts.length}`);
       const visibleProducts = nextProducts.filter(Boolean);
       setProducts(visibleProducts);
-      setTotalProducts(data?.pagination?.total || 0);
+      setTotalProducts(data?.pagination?.total || nextProducts.length || 0);
       setTotalPages(data?.pagination?.pages || 1);
     } catch (error) {
-      console.warn("fetchProducts error:", error);
+      console.error("[Shop] fetchProducts error:", error);
       setNotification(error?.message || "Unable to load products");
       setTimeout(() => setNotification(""), 3000);
     } finally {

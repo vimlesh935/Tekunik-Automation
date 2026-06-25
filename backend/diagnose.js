@@ -1,137 +1,84 @@
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
+// Diagnostic script to check database products and API
+const mysql = require("mysql2/promise");
 
-console.log('\n╔════════════════════════════════════════╗');
-console.log('║   BACKEND DIAGNOSTIC TOOL            ║');
-console.log('╚════════════════════════════════════════╝\n');
+async function main() {
+  const conn = await mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    database: "Technique"
+  });
 
-async function runDiagnostics() {
-  let allPassed = true;
-
-  // 1. Check .env file
-  console.log('📋 [1/6] Checking .env file...');
-  const envPath = path.join(__dirname, '.env');
-  if (fs.existsSync(envPath)) {
-    console.log('✅ .env file exists\n');
-  } else {
-    console.log('❌ .env file NOT FOUND!');
-    console.log('   Create .env file in backend folder\n');
-    allPassed = false;
-  }
-
-  // 2. Check node_modules
-  console.log('📦 [2/6] Checking dependencies...');
-  const nodeModulesPath = path.join(__dirname, 'node_modules');
-  if (fs.existsSync(nodeModulesPath)) {
-    console.log('✅ node_modules exists\n');
-  } else {
-    console.log('❌ node_modules NOT FOUND!');
-    console.log('   Run: npm install\n');
-    allPassed = false;
-  }
-
-  // 3. Check required packages
-  console.log('📚 [3/6] Checking required packages...');
-  const requiredPackages = ['express', 'mysql2', 'bcrypt', 'jsonwebtoken', 'nodemailer', 'cors', 'dotenv'];
-  const missingPackages = [];
-  
-  for (const pkg of requiredPackages) {
-    try {
-      require.resolve(pkg);
-    } catch (e) {
-      missingPackages.push(pkg);
-    }
-  }
-  
-  if (missingPackages.length === 0) {
-    console.log('✅ All required packages installed\n');
-  } else {
-    console.log('❌ Missing packages:', missingPackages.join(', '));
-    console.log('   Run: npm install\n');
-    allPassed = false;
-  }
-
-  // 4. Load environment variables
-  console.log('⚙️  [4/6] Loading environment variables...');
   try {
-    require('dotenv').config();
-    console.log('✅ Environment variables loaded');
-    console.log(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET'}`);
-    console.log(`   DB_USER: ${process.env.DB_USER || 'NOT SET'}`);
-    console.log(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET'}`);
-    console.log(`   PORT: ${process.env.PORT || 'NOT SET'}\n`);
-  } catch (error) {
-    console.log('❌ Failed to load .env:', error.message, '\n');
-    allPassed = false;
-  }
+    // 1. Check products table columns
+    const [cols] = await conn.execute("SHOW COLUMNS FROM products");
+    console.log("=== PRODUCTS COLUMNS ===");
+    cols.forEach(c => console.log(`  ${c.Field}: ${c.Type} | Null: ${c.Null} | Default: ${c.Default}`));
 
-  // 5. Test MySQL connection
-  console.log('🔌 [5/6] Testing MySQL connection...');
-  try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-    });
-    console.log('✅ MySQL server is reachable\n');
-    await connection.end();
-  } catch (error) {
-    console.log('❌ MySQL connection FAILED!');
-    console.log('   Error:', error.message);
-    console.log('   Solution: Start MySQL in XAMPP Control Panel\n');
-    allPassed = false;
-    return; // Stop here if MySQL is not running
-  }
+    // 2. Check all products with status
+    const [products] = await conn.execute(
+      "SELECT id, name, status, featured, price, stock, image_url, category_id, created_at FROM products ORDER BY id"
+    );
+    console.log(`\n=== ALL PRODUCTS (${products.length}) ===`);
+    products.forEach(p => console.log(`  ID=${p.id} | "${p.name}" | status=${p.status} | featured=${p.featured} | cat=${p.category_id} | price=${p.price}`));
 
-  // 6. Test database existence
-  console.log('🗄️  [6/6] Checking database...');
-  try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'Technique',
-    });
-    console.log('✅ Database "Technique" exists and is accessible\n');
-    
-    // Check if tables exist
-    const [tables] = await connection.query('SHOW TABLES');
-    if (tables.length > 0) {
-      console.log(`✅ Found ${tables.length} tables in database`);
-      console.log('   Tables:', tables.map(t => Object.values(t)[0]).join(', '), '\n');
+    // 3. Check categories
+    const [cats] = await conn.execute("SELECT id, name FROM product_categories");
+    console.log(`\n=== CATEGORIES (${cats.length}) ===`);
+    cats.forEach(c => console.log(`  ${c.id}: ${c.name}`));
+
+    // 4. Count active products
+    const [active] = await conn.execute("SELECT COUNT(*) as count FROM products WHERE status='active'");
+    console.log(`\n=== ACTIVE PRODUCTS: ${active[0].count}`);
+
+    // 5. Check featured + active
+    const [featuredActive] = await conn.execute("SELECT COUNT(*) as count FROM products WHERE status='active' AND featured=1");
+    console.log(`=== FEATURED+ACTIVE: ${featuredActive[0].count}`);
+
+    // 6. Check product_images
+    const [images] = await conn.execute("SELECT id, product_id, image_url FROM product_images LIMIT 10");
+    console.log(`\n=== PRODUCT IMAGES (${images.length}) ===`);
+    images.forEach(i => console.log(`  id=${i.id} | product_id=${i.product_id} | url=${i.image_url}`));
+
+    // 7. Check for any migration issues - if category doesn't exist
+    const [orphans] = await conn.execute(`
+      SELECT p.id, p.name, p.category_id FROM products p 
+      LEFT JOIN product_categories c ON p.category_id = c.id 
+      WHERE c.id IS NULL AND p.category_id IS NOT NULL
+    `);
+    if (orphans.length > 0) {
+      console.log(`\n⚠️ ORPHAN PRODUCTS (category missing): ${orphans.length}`);
+      orphans.forEach(p => console.log(`  ${p.id}: ${p.name} (category_id=${p.category_id})`));
     } else {
-      console.log('⚠️  Database exists but has NO TABLES');
-      console.log('   Import database/database.sql in phpMyAdmin\n');
+      console.log("\n✓ No orphan products found");
     }
-    
-    await connection.end();
-  } catch (error) {
-    console.log('❌ Database "Technique" NOT FOUND!');
-    console.log('   Error:', error.message);
-    console.log('   Solution: Create database in phpMyAdmin');
-    console.log('   1. Go to http://localhost/phpmyadmin');
-    console.log('   2. Click "New" → Create database "Technique"');
-    console.log('   3. Import database/database.sql\n');
-    allPassed = false;
-  }
 
-  // Final result
-  console.log('╔════════════════════════════════════════╗');
-  if (allPassed) {
-    console.log('║  ✅ ALL CHECKS PASSED!               ║');
-    console.log('╚════════════════════════════════════════╝');
-    console.log('\n🚀 Your backend should start successfully!');
-    console.log('   Run: npm run dev\n');
-  } else {
-    console.log('║  ❌ SOME CHECKS FAILED               ║');
-    console.log('╚════════════════════════════════════════╝');
-    console.log('\n⚠️  Fix the issues above before starting the server');
-    console.log('   See TROUBLESHOOTING.md for detailed solutions\n');
+    // 8. Test product listing query that the PUBLIC API would use
+    console.log("\n=== SIMULATING PUBLIC API QUERY ===");
+    const [publicProducts] = await conn.execute(`
+      SELECT p.id, p.name, p.status, p.price, p.stock, p.image_url, pc.name as category_name
+      FROM products p
+      LEFT JOIN product_categories pc ON p.category_id = pc.id
+      WHERE p.status = 'active'
+      ORDER BY p.created_at DESC
+      LIMIT 20
+    `);
+    console.log(`Public API would return ${publicProducts.length} products`);
+    if (publicProducts.length === 0) {
+      console.log("❌ CRITICAL: No active products found!");
+      // Check what statuses are available
+      const [statuses] = await conn.execute("SELECT status, COUNT(*) as cnt FROM products GROUP BY status");
+      console.log("Products by status:");
+      statuses.forEach(s => console.log(`  ${s.status}: ${s.cnt}`));
+    } else {
+      publicProducts.forEach(p => console.log(`  ${p.name} | status=${p.status} | price=${p.price}`));
+    }
+
+  } catch(e) {
+    console.error("ERROR:", e.message);
+    console.error(e.stack);
+  } finally {
+    await conn.end();
   }
 }
 
-runDiagnostics().catch(error => {
-  console.error('\n❌ Diagnostic tool error:', error.message);
-  console.log('   This might indicate a serious configuration issue\n');
-});
+main();

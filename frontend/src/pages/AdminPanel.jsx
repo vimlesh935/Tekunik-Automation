@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { formatCurrency } from "../utils/currency.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { adminUserService, adminDemoEnquiryService } from "../services/api";
+import { adminUserService, adminDemoEnquiryService, reviewService } from "../services/api";
 import {
   LayoutDashboard,
   Package,
@@ -1632,15 +1632,13 @@ export default function AdminPanel() {
                                 <>
                                   <button onClick={async () => { 
                                     try { 
-                                      await apiCall(`/api/admin/reviews/${r.id}/approve`, { 
-                                        method: "POST",
-                                        body: JSON.stringify({ admin_notes: "Approved by admin" }),
-                                        headers: { "Content-Type": "application/json" }
-                                      }); 
-                                      setReviewActionMessage("Review approved successfully! It is now visible on the website.");
+                                      console.log("[Admin Reviews] Approving review", { id: r.id, route: `/api/reviews/${r.id}/approve` });
+                                      await reviewService.approveReview(r.id, "Approved by admin"); 
+                                      setReviewActionMessage("Review approved successfully. Use Show on Website to publish it.");
                                       setReviewActionType("success");
                                       fetchData(); 
                                     } catch(e) { 
+                                      console.error("[Admin Reviews] Approve failed", e);
                                       setReviewActionMessage(e.message || "Failed to approve review");
                                       setReviewActionType("error");
                                     }
@@ -1650,15 +1648,13 @@ export default function AdminPanel() {
                                   </button>
                                   <button onClick={async () => { 
                                     try { 
-                                      await apiCall(`/api/admin/reviews/${r.id}/reject`, { 
-                                        method: "POST",
-                                        body: JSON.stringify({ admin_notes: "Rejected by admin" }),
-                                        headers: { "Content-Type": "application/json" }
-                                      }); 
+                                      console.log("[Admin Reviews] Rejecting review", { id: r.id, route: `/api/reviews/${r.id}/reject` });
+                                      await reviewService.rejectReview(r.id, "Rejected by admin"); 
                                       setReviewActionMessage("Review rejected. It will remain hidden from the website.");
                                       setReviewActionType("success");
                                       fetchData(); 
                                     } catch(e) { 
+                                      console.error("[Admin Reviews] Reject failed", e);
                                       setReviewActionMessage(e.message || "Failed to reject review");
                                       setReviewActionType("error");
                                     }
@@ -1672,33 +1668,35 @@ export default function AdminPanel() {
                                 <>
                                   <button onClick={async () => { 
                                     try { 
-                                      await apiCall(`/api/admin/reviews/${r.id}/visibility`, { 
-                                        method: "PATCH",
-                                        body: JSON.stringify({ visibility: r.website_visibility === 'visible' ? 'hidden' : 'visible' }),
-                                        headers: { "Content-Type": "application/json" }
-                                      }); 
-                                      setReviewActionMessage(r.website_visibility === 'visible' ? "Review hidden from website." : "Review is now visible on website.");
+                                      const isShown = r.show_on_website === true || r.show_on_website === 1 || r.website_visibility === 'visible';
+                                      const route = `/api/reviews/${r.id}/${isShown ? 'hide' : 'show'}`;
+                                      console.log("[Admin Reviews] Updating website visibility", { id: r.id, route });
+                                      if (isShown) {
+                                        await reviewService.hideReviewFromWebsite(r.id);
+                                      } else {
+                                        await reviewService.showReviewOnWebsite(r.id);
+                                      }
+                                      setReviewActionMessage(isShown ? "Review hidden from website." : "Review is now visible on website.");
                                       setReviewActionType("success");
                                       fetchData(); 
                                     } catch(e) { 
+                                      console.error("[Admin Reviews] Visibility update failed", e);
                                       setReviewActionMessage(e.message || "Failed to update visibility");
                                       setReviewActionType("error");
                                     }
                                   }}
                                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 rounded-xl text-xs font-bold transition-all duration-200">
-                                    <Eye size={14} /> {r.website_visibility === 'visible' ? 'Hide from Website' : 'Show on Website'}
+                                    <Eye size={14} /> {(r.show_on_website === true || r.show_on_website === 1 || r.website_visibility === 'visible') ? 'Hide from Website' : 'Show on Website'}
                                   </button>
                                   <button onClick={async () => { 
                                     try { 
-                                      await apiCall(`/api/admin/reviews/${r.id}/reject`, { 
-                                        method: "POST",
-                                        body: JSON.stringify({ admin_notes: "Rejected by admin" }),
-                                        headers: { "Content-Type": "application/json" }
-                                      }); 
+                                      console.log("[Admin Reviews] Rejecting approved review", { id: r.id, route: `/api/reviews/${r.id}/reject` });
+                                      await reviewService.rejectReview(r.id, "Rejected by admin"); 
                                       setReviewActionMessage("Review rejected and hidden from website.");
                                       setReviewActionType("success");
                                       fetchData(); 
                                     } catch(e) { 
+                                      console.error("[Admin Reviews] Reject approved failed", e);
                                       setReviewActionMessage(e.message || "Failed to reject review");
                                       setReviewActionType("error");
                                     }
@@ -1711,15 +1709,13 @@ export default function AdminPanel() {
                               {r.review_status === 'rejected' && (
                                 <button onClick={async () => { 
                                   try { 
-                                    await apiCall(`/api/admin/reviews/${r.id}/approve`, { 
-                                      method: "POST",
-                                      body: JSON.stringify({ admin_notes: "Approved by admin" }),
-                                      headers: { "Content-Type": "application/json" }
-                                    }); 
-                                    setReviewActionMessage("Review approved and visible on website.");
+                                    console.log("[Admin Reviews] Re-approving review", { id: r.id, route: `/api/reviews/${r.id}/approve` });
+                                    await reviewService.approveReview(r.id, "Approved by admin"); 
+                                    setReviewActionMessage("Review approved. Use Show on Website to publish it.");
                                     setReviewActionType("success");
                                     fetchData(); 
                                   } catch(e) { 
+                                    console.error("[Admin Reviews] Re-approve failed", e);
                                     setReviewActionMessage(e.message || "Failed to approve review");
                                     setReviewActionType("error");
                                   }

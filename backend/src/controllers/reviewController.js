@@ -3,6 +3,24 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 
+const nowSql = () => new Date().toISOString().slice(0, 19).replace("T", " ");
+
+const parseReviewImages = (images) => {
+  if (!images) return [];
+  try {
+    return JSON.parse(images);
+  } catch {
+    return [];
+  }
+};
+
+const normalizeReview = (review) => ({
+  ...review,
+  is_approved: Boolean(review.is_approved),
+  show_on_website: Boolean(review.show_on_website),
+  review_images: parseReviewImages(review.review_images),
+});
+
 // ─────────────────────────────────────────────────────────────
 // CUSTOMER: Submit Review
 // ─────────────────────────────────────────────────────────────
@@ -59,8 +77,8 @@ const createReview = asyncHandler(async (req, res) => {
 
   const result = await query(
     `INSERT INTO product_reviews
-      (order_id, product_id, user_id, customer_name, rating, review_title, review_message, review_images, review_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      (order_id, product_id, user_id, customer_name, rating, review_title, review_message, review_images, review_status, is_approved, show_on_website, website_visibility)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, 'hidden')`,
     [
       order_id,
       product_id,
@@ -96,7 +114,7 @@ const getProductReviews = asyncHandler(async (req, res) => {
   const { rating, limit = 50, page = 1 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
-  let whereClause = "WHERE pr.product_id = ? AND pr.review_status = 'approved' AND pr.website_visibility = 'visible'";
+  let whereClause = "WHERE pr.product_id = ? AND pr.is_approved = 1 AND pr.show_on_website = 1";
   const params = [productId];
 
   if (rating) {
@@ -108,7 +126,8 @@ const getProductReviews = asyncHandler(async (req, res) => {
     SELECT
       pr.id, pr.product_id, pr.order_id, pr.user_id, pr.customer_name,
       pr.rating, pr.review_title, pr.review_message, pr.review_images,
-      pr.review_status, pr.admin_notes, pr.created_at, pr.approved_at,
+      pr.review_status, pr.is_approved, pr.show_on_website, pr.website_visibility,
+      pr.admin_notes, pr.created_at, pr.approved_at,
       up.first_name, up.last_name
     FROM product_reviews pr
     LEFT JOIN users u ON pr.user_id = u.id
@@ -118,11 +137,7 @@ const getProductReviews = asyncHandler(async (req, res) => {
     LIMIT ? OFFSET ?
   `, [...params, Number(limit), offset]);
 
-  // Parse review_images JSON
-  const parsedReviews = reviews.map((r) => ({
-    ...r,
-    review_images: r.review_images ? JSON.parse(r.review_images) : [],
-  }));
+  const parsedReviews = reviews.map(normalizeReview);
 
   const [statsRow] = await query(`
     SELECT
@@ -134,7 +149,7 @@ const getProductReviews = asyncHandler(async (req, res) => {
       SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) AS two_star,
       SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS one_star
     FROM product_reviews
-    WHERE product_id = ? AND review_status = 'approved' AND website_visibility = 'visible'
+    WHERE product_id = ? AND is_approved = 1 AND show_on_website = 1
   `, [productId]);
 
   return success(res, "Reviews fetched", {
@@ -152,6 +167,38 @@ const getProductReviews = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// PUBLIC: Get Approved Reviews Shown on Website
+// ─────────────────────────────────────────────────────────────
+
+const getPublicReviews = asyncHandler(async (req, res) => {
+  const { limit = 20, page = 1 } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+
+  console.log("[REVIEWS] GET public reviews", { route: req.originalUrl, limit, page });
+
+  const reviews = await query(`
+    SELECT
+      pr.id, pr.product_id, pr.order_id, pr.user_id, pr.customer_name,
+      pr.rating, pr.review_title, pr.review_message, pr.review_images,
+      pr.review_status, pr.is_approved, pr.show_on_website, pr.website_visibility,
+      pr.created_at, pr.approved_at,
+      p.name AS product_name,
+      up.first_name, up.last_name
+    FROM product_reviews pr
+    LEFT JOIN products p ON pr.product_id = p.id
+    LEFT JOIN users u ON pr.user_id = u.id
+    LEFT JOIN user_profiles up ON u.id = up.user_id
+    WHERE pr.is_approved = 1 AND pr.show_on_website = 1
+    ORDER BY pr.approved_at DESC, pr.created_at DESC
+    LIMIT ? OFFSET ?
+  `, [Number(limit), offset]);
+
+  return success(res, "Public reviews fetched", {
+    reviews: reviews.map(normalizeReview),
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
 // CUSTOMER: Get User's Review for a Specific Order+Product
 // ─────────────────────────────────────────────────────────────
 
@@ -161,14 +208,14 @@ const getUserReviewForOrder = asyncHandler(async (req, res) => {
 
   const [review] = await query(
     `SELECT id, order_id, product_id, rating, review_title, review_message,
-            review_images, review_status, created_at
+            review_images, review_status, is_approved, show_on_website, created_at
      FROM product_reviews
      WHERE order_id = ? AND product_id = ? AND user_id = ?`,
     [orderId, productId, user_id]
   );
 
   const parsed = review
-    ? { ...review, review_images: review.review_images ? JSON.parse(review.review_images) : [] }
+    ? normalizeReview(review)
     : null;
 
   return success(res, "Review fetched", { review: parsed });
@@ -198,7 +245,8 @@ const getAllReviewsAdmin = asyncHandler(async (req, res) => {
     SELECT
       pr.id, pr.product_id, pr.order_id, pr.user_id, pr.customer_name,
       pr.rating, pr.review_title, pr.review_message, pr.review_images,
-      pr.review_status, pr.admin_notes, pr.created_at, pr.approved_at,
+      pr.review_status, pr.is_approved, pr.show_on_website, pr.website_visibility,
+      pr.admin_notes, pr.created_at, pr.approved_at,
       p.name AS product_name,
       o.order_number,
       up.first_name, up.last_name
@@ -212,10 +260,7 @@ const getAllReviewsAdmin = asyncHandler(async (req, res) => {
     LIMIT ? OFFSET ?
   `, [...params, Number(limit), offset]);
 
-  const parsedReviews = reviews.map((r) => ({
-    ...r,
-    review_images: r.review_images ? JSON.parse(r.review_images) : [],
-  }));
+  const parsedReviews = reviews.map(normalizeReview);
 
   const [countRow] = await query(
     `SELECT COUNT(*) AS total FROM product_reviews pr ${whereClause}`,
@@ -244,16 +289,20 @@ const approveReview = asyncHandler(async (req, res) => {
   );
   if (!existing) throw new AppError("Review not found", 404);
 
-  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const now = nowSql();
 
   await query(
     `UPDATE product_reviews
-     SET review_status = 'approved', admin_notes = ?, approved_at = ?, updated_at = ?
+     SET review_status = 'approved',
+         is_approved = 1,
+         admin_notes = ?,
+         approved_at = ?,
+         updated_at = ?
      WHERE id = ?`,
     [adminNotes, now, now, reviewId]
   );
 
-  return success(res, "Review approved successfully");
+  return success(res, "Review approved successfully", { id: Number(reviewId), is_approved: true });
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -269,20 +318,25 @@ const rejectReview = asyncHandler(async (req, res) => {
     [reviewId]
   );
   if (!existing) throw new AppError("Review not found", 404);
-  if (existing.review_status === "approved") {
-    throw new AppError("Cannot reject an already approved review", 400);
-  }
-
-  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const now = nowSql();
 
   await query(
     `UPDATE product_reviews
-     SET review_status = 'rejected', admin_notes = ?, updated_at = ?
+     SET review_status = 'rejected',
+         is_approved = 0,
+         show_on_website = 0,
+         website_visibility = 'hidden',
+         admin_notes = ?,
+         updated_at = ?
      WHERE id = ?`,
     [adminNotes, now, reviewId]
   );
 
-  return success(res, "Review rejected successfully");
+  return success(res, "Review rejected successfully", {
+    id: Number(reviewId),
+    is_approved: false,
+    show_on_website: false,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -344,16 +398,67 @@ const toggleReviewVisibility = asyncHandler(async (req, res) => {
   if (!existing) throw new AppError("Review not found", 404);
 
   await query(
-    `UPDATE product_reviews SET website_visibility = ?, updated_at = ? WHERE id = ?`,
-    [visibility, new Date().toISOString().slice(0, 19).replace("T", " "), reviewId]
+    `UPDATE product_reviews SET website_visibility = ?, show_on_website = ?, updated_at = ? WHERE id = ?`,
+    [visibility, visibility === "visible" ? 1 : 0, nowSql(), reviewId]
   );
 
   return success(res, `Review is now ${visibility} on website`);
 });
 
+// ─────────────────────────────────────────────────────────────
+// ADMIN: Show/Hide Review on Website
+// ─────────────────────────────────────────────────────────────
+
+const showReviewOnWebsite = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  console.log("[REVIEWS] PUT show review on website", { route: req.originalUrl, reviewId });
+
+  const [existing] = await query(
+    "SELECT id, is_approved, review_status FROM product_reviews WHERE id = ?",
+    [reviewId]
+  );
+  if (!existing) throw new AppError("Review not found", 404);
+  if (!existing.is_approved && existing.review_status !== "approved") {
+    throw new AppError("Only approved reviews can be shown on the website", 400);
+  }
+
+  await query(
+    `UPDATE product_reviews
+     SET show_on_website = 1, website_visibility = 'visible', updated_at = ?
+     WHERE id = ?`,
+    [nowSql(), reviewId]
+  );
+
+  return success(res, "Review is now visible on website", {
+    id: Number(reviewId),
+    show_on_website: true,
+  });
+});
+
+const hideReviewFromWebsite = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  console.log("[REVIEWS] PUT hide review from website", { route: req.originalUrl, reviewId });
+
+  const [existing] = await query("SELECT id FROM product_reviews WHERE id = ?", [reviewId]);
+  if (!existing) throw new AppError("Review not found", 404);
+
+  await query(
+    `UPDATE product_reviews
+     SET show_on_website = 0, website_visibility = 'hidden', updated_at = ?
+     WHERE id = ?`,
+    [nowSql(), reviewId]
+  );
+
+  return success(res, "Review hidden from website", {
+    id: Number(reviewId),
+    show_on_website: false,
+  });
+});
+
 module.exports = {
   createReview,
   getProductReviews,
+  getPublicReviews,
   getUserReviewForOrder,
   getAllReviewsAdmin,
   approveReview,
@@ -361,4 +466,6 @@ module.exports = {
   deleteReview,
   getReviewCounts,
   toggleReviewVisibility,
+  showReviewOnWebsite,
+  hideReviewFromWebsite,
 };

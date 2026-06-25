@@ -96,10 +96,13 @@ const ensureReviewsTable = async () => {
           review_message TEXT NULL,
           review_images JSON NULL,
           review_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+          is_approved BOOLEAN NOT NULL DEFAULT FALSE,
+          show_on_website BOOLEAN NOT NULL DEFAULT FALSE,
           admin_notes TEXT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           approved_at DATETIME NULL,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          website_visibility ENUM('visible','hidden') NOT NULL DEFAULT 'hidden',
           FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
           FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -119,10 +122,12 @@ const ensureReviewsTable = async () => {
         { name: "customer_name", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS customer_name VARCHAR(200) NULL AFTER user_id" },
         { name: "review_images", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS review_images JSON NULL AFTER review_message" },
         { name: "review_status", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS review_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending' AFTER review_images" },
-        { name: "admin_notes", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS admin_notes TEXT NULL AFTER review_status" },
+        { name: "is_approved", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS is_approved BOOLEAN NOT NULL DEFAULT FALSE AFTER review_status" },
+        { name: "show_on_website", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS show_on_website BOOLEAN NOT NULL DEFAULT FALSE AFTER is_approved" },
+        { name: "admin_notes", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS admin_notes TEXT NULL AFTER show_on_website" },
         { name: "approved_at", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL AFTER admin_notes" },
         { name: "updated_at", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER approved_at" },
-        { name: "website_visibility", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS website_visibility ENUM('visible','hidden') NOT NULL DEFAULT 'visible' AFTER updated_at" },
+        { name: "website_visibility", sql: "ALTER TABLE product_reviews ADD COLUMN IF NOT EXISTS website_visibility ENUM('visible','hidden') NOT NULL DEFAULT 'hidden' AFTER updated_at" },
       ];
 
       for (const col of checks) {
@@ -137,8 +142,24 @@ const ensureReviewsTable = async () => {
         console.log(`✅ [MIGRATE] Added missing review columns: ${missingCols.join(", ")}`);
       }
 
+      await query(`
+        UPDATE product_reviews
+        SET
+          is_approved = CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END,
+          show_on_website = CASE
+            WHEN review_status = 'approved' AND website_visibility = 'visible' THEN 1
+            ELSE show_on_website
+          END,
+          website_visibility = CASE
+            WHEN show_on_website = 1 THEN 'visible'
+            ELSE website_visibility
+          END
+      `);
+      console.log("✅ [MIGRATE] Synced review approval and website visibility flags");
+
       const idxChecks = [
         { name: "idx_reviews_status", sql: "ALTER TABLE product_reviews ADD INDEX IF NOT EXISTS idx_reviews_status (review_status)" },
+        { name: "idx_reviews_public", sql: "ALTER TABLE product_reviews ADD INDEX IF NOT EXISTS idx_reviews_public (is_approved, show_on_website)" },
         { name: "idx_reviews_order", sql: "ALTER TABLE product_reviews ADD INDEX IF NOT EXISTS idx_reviews_order (order_id)" },
       ];
 
@@ -159,6 +180,7 @@ const ensureAdminTables = async () => {
   try {
     // Verify admin-related tables and migrations
     await ensureProductsColumns();
+    await ensureReviewsTable();
     console.log("✅ [MIGRATE] All admin migrations completed");
   } catch (error) {
     console.error("❌ [MIGRATE] Error in admin migrations:", error.message);

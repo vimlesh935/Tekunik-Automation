@@ -240,14 +240,16 @@ const listProducts = asyncHandler(async (req, res) => {
     const productIds = products.map((p) => p.id);
     let reviewStatsMap = {};
     if (productIds.length > 0) {
+      // Use individual placeholders for IN clause to avoid mysql2 parameter issues
+      const placeholders = productIds.map(() => '?').join(',');
       const statsRows = await query(
         `SELECT product_id,
           AVG(rating) AS avg_rating,
           COUNT(*) AS total_reviews
         FROM product_reviews
-        WHERE product_id IN (?) AND review_status = 'approved'
+        WHERE product_id IN (${placeholders}) AND is_approved = 1 AND show_on_website = 1
         GROUP BY product_id`,
-        [productIds]
+        productIds
       );
       statsRows.forEach((row) => {
         reviewStatsMap[row.product_id] = {
@@ -946,14 +948,15 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
     const productIds = products.map((p) => p.id);
     let reviewStatsMap = {};
     if (productIds.length > 0) {
+      const placeholders = productIds.map(() => '?').join(',');
       const statsRows = await query(
         `SELECT product_id,
           AVG(rating) AS avg_rating,
           COUNT(*) AS total_reviews
         FROM product_reviews
-        WHERE product_id IN (?) AND review_status = 'approved'
+        WHERE product_id IN (${placeholders}) AND is_approved = 1 AND show_on_website = 1
         GROUP BY product_id`,
-        [productIds]
+        productIds
       );
       statsRows.forEach((row) => {
         reviewStatsMap[row.product_id] = {

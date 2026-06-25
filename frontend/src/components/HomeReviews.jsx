@@ -15,8 +15,10 @@ export default function HomeReviews() {
       try {
         const res = await reviewService.getWebsiteReviews();
         const list = res?.data?.reviews || [];
-        const approved = list.filter((r) => r.review_status === "approved");
-        setReviews(approved);
+        const visibleReviews = list.filter(
+          (r) => r.is_approved === true && r.show_on_website === true,
+        );
+        setReviews(visibleReviews);
       } catch (err) {
         console.warn("Home reviews load failed:", err);
       } finally {

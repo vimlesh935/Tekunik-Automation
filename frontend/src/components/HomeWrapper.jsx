@@ -35,29 +35,58 @@ export default function HomeWrapper({ token }) {
         setLoading(true);
         setError(null);
 
-        const [prodRes, catRes] = await Promise.all([
-          productService.getAllProducts(1, 8).catch((err) => {
-            console.warn("Failed to load products:", err);
-            return { data: { products: [] } };
-          }),
-          categoryService.getAllCategories().catch((err) => {
-            console.warn("Failed to load categories:", err);
-            return { data: { categories: [] } };
-          }),
+        const [prodRes, catRes] = await Promise.allSettled([
+          productService.getAllProducts(1, 8),
+          categoryService.getAllCategories(),
         ]);
 
-        setFeaturedProducts(prodRes.data?.products?.slice(0, 8) || []);
+        // Handle products response with detailed logging
+        if (prodRes.status === 'fulfilled') {
+          const response = prodRes.value;
+          console.log("[HomeWrapper] Products API response:", JSON.stringify(response).slice(0, 500));
+          const products = response?.data?.products || response?.products || [];
+          console.log(`[HomeWrapper] Products found: ${products.length}`);
+          if (products.length > 0) {
+            setFeaturedProducts(products.slice(0, 8));
+          } else {
+            // Fallback 1: Try without featured filter (get any active products)
+            console.log("[HomeWrapper] No featured products, trying general product fetch...");
+            try {
+              const fallbackRes = await productService.getAllProducts(1, 8);
+              const fallbackProducts = fallbackRes?.data?.products || fallbackRes?.products || [];
+              console.log(`[HomeWrapper] Fallback products found: ${fallbackProducts.length}`);
+              setFeaturedProducts(fallbackProducts.slice(0, 8));
+            } catch (fbErr) {
+              console.error("[HomeWrapper] Fallback also failed:", fbErr);
+              setFeaturedProducts([]);
+            }
+          }
+        } else {
+          const reason = prodRes.reason;
+          console.error("[HomeWrapper] Failed to load products:", reason?.status, reason?.message);
+          // Show error page only for non-404 errors (404 just means no products)
+          if (reason?.status && reason?.status !== 404) {
+            setError(reason?.message || "Failed to load products");
+          }
+          setFeaturedProducts([]);
+        }
 
-        const dynamicCategories = (catRes.data?.categories || []).map((cat, i) => ({
-          ...cat,
-          icon: [
-            HomeIcon, Lock, Cpu, Lightbulb,
-            CircuitBoard, Camera, Wifi, Thermometer,
-          ][i % 8],
-          desc: cat.description || `Explore our ${cat.name} range`,
-        }));
-
-        setCategories(dynamicCategories);
+        // Handle categories response
+        if (catRes.status === 'fulfilled') {
+          const catData = catRes.value;
+          const dynamicCategories = (catData?.data?.categories || catData?.categories || []).map((cat, i) => ({
+            ...cat,
+            icon: [
+              HomeIcon, Lock, Cpu, Lightbulb,
+              CircuitBoard, Camera, Wifi, Thermometer,
+            ][i % 8],
+            desc: cat.description || `Explore our ${cat.name} range`,
+          }));
+          setCategories(dynamicCategories);
+        } else {
+          console.error("[HomeWrapper] Failed to load categories:", catRes.reason);
+          setCategories([]);
+        }
       } catch (error) {
         console.error("Failed to load home data:", error);
         setError("Failed to sync store parameters. Please reload.");

@@ -127,6 +127,13 @@ const apiCall = async (endpoint, options = {}) => {
       if (!response.ok) {
         const apiError = await normalizeApiError(response, payload || {});
         apiError.requestUrl = requestUrl;
+        if (response.status === 404) {
+          console.error("[API] Route not found", {
+            endpoint,
+            requestUrl,
+            method: options.method || "GET",
+          });
+        }
         throw apiError;
       }
 
@@ -449,6 +456,26 @@ export const reviewService = {
     if (status) params.set("status", status);
     return apiCall(`/api/admin/reviews?${params.toString()}`);
   },
+  approveReview: (reviewId, admin_notes = "Approved by admin") =>
+    apiCall(`/api/reviews/${reviewId}/approve`, {
+      method: "PUT",
+      body: JSON.stringify({ admin_notes }),
+    }),
+  rejectReview: (reviewId, admin_notes = "Rejected by admin") =>
+    apiCall(`/api/reviews/${reviewId}/reject`, {
+      method: "PUT",
+      body: JSON.stringify({ admin_notes }),
+    }),
+  showReviewOnWebsite: (reviewId) =>
+    apiCall(`/api/reviews/${reviewId}/show`, { method: "PUT" }),
+  hideReviewFromWebsite: (reviewId) =>
+    apiCall(`/api/reviews/${reviewId}/hide`, { method: "PUT" }),
+  getPublicReviews: (page = 1, limit = 20) => {
+    const params = new URLSearchParams();
+    params.set("page", page);
+    params.set("limit", limit);
+    return apiCall(`/api/reviews/public?${params.toString()}`);
+  },
 
   // Website Reviews
   createWebsiteReview: (data) =>
@@ -459,7 +486,7 @@ export const reviewService = {
   getMyWebsiteReview: () =>
     apiCall("/api/website-reviews/my"),
   getWebsiteReviews: () =>
-    apiCall("/api/website-reviews"),
+    apiCall("/api/reviews/public"),
   getAdminWebsiteReviews: (page = 1, limit = 20, status = "") => {
     const params = new URLSearchParams();
     params.set("page", page);
