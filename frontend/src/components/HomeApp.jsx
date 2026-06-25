@@ -18,25 +18,7 @@ export default function AppDownloadSection() {
             Download the Automate app to access all your devices remotely. Enjoy real-time notifications, camera feeds, and automated routines anywhere in the world.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button className="flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-white text-black hover:bg-gray-100 transition-colors group">
-              <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="fill-current text-black">
-                <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path>
-                <path d="M10 2c1 .5 2 2 2 3.5-1.5.5-3-.5-3-3.5Z"></path>
-              </svg>
-              <div className="text-left">
-                <p className="text-xs font-semibold uppercase tracking-wide">Download on the</p>
-                <p className="text-xl font-bold -mt-1">App Store</p>
-              </div>
-            </button>
-            <button className="flex items-center justify-center gap-3 px-6 py-4 rounded-xl glass border border-white/20 hover:bg-white/10 transition-colors group">
-              <Play className="w-8 h-8 fill-current text-white" />
-              <div className="text-left">
-                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary group-hover:text-white transition-colors">GET IT ON</p>
-                <p className="text-xl font-bold -mt-1">Google Play</p>
-              </div>
-            </button>
-          </div>
+        
         </motion.div>
 
         <motion.div
