@@ -116,13 +116,13 @@ const getRevenueAnalytics = asyncHandler(async (req, res) => {
 
   let dateFilter = "";
   if (period === "today") {
-    dateFilter = "WHERE DATE(created_at) = CURDATE() AND status = 'delivered'";
+    dateFilter = "WHERE DATE(o.created_at) = CURDATE() AND o.status = 'delivered'";
   } else if (period === "week") {
-    dateFilter = "WHERE YEARWEEK(created_at) = YEARWEEK(CURDATE()) AND status = 'delivered'";
+    dateFilter = "WHERE YEARWEEK(o.created_at) = YEARWEEK(CURDATE()) AND o.status = 'delivered'";
   } else if (period === "month") {
-    dateFilter = "WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE()) AND status = 'delivered'";
+    dateFilter = "WHERE MONTH(o.created_at) = MONTH(CURDATE()) AND YEAR(o.created_at) = YEAR(CURDATE()) AND o.status = 'delivered'";
   } else {
-    dateFilter = "WHERE status = 'delivered'";
+    dateFilter = "WHERE o.status = 'delivered'";
   }
 
   // Revenue by payment method
@@ -152,8 +152,8 @@ const getRevenueAnalytics = asyncHandler(async (req, res) => {
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     LEFT JOIN user_profiles up ON u.id = up.user_id
-    WHERE status = 'delivered'
-      AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    WHERE o.status = 'delivered'
+      AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
     ORDER BY o.created_at DESC
     LIMIT 20
   `);

@@ -3,9 +3,10 @@ const path = require("node:path");
 const express = require("express");
 const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
-const { ensureUsersOtpColumns, ensureAdminTables } = require("./src/config/migrate");
+const { ensureUsersOtpColumns } = require("./src/config/migrate");
+const { ensureAdminTables } = require("./src/config/migrate");
 const { ensureGuestOrderColumns, ensureEnquiriesTable } = require("./src/config/migrate");
-const { ensureOrderTrackingTable } = require("./src/config/orderMigration");
+const { ensureOrderTrackingTable, ensureOrderCancellationColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -183,6 +184,14 @@ const startServer = async () => {
     console.log("✅ [STARTUP] Order tracking tables ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Order tracking setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring order cancellation columns...");
+    await ensureOrderCancellationColumns();
+    console.log("✅ [STARTUP] Order cancellation columns ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Order cancellation columns setup failed:", error.message, "\n");
   }
 
   // Start HTTP server immediately

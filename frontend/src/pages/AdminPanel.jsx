@@ -136,7 +136,6 @@ function UserProfileModal({ show, user, onClose, onToggleStatus }) {
       shipped: "text-purple-400 bg-purple-500/10 border-purple-500/20",
       out_for_delivery: "text-orange-400 bg-orange-500/10 border-orange-500/20",
       delivered: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-      cancelled: "text-red-400 bg-red-500/10 border-red-500/20",
     };
     return colors[status] || "text-gray-400 bg-gray-500/10 border-gray-500/20";
   };
@@ -1825,7 +1824,7 @@ export default function AdminPanel() {
                   {/* Order status filter */}
                   <div className="flex flex-wrap items-center gap-3 p-4 border-b border-gray-800">
                     <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Filter:</span>
-                    {["all", "pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"].map(s => (
+                    {["all", "pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered"].map(s => (
                       <button key={s} onClick={() => { setPage(1); setOrderFilter(s === "all" ? "" : s); fetchOrders(1, s === "all" ? "" : s); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${orderFilter === s || (s === "all" && !orderFilter) ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "text-gray-400 hover:text-white bg-gray-800/50 border border-gray-700/50"}`}>
                         {s === "all" ? "All" : s.replace(/_/g, " ").charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ")}
@@ -1874,7 +1873,6 @@ export default function AdminPanel() {
                                 <option value="shipped">Shipped</option>
                                 <option value="out_for_delivery">Out for Delivery</option>
                                 <option value="delivered">Delivered</option>
-                                <option value="cancelled">Cancelled</option>
                               </select>
                             )}
                           </td>

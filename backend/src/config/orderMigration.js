@@ -1,115 +1,40 @@
 const { query } = require("./db");
 
-const hasColumn = async (tableName, columnName) => {
-  const columns = await query(`SHOW COLUMNS FROM ${tableName}`);
-  return columns.some((column) => column.Field === columnName);
-};
-
-const addColumnIfMissing = async (tableName, columnDefinition, columnName) => {
-  if (await hasColumn(tableName, columnName)) {
-    return;
-  }
-
-  await query(`ALTER TABLE ${tableName} ADD COLUMN ${columnDefinition}`);
-};
-
-const ensureOrderStatusEnum = async () => {
+const ensureOrderCancellationColumns = async () => {
   try {
-    await query(`
-      ALTER TABLE orders MODIFY COLUMN status 
-      ENUM('pending','confirmed','processing','packed','shipped','out_for_delivery','delivered','cancelled') 
-      NOT NULL DEFAULT 'pending'
-    `);
-  } catch (e) {
-    // Column may already have correct definition
-  }
-};
+    console.log("[MIGRATE] Checking order cancellation columns...");
 
-const ensureOrderTrackingTable = async () => {
-  try {
-    await ensureOrderStatusEnum();
-    const [trackingTable] = await query("SHOW TABLES LIKE 'order_tracking'");
-    if (!trackingTable) {
-      await query(`
-        CREATE TABLE IF NOT EXISTS order_tracking (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          order_id INT NOT NULL,
-          status VARCHAR(50) NOT NULL,
-          label VARCHAR(100) NOT NULL,
-          description TEXT NULL,
-          timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-          INDEX idx_tracking_order (order_id),
-          INDEX idx_tracking_status (status)
-        )
-      `);
-      console.log("✅ [ORDER MIGRATION] Created order_tracking table");
+    // Check and add cancelled_at
+    const [colCancelledAt] = await query("SHOW COLUMNS FROM orders LIKE 'cancelled_at'");
+    if (!colCancelledAt) {
+      await query(
+        "ALTER TABLE orders ADD COLUMN cancelled_at DATETIME NULL AFTER estimated_delivery"
+      );
+      console.log("✅ [MIGRATE] Added 'cancelled_at' column to orders table");
     }
 
-    await addColumnIfMissing("orders", "estimated_delivery DATE NULL AFTER notes", "estimated_delivery");
-    await addColumnIfMissing("orders", "invoice_number VARCHAR(50) NULL UNIQUE AFTER order_number", "invoice_number");
-    await addColumnIfMissing("orders", "tracking_number VARCHAR(50) NULL UNIQUE AFTER invoice_number", "tracking_number");
-    await addColumnIfMissing("orders", "admin_notes TEXT NULL AFTER notes", "admin_notes");
-    await addColumnIfMissing("orders", "guest_name VARCHAR(200) NULL AFTER user_id", "guest_name");
-    await addColumnIfMissing("orders", "guest_email VARCHAR(150) NULL AFTER guest_name", "guest_email");
-    await addColumnIfMissing("orders", "guest_phone VARCHAR(20) NULL AFTER guest_email", "guest_phone");
-    await addColumnIfMissing("orders", "delivery_address TEXT NULL AFTER total_amount", "delivery_address");
-    await addColumnIfMissing("orders", "guest_city VARCHAR(100) NULL AFTER delivery_address", "guest_city");
-    await addColumnIfMissing("orders", "guest_state VARCHAR(100) NULL AFTER guest_city", "guest_state");
-    await addColumnIfMissing("orders", "guest_pincode VARCHAR(20) NULL AFTER guest_state", "guest_pincode");
-    await addColumnIfMissing("orders", "user_email VARCHAR(150) NULL AFTER guest_email", "user_email");
+    // Check and add cancelled_by
+    const [colCancelledBy] = await query("SHOW COLUMNS FROM orders LIKE 'cancelled_by'");
+    if (!colCancelledBy) {
+      await query(
+        "ALTER TABLE orders ADD COLUMN cancelled_by VARCHAR(50) NULL AFTER cancelled_at"
+      );
+      console.log("✅ [MIGRATE] Added 'cancelled_by' column to orders table");
+    }
 
-    console.log("✅ [ORDER MIGRATION] Order schema verification completed");
+    // Check and add cancel_reason
+    const [colCancelReason] = await query("SHOW COLUMNS FROM orders LIKE 'cancel_reason'");
+    if (!colCancelReason) {
+      await query(
+        "ALTER TABLE orders ADD COLUMN cancel_reason TEXT NULL AFTER cancelled_by"
+      );
+      console.log("✅ [MIGRATE] Added 'cancel_reason' column to orders table");
+    }
+
+    console.log("✅ [MIGRATE] Order cancellation columns ready");
   } catch (error) {
-    console.error("❌ [ORDER MIGRATION] Error:", error.message);
+    console.warn("⚠️ [MIGRATE] Could not ensure order cancellation columns:", error.message);
   }
 };
 
-/**
- * Generate a tracking number like TRK-2026-874521
- * Format: TRK-YYYY-XXXXXX (year + random digits)
- */
-const generateTrackingNumber = () => {
-  const year = new Date().getFullYear();
-  const randomPart = Math.floor(100000 + Math.random() * 900000);
-  return `TRK-${year}-${randomPart}`;
-};
-
-const getTrackingSteps = (status) => {
-  const steps = [
-    { status: "pending", label: "Order Confirmed", description: "Your order has been placed and is awaiting confirmation", icon: "check" },
-    { status: "confirmed", label: "Confirmed", description: "Your order has been confirmed and is being processed", icon: "check" },
-    { status: "processing", label: "Processing", description: "Your items are being processed", icon: "package" },
-    { status: "packed", label: "Packed", description: "Your items are packed and ready for shipping", icon: "package" },
-    { status: "shipped", label: "Shipped", description: "Your package has been shipped and is on its way", icon: "truck" },
-    { status: "out_for_delivery", label: "Out for Delivery", description: "Your package is out for delivery today", icon: "map-pin" },
-    { status: "delivered", label: "Delivered", description: "Your package has been delivered successfully", icon: "check-circle" },
-  ];
-
-  const statusOrder = ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered"];
-  const currentIndex = statusOrder.indexOf(status);
-
-  return steps.map((step, index) => ({
-    ...step,
-    completed: index <= currentIndex,
-    active: index === currentIndex,
-    stepNumber: index + 1,
-  }));
-};
-
-const getEstimatedDelivery = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + 5); // 5 business days
-  // Adjust for weekends
-  if (date.getDay() === 0) date.setDate(date.getDate() + 1);
-  if (date.getDay() === 6) date.setDate(date.getDate() + 2);
-  return date.toISOString().split("T")[0];
-};
-
-module.exports = {
-  ensureOrderTrackingTable,
-  getTrackingSteps,
-  getEstimatedDelivery,
-  generateTrackingNumber,
-};
+module.exports = { ensureOrderCancellationColumns };

@@ -959,7 +959,7 @@ const cancelOrder = asyncHandler(async (req, res) => {
   }
 
   await query(
-    "UPDATE orders SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = 'customer', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    "UPDATE orders SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = 'customer', cancel_reason = 'Cancelled by customer', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     [orderId],
   );
 

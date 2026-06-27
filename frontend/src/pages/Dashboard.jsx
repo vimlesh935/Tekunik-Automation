@@ -82,6 +82,7 @@ export default function Dashboard() {
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
 useEffect(() => {
      loadDashboardData();
@@ -251,6 +252,7 @@ useEffect(() => {
   const handleSubmitReview = async () => {
     if (!selectedProduct || !rating || !reviewOrder) return;
     setSubmittingReview(true);
+    setReviewSuccess(false);
 
     try {
       await reviewService.createReview({
@@ -260,8 +262,12 @@ useEffect(() => {
         review_title: reviewTitle.trim() || null,
         review_message: reviewMessage.trim() || null,
       });
+      setReviewSuccess(true);
       showNotification("Review submitted successfully and is pending approval.", "success");
-      setShowReviewModal(false);
+      setTimeout(() => {
+        setShowReviewModal(false);
+        setReviewSuccess(false);
+      }, 1200);
     } catch (error) {
       showNotification(error?.message || "Failed to submit review", "error");
     } finally {
@@ -1058,18 +1064,25 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={handleSubmitReview}
-                  disabled={!rating || !selectedProduct || submittingReview || reviewProducts.length === 0}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-[12px] bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(245,158,11,0.2)] transition-all duration-300 hover:from-amber-400 hover:to-orange-400 hover:shadow-[0_6px_28px_rgba(245,158,11,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700"
+                  disabled={!rating || !selectedProduct || submittingReview || reviewProducts.length === 0 || reviewSuccess}
+                  className="motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] flex-1 inline-flex items-center justify-center gap-2 rounded-[12px] bg-blue-600 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(37,99,235,0.25)] transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submittingReview ? (
+                  {reviewSuccess ? (
                     <>
-                      <Loader size={16} className="animate-spin" />
-                      Submitting...
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-current">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
+                      <span>Review Submitted Successfully</span>
+                    </>
+                  ) : submittingReview ? (
+                    <>
+                      <span className="inline-flex h-5 w-5 animate-spin rounded-full border-[2px] border-current border-t-transparent" />
+                      <span className="tabular-nums tracking-wide">Submitting Review...</span>
                     </>
                   ) : (
                     <>
-                      <Star size={15} className="fill-white" />
-                      Submit Review
+                      <Star size={15} className="fill-white/90" />
+                      <span>Submit Review</span>
                     </>
                   )}
                 </button>

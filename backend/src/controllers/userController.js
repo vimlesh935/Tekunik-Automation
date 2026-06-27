@@ -41,7 +41,7 @@ const updateProfile = asyncHandler(async (req, res) => {
        phone = VALUES(phone),
        address = VALUES(address),
        city = VALUES(city)`,
-    [userId, first_name || "User", last_name || "-", phone || null, address || null, city || null]
+    [userId, (first_name && String(first_name)) || "User", (last_name && String(last_name)) || "-", (phone && String(phone)) || null, (address && String(address)) || null, (city && String(city)) || null]
   );
 
   // Fetch updated profile

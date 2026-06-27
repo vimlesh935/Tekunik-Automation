@@ -310,12 +310,6 @@ html[data-theme="light"] .bg-gray-900\/50 {
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
 
-/* ── Input focus ring ── */
-.input-field {
-  @apply w-full bg-white/[0.05] border border-white/[0.08] rounded-xl text-white placeholder-gray-500
-         focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/15 outline-none transition-all duration-200;
-}
-
 /* ── Card hover lift ── */
 .card-hover {
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
@@ -353,4 +347,56 @@ html[data-theme="light"] .bg-gray-900\/50 {
   .border-border-color {
     border-color: rgba(255, 255, 255, 0.08);
   }
+}
+
+/* ── Unified Inputs ── */
+.input-field {
+  @apply w-full h-14 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white
+         placeholder-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all duration-300;
+}
+.input-field-error {
+  @apply border-red-500/60 focus:border-red-500 focus:ring-red-500/10;
+}
+
+/* ── Unified Buttons ── */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all duration-300;
+}
+.btn-primary {
+  @apply btn h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_4px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-secondary {
+  @apply btn h-12 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-danger {
+  @apply btn h-12 px-6 bg-red-600 hover:bg-red-500 text-white shadow-[0_4px_20px_rgba(220,38,38,0.25)] hover:shadow-[0_8px_30px_rgba(220,38,38,0.35)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-ghost {
+  @apply btn h-12 px-6 bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700/60 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* ── Unified Cards ── */
+.card {
+  @apply rounded-xl border border-slate-800/80 bg-slate-900/80 shadow-xl;
+}
+.card-body {
+  @apply p-5 sm:p-7;
+}
+
+/* ── Unified Page Container ── */
+.page-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+/* ── Unified Form Labels ── */
+.form-label {
+  @apply block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2;
+}
+
+/* ── Unified Section Heading ── */
+.section-heading {
+  @apply text-lg sm:text-xl font-bold text-white tracking-tight;
+}
+.section-subheading {
+  @apply text-xs sm:text-sm text-slate-400 font-medium mt-1;
 }

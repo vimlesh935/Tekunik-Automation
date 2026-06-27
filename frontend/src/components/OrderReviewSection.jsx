@@ -10,6 +10,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
     review_images: [],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [reviewStatus, setReviewStatus] = useState({});
@@ -73,6 +74,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
     if (!reviewForm.rating) return alert("Please select a rating.");
 
     setSubmitting(true);
+    setSubmitted(false);
     try {
       const payload = {
         order_id: order.id,
@@ -87,15 +89,18 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
       }
 
       await reviewService.createReview(payload);
+      setSubmitted(true);
       setReviewStatus((prev) => ({
         ...prev,
         [productId]: { status: "pending" },
       }));
-      setOpenProductId(null);
+      setTimeout(() => {
+        setOpenProductId(null);
+        setSubmitted(false);
+      }, 1200);
       setReviewForm({ rating: 0, review_title: "", review_message: "", review_images: [] });
       setImagePreview("");
       setImageFile(null);
-      alert("Thank you. Your review has been submitted and is awaiting admin approval.");
       if (onReviewSubmit) onReviewSubmit();
     } catch (err) {
       alert(err.message || "Failed to submit review");
@@ -200,10 +205,27 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || !reviewForm.rating}
-                  className="px-4 py-2 bg-cyan-500 text-black rounded-lg hover:bg-cyan-400 transition text-sm font-semibold disabled:opacity-50"
+                  disabled={submitting || !reviewForm.rating || submitted}
+                  className="motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] inline-flex items-center justify-center gap-2 rounded-[12px] bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_20px_rgba(37,99,235,0.25)] transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submitting ? "Submitting..." : "Submit Review"}
+                  {submitted ? (
+                    <>
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border-2 border-current">
+                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
+                      <span>Review Submitted Successfully</span>
+                    </>
+                  ) : submitting ? (
+                    <>
+                      <span className="inline-flex h-4 w-4 animate-spin rounded-full border-[2px] border-current border-t-transparent" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Star size={14} className="fill-white/90" />
+                      <span>Submit Review</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
