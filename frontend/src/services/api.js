@@ -256,6 +256,12 @@ export const productService = {
     params.set("limit", limit);
     return apiCall(`/api/products?${params.toString()}`);
   },
+  smartSearch: (query, limit = 8) => {
+    const params = new URLSearchParams();
+    params.set("q", query || "");
+    params.set("limit", limit);
+    return apiCall(`/api/products/search?${params.toString()}`);
+  },
   getProductsByCategory: (categoryId, page = 1, limit = 12) =>
     apiCall(
       `/api/products?category_id=${categoryId}&page=${page}&limit=${limit}`,
@@ -526,6 +532,27 @@ export const demoEnquiryService = {
       throw primaryError;
     }
   },
+};
+
+// ─────────────────────────────────────────────────────────────
+// EMAIL VALIDATION SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const emailValidationService = {
+  validateEmail: (email) =>
+    apiCall("/api/validation/email", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  validateEmailFormat: (email) =>
+    apiCall(`/api/validation/email/format?email=${encodeURIComponent(email)}`),
+
+  validateEmailsBatch: (emails) =>
+    apiCall("/api/validation/email/batch", {
+      method: "POST",
+      body: JSON.stringify({ emails }),
+    }),
 };
 
 // ─────────────────────────────────────────────────────────────

@@ -30,6 +30,15 @@ const clearUserCart = async (userId) => {
 const ALLOWED_PAYMENT_METHODS = ["cod", "online", "card", "upi"];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[+()\-\.\s\d]{7,20}$/;
+const REQUIRED_CHECKOUT_FIELDS = [
+  "full_name",
+  "email",
+  "phone",
+  "address",
+  "city",
+  "state",
+  "pincode",
+];
 
 const normalizeCustomer = (customer = {}) => ({
   full_name: String(customer.full_name || "").trim(),
@@ -61,18 +70,29 @@ const validateCheckoutRequest = (items, customer, payment_method) => {
   }
 
   const normalizedCustomer = normalizeCustomer(customer);
-  const requiredFields = [
-    "full_name",
-    "email",
-    "phone",
-    "address",
-    "city",
-    "state",
-    "pincode",
-  ];
+  console.log("[ORDER][EmailValidation] Backend received email:", customer.email);
+  console.log("[ORDER][EmailValidation] Email after trim():", String(customer.email || "").trim());
+  console.log("[ORDER][EmailValidation] Email after trim()+lowercase:", normalizedCustomer.email);
+  const requiredFieldState = REQUIRED_CHECKOUT_FIELDS.map((field) => ({
+    field,
+    value: customer[field],
+    normalizedValue: normalizedCustomer[field],
+    isUndefined: customer[field] === undefined,
+    isNull: customer[field] === null,
+    isEmptyString: customer[field] === "",
+    isWhitespaceOnly:
+      typeof customer[field] === "string" &&
+      customer[field].length > 0 &&
+      String(customer[field]).trim().length === 0,
+    missing: !normalizedCustomer[field],
+  }));
+  console.log("[ORDER][RequiredFields] Received customer:", JSON.stringify(customer));
+  console.table(requiredFieldState);
 
-  for (const field of requiredFields) {
+  for (const field of REQUIRED_CHECKOUT_FIELDS) {
     if (!normalizedCustomer[field]) {
+      console.log("[ORDER][RequiredFields] Missing field name:", field);
+      console.log("[ORDER][RequiredFields] Validation result:", false);
       throw new AppError(
         "Please complete all required checkout fields",
         400,
@@ -80,14 +100,21 @@ const validateCheckoutRequest = (items, customer, payment_method) => {
       );
     }
   }
+  console.log("[ORDER][RequiredFields] Missing field name:", null);
+  console.log("[ORDER][RequiredFields] Validation result:", true);
 
-  if (!EMAIL_REGEX.test(normalizedCustomer.email)) {
+  const emailRegexResult = EMAIL_REGEX.test(normalizedCustomer.email);
+  console.log("[ORDER][EmailValidation] Regex result:", emailRegexResult);
+
+  if (!emailRegexResult) {
+    console.log("[ORDER][EmailValidation] Final validation result:", false);
     throw new AppError(
       "Please enter a valid email address",
       400,
       "VALIDATION_ERROR",
     );
   }
+  console.log("[ORDER][EmailValidation] Final validation result:", true);
 
   if (!PHONE_REGEX.test(normalizedCustomer.phone)) {
     throw new AppError(
@@ -122,11 +149,13 @@ const validateCheckoutRequest = (items, customer, payment_method) => {
 const createOrder = asyncHandler(async (req, res) => {
   let user_id = req.user?.id || null;
   const { items, customer, payment_method } = req.body;
+  console.log("[ORDER] Request payload:", JSON.stringify(req.body));
 
   const {
     customer: normalizedCustomer,
     payment_method: normalizedPaymentMethod,
   } = validateCheckoutRequest(items, customer, payment_method);
+  console.log("[ORDER] Checkout data:", JSON.stringify({ items, customer, payment_method }));
 
   try {
     await ensureOrderTrackingTable();

@@ -3,8 +3,8 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { getApiUrl } from "../../services/api";
 import {
   TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users,
-  Package, AlertTriangle, Clock, Activity, Zap, Eye,
-  RefreshCw, Calendar, ChevronDown, ChevronUp
+  Package, AlertTriangle, Clock, Zap,
+  RefreshCw
 } from "lucide-react";
 
 // ─── Pro‑Level SVG Sparkline ───────────────────────────────────────────
@@ -406,40 +406,60 @@ export default function DashboardAnalytics({ toast, fetchData, refreshInterval =
     return json.data || json;
   }, [token]);
 
-  const loadAllData = useCallback(async () => {
+  const loadAllData = useCallback(async (range) => {
     try {
       setError(null);
-      const [stats, revenueAnalytics, orderAnalytics, invDash] = await Promise.all([
-        apiCall("/api/admin/dashboard/stats").catch(() => ({ stats: null, recentOrders: [], recentUsers: [] })),
-        apiCall("/api/admin/dashboard/revenue-analytics").catch(() => ({ dailyRevenue: [], summary: null })),
-        apiCall("/api/admin/dashboard/order-analytics").catch(() => ({})),
+      const rangeParam = range || timeRange;
+      const queryStr = rangeParam !== "all" ? `?range=${rangeParam}` : "";
+      const [analytics, invDash] = await Promise.all([
+        apiCall(`/api/admin/dashboard/analytics${queryStr}`).catch(() => ({
+          stats: null, summary: null, dailyRevenue: [], last30Days: null,
+          recentOrders: [], recentUsers: [], topProducts: []
+        })),
         apiCall("/api/admin/inventory/dashboard").catch(() => ({ alertProducts: [], recentUpdates: [] })),
       ]);
 
       setData({
-        stats: stats.stats || null,
-        revenueAnalytics: revenueAnalytics || null,
-        orderAnalytics: orderAnalytics || null,
+        stats: analytics?.stats || null,
+        revenueAnalytics: {
+          dailyRevenue: analytics?.dailyRevenue || [],
+          summary: analytics?.summary || null,
+        },
+        orderAnalytics: analytics?.stats ? {
+          deliveredOrders: analytics.stats.deliveredOrders || 0,
+          pendingOrders: analytics.stats.pendingOrders || 0,
+          cancelledOrders: analytics.stats.cancelledOrders || 0,
+          outForDelivery: analytics.stats.outForDelivery || 0,
+          revenue: analytics.stats.revenue || 0,
+          last30Days: analytics?.last30Days || { deliveredOrders: 0, cancelledOrders: 0, revenue: 0 },
+        } : null,
         inventoryAlerts: invDash?.alertProducts || [],
-        activeUsers: stats.recentUsers || [],
-        recentOrders: stats.recentOrders || [],
+        activeUsers: analytics?.recentUsers || [],
+        recentOrders: analytics?.recentOrders || [],
       });
     } catch (err) {
       setError(err.message);
       console.error("Dashboard analytics error:", err);
     }
     setLoading(false);
-  }, [apiCall]);
+  }, [apiCall, timeRange]);
 
   useEffect(() => {
+    setLoading(true);
     loadAllData();
-    intervalRef.current = setInterval(loadAllData, refreshInterval);
+    intervalRef.current = setInterval(() => loadAllData(), refreshInterval);
     return () => clearInterval(intervalRef.current);
   }, [loadAllData, refreshInterval]);
 
   const handleRefresh = () => {
     setLoading(true);
     loadAllData().then(() => setLoading(false));
+  };
+
+  const handleTimeRangeChange = (range) => {
+    setTimeRange(range);
+    setLoading(true);
+    loadAllData(range);
   };
 
   const stats = data.stats;
@@ -466,12 +486,6 @@ export default function DashboardAnalytics({ toast, fetchData, refreshInterval =
     { label: "Active Days", value: revenueAnalytics.summary.active_days || 0 },
   ] : [];
 
-  // Derive monthly data (from last 14 days dailyRevenue, extrapolate to monthly)
-  const monthlyRevenue = dailyRevenue.length > 0
-    ? dailyRevenue.reduce((sum, d) => sum + d.value, 0) * (30 / Math.max(dailyRevenue.length, 1))
-    : 0;
-
-  const newSalesCount = data.recentOrders?.length || 0;
   const revenueChange = stats?.revenue ? ((parseFloat(revenueAnalytics?.summary?.total_revenue || 0) / stats.revenue) - 1) * 100 : 0;
   const orderChange = orderAnalytics?.last30Days?.deliveredOrders
     ? ((orderAnalytics.last30Days.deliveredOrders / Math.max(stats?.totalOrders || 1, 1)) * 100) : 0;
@@ -528,7 +542,7 @@ export default function DashboardAnalytics({ toast, fetchData, refreshInterval =
         <div className="flex items-center gap-3">
           <div className="flex rounded-xl bg-gray-900/80 border border-gray-800 overflow-hidden">
             {["today", "week", "month", "all"].map((range) => (
-              <button key={range} onClick={() => setTimeRange(range)}
+              <button key={range} onClick={() => handleTimeRangeChange(range)}
                 className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition
                   ${timeRange === range ? 'bg-cyan-500/10 text-cyan-400 border-r border-gray-800' : 'text-gray-500 hover:text-gray-300 border-r border-gray-800 last:border-r-0'}`}>
                 {range === "all" ? "All" : range.charAt(0).toUpperCase() + range.slice(1)}
@@ -543,19 +557,13 @@ export default function DashboardAnalytics({ toast, fetchData, refreshInterval =
       </div>
 
       {/* Row 1: Core Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <StatCard label="Total Revenue" value={stats?.revenue || 0} prefix="₹"
           change={revenueChange}
           changeLabel="vs total revenue"
           icon={DollarSign} color="#06b6d4"
           chartData={RevenueSparkline}
           subtitle="Lifetime delivered orders" />
-
-        <StatCard label="Monthly Revenue" value={monthlyRevenue} prefix="₹"
-          change={dailyRevenue.length > 0 ? ((dailyRevenue[dailyRevenue.length-1]?.value / Math.max(dailyRevenue[0]?.value, 1)) - 1) * 100 : 0}
-          changeLabel="projected from daily avg"
-          icon={TrendingUp} color="#10b981"
-          subtitle="Current month projection" />
 
         <StatCard label="Active Users" value={activeUserCount}
           change={data.activeUsers?.length ? ((activeUserCount / data.activeUsers.length) * 100) : 0}
@@ -571,34 +579,10 @@ export default function DashboardAnalytics({ toast, fetchData, refreshInterval =
           subtitle="All time" />
       </div>
 
-      {/* Row 2: Charts Grid */}
+      {/* Row 2: Order Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Revenue Chart */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900/60 to-gray-950/60 border border-gray-800/60 rounded-[1.75rem] p-6 transition-all hover:border-gray-700/60">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Activity size={16} className="text-cyan-400" />
-                Daily Revenue
-              </h3>
-              <p className="text-[10px] text-gray-600 mt-1">Last 14 days · Delivered orders only</p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              Revenue (₹)
-            </div>
-          </div>
-          <div className="h-56">
-            {dailyRevenue.length > 0 ? (
-              <BarChart data={dailyRevenue} height={220} color="#06b6d4" />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-600 text-sm">No revenue data yet</div>
-            )}
-          </div>
-        </div>
-
         {/* Order Distribution Donut */}
-        <div className="bg-gradient-to-br from-gray-900/60 to-gray-950/60 border border-gray-800/60 rounded-[1.75rem] p-6 transition-all hover:border-gray-700/60">
+        <div className="lg:col-span-3 bg-gradient-to-br from-gray-900/60 to-gray-950/60 border border-gray-800/60 rounded-[1.75rem] p-6 transition-all hover:border-gray-700/60">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">

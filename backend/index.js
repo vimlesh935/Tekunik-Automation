@@ -37,6 +37,7 @@ const userRoutes = require("./src/routes/userRoutes");
 const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const demoEnquiryRoutes = require("./src/routes/demoEnquiryRoutes");
+const validationRoutes = require("./src/routes/validationRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -167,6 +168,7 @@ app.use(cartRoutes);
 app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
 app.use(demoEnquiryRoutes);
+app.use(validationRoutes);
 app.use("/api/admin/upload", uploadRoutes);
 
 // Static files

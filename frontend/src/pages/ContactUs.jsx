@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 
 const VIOLET = "#7C3AED";
 const CYAN = "#06B6D4";
@@ -618,9 +619,12 @@ export default function ContactUs() {
                         label="Full Name" name="full_name" value={formData.full_name}
                         onChange={handleChange} placeholder="Your full name" required
                       />
-                      <FloatingInput
-                        label="Email" name="email" type="email" value={formData.email}
-                        onChange={handleChange} placeholder="your@email.com" required
+                      <ValidatedEmailInput
+                        label="Email"
+                        value={formData.email}
+                        onChange={(e) => handleChange(e)}
+                        placeholder="your@email.com"
+                        required
                       />
                       <FloatingInput
                         label="Phone" name="phone" type="tel" value={formData.phone}

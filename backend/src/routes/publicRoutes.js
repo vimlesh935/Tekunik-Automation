@@ -5,6 +5,7 @@ const {
 const {
   listProducts,
   getProduct,
+  searchProducts,
 } = require("../controllers/productController");
 const { submitContactForm } = require("../controllers/contactController");
 
@@ -44,6 +45,12 @@ router.get("/api/products/featured", (req, res, next) => {
   };
   return listProducts(request, res, next);
 });
+
+/**
+ * GET /api/products/search?q=keyword - Public: smart search suggestions
+ * MUST be defined BEFORE /api/products/:id to avoid :id catching "search" as a param
+ */
+router.get("/api/products/search", searchProducts);
 
 /**
  * GET /api/products/:id - Public single product (active only)

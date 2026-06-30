@@ -8,17 +8,19 @@
     "prod": "NODE_ENV=production node index.js"
   },
   "dependencies": {
+    "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.22.3",
     "nodemailer": "^9.0.1",
-    "pdfkit": "^0.18.0"
+    "pdfkit": "^0.18.0",
+    "validator": "^13.15.35"
   }
 }

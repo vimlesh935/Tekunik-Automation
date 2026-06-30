@@ -20,16 +20,17 @@ import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { productService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
+import SmartSearch from "../components/SmartSearch.jsx";
 
 export default function Navbar() {
   const { isAuthenticated: token, logout } = useAuth();
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
+  const [smartSearchOpen, setSmartSearchOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,50 +42,20 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileOpen(false);
-    setSuggestions([]); // Clear suggestions on route changes
   }, [location.pathname]);
 
-  // Live Query Search Suggestion Effect
-  useEffect(() => {
-    if (!query.trim()) {
-      setSuggestions([]);
-      return;
-    }
-
-    const delayDebounceFn = setTimeout(async () => {
-      try {
-        const response = await productService.getAllProducts(
-          1,
-          5,
-          query.trim(),
-          "",
-        );
-        if (response?.data?.products) {
-          setSuggestions(response.data.products);
-        } else {
-          setSuggestions([]);
-        }
-      } catch (error) {
-        console.warn("Search suggestion lookup failed:", error);
-        setSuggestions([]);
-      }
-    }, 300); // Debounce to prevent server flooding
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [query]);
+  const handleSearchIconClick = () => {
+    setSmartSearchOpen(true);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    navigate(`/shop?search=${encodeURIComponent(query.trim())}`);
     setQuery("");
-    setSuggestions([]);
-    setSearchExpanded(false);
+    setSmartSearchOpen(false);
   };
 
-  const handleSearchIconClick = () => {
-    setSearchExpanded(true);
-  };
 
   const handleSearchBlur = () => {
     if (!query.trim()) {
@@ -92,13 +63,27 @@ export default function Navbar() {
     }
   };
 
-  const navLinks = [
+  const handleSmartSearchClose = () => {
+    setSmartSearchOpen(false);
+  };
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setSearchExpanded(false);
+        setSmartSearchOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, []);
+
+  const baseNavLinks = [
     { path: "/", label: "Home" },
     { path: "/shop", label: "Shop" },
     { path: "/about", label: "About Us" },
     { path: "/contact", label: "Contact Us" },
     { path: "/track-order", label: "Track Order" },
-    ...(token ? [{ path: "/dashboard", label: "Dashboard" }] : []),
   ];
 
   const { itemCount } = useCart();
@@ -128,153 +113,76 @@ export default function Navbar() {
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
-          {/* Logo Brand Frame */}
-          <Link
-            to="/"
-            className="flex items-center gap-2.5 group flex-shrink-0"
-          >
-            <motion.div
-              whileHover={{ rotate: 15, scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+          {/* LEFT SECTION: Logo + Navigation Links */}
+          <div className="nav-left flex items-center gap-6">
+            {/* Logo Brand Frame */}
+            <Link
+              to="/"
+              className="flex items-center gap-2.5 group flex-shrink-0"
             >
-              <Zap size={16} className="text-white fill-white" />
-            </motion.div>
-            <span className="text-xl font-black text-white tracking-tight">
-              Tek<span className="text-indigo-400 bg-clip-text">Node</span>
-            </span>
-          </Link>
+              <motion.div
+                whileHover={{ rotate: 15, scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+              >
+                <Zap size={16} className="text-white fill-white" />
+              </motion.div>
+              <span className="text-xl font-black text-white tracking-tight">
+                Tek<span className="text-indigo-400 bg-clip-text">Node</span>
+              </span>
+            </Link>
 
-          {/* Search Box Component with Contextual Suggestion Node Dropdown */}
-          <div className="hidden md:flex items-center relative z-50">
-            <AnimatePresence>
-              {searchExpanded ? (
-                <motion.form
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 280, opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  onSubmit={handleSearch}
-                  className="flex items-center overflow-hidden"
-                  onBlur={handleSearchBlur}
+            {/* Premium Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {baseNavLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`relative px-4 py-2 text-sm font-bold tracking-wide transition-colors duration-300 rounded-lg ${
+                    isActive(link.path)
+                      ? "text-indigo-400"
+                      : "text-slate-400 hover:text-white"
+                  }`}
                 >
-                  <div className="relative flex items-center w-full">
-                    <div className="absolute left-3 pointer-events-none text-slate-500">
-                      <Search size={14} />
-                    </div>
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search products..."
-                      className="w-full rounded-l-xl border border-slate-900 bg-slate-900/40 py-2 pl-9 pr-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-slate-900/80 transition-all"
-                      autoFocus
-                    />
-                    <button
-                      type="submit"
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white h-[34px] px-4 rounded-r-xl text-xs font-bold tracking-wider uppercase transition-all border-y border-r border-indigo-600"
+                  <span className="relative z-10">{link.label}</span>
+                  {isActive(link.path) && (
+                    <motion.span
+                      layoutId="activeNavIndicator"
+                      className="absolute inset-0 bg-indigo-500/5 rounded-lg border border-indigo-500/10"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     >
-                      Search
-                    </button>
-                  </div>
-                </motion.form>
-              ) : (
-                <motion.button
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                      <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" />
+                    </motion.span>
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* CENTER SECTION: Smart Search */}
+          <div className="nav-center hidden lg:flex items-center justify-center flex-1 px-4">
+            <div className="relative w-[170px]">
+              <SmartSearch
+                isOpen={smartSearchOpen}
+                onClose={handleSmartSearchClose}
+                query={query}
+                onQueryChange={setQuery}
+              />
+              {!smartSearchOpen && (
+                <button
                   onClick={handleSearchIconClick}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/50 transition-all"
+                  className="w-full h-9 rounded-full border border-slate-700/50 bg-slate-900/40 text-slate-400 hover:text-white hover:border-slate-600 flex items-center gap-2 pl-3 pr-3 transition-all duration-200 group"
                   type="button"
                 >
-                  <Search size={18} />
-                </motion.button>
+                  <Search size={14} className="text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                  <span className="text-[11px] font-medium tracking-wide">Search...</span>
+                </button>
               )}
-            </AnimatePresence>
-
-              {/* Suggestions Overlay Array */}
-              <AnimatePresence>
-                {suggestions.length > 0 && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setSuggestions([])} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 5, scale: 0.98 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute left-0 right-0 mt-2 rounded-2xl bg-slate-900 border border-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-2 z-50 max-h-[380px] overflow-y-auto backdrop-blur-xl divide-y divide-slate-800/50"
-                    >
-                      <div className="px-4 py-1.5 bg-slate-950/40 mb-1">
-                        <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">
-                          Matched Architecture Nodules
-                        </p>
-                      </div>
-                      {suggestions.map((product) => (
-                        <div
-                          key={product.id}
-                          onClick={() => {
-                            navigate(`/product/${product.id}`);
-                            setQuery("");
-                            setSuggestions([]);
-                          }}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/60 transition-colors duration-150 cursor-pointer text-left group"
-                        >
-                          <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 group-hover:border-slate-700 transition-colors">
-                            {product.image_url ? (
-                              <SafeImage
-                                src={product.image_url}
-                                alt={product.name}
-                                className="w-full h-full object-contain p-1"
-                                fallback={<Cpu size={16} className="text-slate-700" />}
-                              />
-                            ) : (
-                              <Cpu size={16} className="text-slate-700" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-indigo-400 uppercase tracking-widest text-[9px] block mb-0.5">
-                              {product.category_name || "IoT Component"}
-                            </p>
-                            <h4 className="text-xs font-bold text-slate-200 group-hover:text-white truncate transition-colors">
-                              {product.name}
-                            </h4>
-                          </div>
-                        </div>
-                      ))}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
             </div>
+          </div>
 
-          {/* Premium Desktop Navigation Bar Layout */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`relative px-4 py-2 text-sm font-bold tracking-wide transition-colors duration-300 rounded-lg ${
-                  isActive(link.path)
-                    ? "text-indigo-400"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <span className="relative z-10">{link.label}</span>
-                {isActive(link.path) && (
-                  <motion.span
-                    layoutId="activeNavIndicator"
-                    className="absolute inset-0 bg-indigo-500/5 rounded-lg border border-indigo-500/10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  >
-                    <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" />
-                  </motion.span>
-                )}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right Action Stack */}
-          <div className="flex items-center gap-3.5">
+          {/* RIGHT SECTION: Auth Actions + Cart + Mobile Menu */}
+          <div className="nav-right flex items-center gap-3.5">
             {/* Authenticated User Floating Dropdown Menu */}
             {token && (
               <div className="relative">
@@ -334,7 +242,7 @@ export default function Navbar() {
                 to="/login"
                 className="text-xs font-bold tracking-wide uppercase text-slate-400 hover:text-indigo-400 transition-colors px-2.5 py-2"
               >
-                Sign In
+                Login
               </Link>
             )}
 
@@ -391,12 +299,19 @@ export default function Navbar() {
           >
             <div className="px-4 py-5 space-y-2">
               {/* Mobile Input Search Integration */}
-              <form onSubmit={handleSearch} className="mb-4">
+              <div className="mb-4">
+                <SmartSearch
+                  isOpen={mobileOpen}
+                  onClose={() => setMobileOpen(false)}
+                  query={query}
+                  onQueryChange={setQuery}
+                />
+                <form onSubmit={handleSearch} className="mt-3">
                   <div className="relative flex items-center">
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search engineering frameworks..."
+                      placeholder="Search products..."
                       className="w-full rounded-l-xl border border-slate-900 bg-slate-900 py-2 pl-4 pr-4 text-xs text-white focus:outline-none focus:border-indigo-500/40"
                     />
                     <button
@@ -407,8 +322,9 @@ export default function Navbar() {
                     </button>
                   </div>
                 </form>
+              </div>
 
-              {navLinks.map((link) => (
+              {baseNavLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
