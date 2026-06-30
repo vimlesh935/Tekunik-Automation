@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import {
   Mail,
   Loader,
@@ -13,8 +12,6 @@ import {
   AlertTriangle,
   Zap,
 } from "lucide-react";
-=======
->>>>>>> 2f71973bf81d6d0c50f58dc20361e240c2e0c829
 import { authService } from "../services/api";
 import AuthInput from "../components/AuthInput.jsx";
 
@@ -247,11 +244,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-<<<<<<< HEAD
-=======
   const [btnHover, setBtnHover] = useState(false);
   const [backHover, setBackHover] = useState(false);
->>>>>>> 2f71973bf81d6d0c50f58dc20361e240c2e0c829
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -296,36 +290,6 @@ export default function Register() {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-page text-primary font-sans antialiased flex items-start sm:items-center justify-center p-4 pt-20 sm:pt-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-cyan-500/5 rounded-full blur-[110px] pointer-events-none" />
-
-      <button
-        onClick={() => navigate(-1)}
-        className="absolute top-6 left-4 sm:left-8 inline-flex items-center gap-2 bg-slate-900 border border-slate-800 shadow-xl rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 hover:text-white hover:border-blue-600 hover:bg-slate-800 transition-all duration-300 group z-10"
-      >
-        <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform duration-300 text-blue-600" />
-        Back
-      </button>
-
-      <div className="w-full max-w-[560px] relative z-10 my-4">
-        <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.3)] transform hover:rotate-12 transition-transform duration-300">
-            <Zap size={18} className="text-white fill-white" />
-          </div>
-          <span className="text-2xl font-black text-white tracking-tight">
-            Tek
-            <span className="text-blue-400 drop-shadow-[0_0_10px_rgba(37,99,235,0.3)]">Node</span>
-          </span>
-        </div>
-
-        <div className="card card-body">
-          <div className="text-center mb-8">
-            <h1 className="section-heading text-2xl">Create Identity</h1>
-            <p className="section-subheading">Provision your secure credentials platform-wide</p>
-=======
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
@@ -812,7 +776,6 @@ export default function Register() {
                 © {new Date().getFullYear()} Tek Node · Secure Core Architecture
               </div>
             </Appear>
->>>>>>> 2f71973bf81d6d0c50f58dc20361e240c2e0c829
           </div>
 
           {success ? (
@@ -952,12 +915,6 @@ export default function Register() {
             </form>
           )}
         </div>
-<<<<<<< HEAD
-        <p className="text-center mt-6 text-xs text-slate-500 font-medium tracking-wide">
-          &copy; {new Date().getFullYear()} Tek Node. Secure Core System Architecture.
-        </p>
-=======
->>>>>>> 2f71973bf81d6d0c50f58dc20361e240c2e0c829
       </div>
     </>
   );
