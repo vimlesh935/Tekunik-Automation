@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, CheckCircle } from "lucide-react";
 import { demoEnquiryService } from "../services/api";
+import ValidatedEmailInput from "./ValidatedEmailInput.jsx";
 
 export default function EnquiryModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({

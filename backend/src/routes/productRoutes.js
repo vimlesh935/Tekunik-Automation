@@ -22,6 +22,7 @@ const {
   reorderGalleryImages,
   getProductsByApplication,
   getApplicationCounts,
+  searchProducts,
 } = require("../controllers/productController");
 
 const router = express.Router();
@@ -68,7 +69,7 @@ router.delete("/api/admin/products/:id/colors/:colorId", requireAdmin, deletePro
 router.post("/api/admin/products/:id/sizes", requireAdmin, createProductSize);
 router.delete("/api/admin/products/:id/sizes/:sizeId", requireAdmin, deleteProductSize);
 
-// Public routes
+// Public routes (search is defined in publicRoutes.js to avoid :id shadowing)
 router.get("/api/products/applications/counts", getApplicationCounts);
 router.get("/api/products/application/:application", getProductsByApplication);
 

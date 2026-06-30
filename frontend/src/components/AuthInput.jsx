@@ -44,7 +44,7 @@ export default function AuthInput({
       <div className="relative">
         {Icon && (
           <div className={`absolute left-4 ${as === "textarea" ? "top-3.5" : "top-1/2 -translate-y-1/2"} text-slate-500 transition-colors duration-300 pointer-events-none`}>
-            <Icon size={16} />
+            {Icon}
           </div>
         )}
         {as === "textarea" ? (

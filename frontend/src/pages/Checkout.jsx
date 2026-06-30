@@ -6,6 +6,7 @@ import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
 import { motion, AnimatePresence } from "framer-motion";
+import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,7 +22,9 @@ import {
   User,
   Zap,
   Lock,
+  Loader,
 } from "lucide-react";
+import { usePincodeLookup } from "../hooks/usePincodeLookup.js";
 
 const EMPTY_CART = {
   items: [],
@@ -34,6 +37,16 @@ const inputCls =
   "mt-2 w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-150 font-medium";
 
 const labelCls = "block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1";
+const STANDARD_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REQUIRED_CHECKOUT_FIELDS = [
+  "full_name",
+  "email",
+  "phone",
+  "address",
+  "city",
+  "state",
+  "pincode",
+];
 
 export default function Checkout({ token }) {
   const navigate = useNavigate();
@@ -55,6 +68,8 @@ export default function Checkout({ token }) {
   const [checkoutTotals, setCheckoutTotals] = useState(EMPTY_CART);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cityLocked, setCityLocked] = useState(false);
+  const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
   const isAuthenticated = Boolean(token);
 
@@ -138,56 +153,86 @@ export default function Checkout({ token }) {
   ]);
 
   const validate = () => {
+    const emailEntered = form.email;
+    const emailTrimmed = String(emailEntered || "").trim();
+    const emailNormalized = emailTrimmed.toLowerCase();
+    const emailRegexResult = STANDARD_EMAIL_REGEX.test(emailNormalized);
+    const requiredFieldState = REQUIRED_CHECKOUT_FIELDS.map((field) => {
+      const value = form[field];
+      const trimmed = value == null ? "" : String(value).trim();
+      return {
+        field,
+        value,
+        type: typeof value,
+        isUndefined: value === undefined,
+        isNull: value === null,
+        isEmptyString: value === "",
+        isWhitespaceOnly: typeof value === "string" && value.length > 0 && trimmed.length === 0,
+        trimmed,
+        missing: trimmed.length === 0,
+      };
+    });
+    const missingField = requiredFieldState.find((item) => item.missing);
+
+    console.log("[Checkout][RequiredFields] Current form state:", form);
+    console.table(requiredFieldState);
+    console.log("[Checkout][RequiredFields] Missing field name:", missingField?.field || null);
+    console.log("[Checkout][EmailValidation] Email entered by user:", emailEntered);
+    console.log("[Checkout][EmailValidation] Email after trim():", emailTrimmed);
+    console.log("[Checkout][EmailValidation] Email after trim()+lowercase:", emailNormalized);
+    console.log("[Checkout][EmailValidation] Regex result:", emailRegexResult);
+
     if (!checkoutItems?.length) {
       addToast("Your cart is empty.", "warning");
+      console.log("[Checkout][EmailValidation] Validation result:", false);
       return false;
     }
-    for (const f of [
-      "full_name",
-      "email",
-      "phone",
-      "address",
-      "city",
-      "state",
-      "pincode",
-    ]) {
-      if (!form[f]?.toString().trim()) {
-        addToast("Please complete all required fields.", "error");
-        return false;
-      }
+    if (missingField) {
+      addToast("Please complete all required fields.", "error");
+      console.log("[Checkout][RequiredFields] Validation result:", false);
+      console.log("[Checkout][EmailValidation] Validation result:", false);
+      return false;
     }
-    if (!form.email.includes("@")) {
+    if (!emailRegexResult) {
       addToast("Please enter a valid email address.", "error");
+      console.log("[Checkout][RequiredFields] Validation result:", true);
+      console.log("[Checkout][EmailValidation] Validation result:", false);
       return false;
     }
+    console.log("[Checkout][RequiredFields] Validation result:", true);
+    console.log("[Checkout][EmailValidation] Validation result:", true);
     return true;
   };
 
   const handleSubmit = async (event) => {
     event?.preventDefault();
+    console.log("[Checkout] Submit attempt with email:", form.email);
     if (!validate()) return;
     setSaving(true);
     try {
+      const normalizedEmail = String(form.email || "").trim().toLowerCase();
       const payload = {
         items: checkoutItems.map((i) => ({
           product_id: i.product_id,
           quantity: i.quantity,
         })),
         customer: {
-          full_name: form.full_name,
-          email: form.email,
-          phone: form.phone,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          pincode: form.pincode,
+          full_name: form.full_name.trim(),
+          email: normalizedEmail,
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          pincode: form.pincode.trim(),
         },
         payment_method: form.payment_method,
         create_account: form.create_account,
       };
+      console.log("[Checkout] Payload:", JSON.stringify(payload));
       const response = isAuthenticated
         ? await cartService.checkout(payload)
         : await guestOrderService.createOrder(payload);
+      console.log("[Checkout] API response:", JSON.stringify(response));
       const order = response?.data?.order;
       if (!order) throw new Error("Order could not be created.");
       if (isAuthenticated) {
@@ -200,6 +245,7 @@ export default function Checkout({ token }) {
       addToast("Order placed successfully! 🎉", "success");
       navigate("/order-confirmation", { state: { order } });
     } catch (err) {
+      console.error("[Checkout] Error:", err);
       addToast(err?.message || "Unable to complete checkout.", "error");
     } finally {
       setSaving(false);
@@ -282,6 +328,7 @@ export default function Checkout({ token }) {
                   <div>
                     <label className={labelCls}>Full Name *</label>
                     <input
+                      name="full_name"
                       value={form.full_name}
                       onChange={(e) =>
                         handleChange("full_name", e.target.value)
@@ -293,13 +340,13 @@ export default function Checkout({ token }) {
                   </div>
                   <div>
                     <label className={labelCls}>Email Address *</label>
-                    <input
-                      type="email"
+                    <ValidatedEmailInput
+                      name="email"
                       value={form.email}
                       onChange={(e) => handleChange("email", e.target.value)}
                       placeholder="you@example.com"
-                      className={inputCls}
-                      required
+                      required={false}
+                      className=""
                     />
                   </div>
                 </div>
@@ -309,6 +356,7 @@ export default function Checkout({ token }) {
                     <label className={labelCls}>Phone Number *</label>
                     <input
                       type="tel"
+                      name="phone"
                       value={form.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                       placeholder="+91 XXXXX XXXXX"
@@ -319,8 +367,26 @@ export default function Checkout({ token }) {
                   <div>
                     <label className={labelCls}>Pincode *</label>
                     <input
+                      name="pincode"
                       value={form.pincode}
-                      onChange={(e) => handleChange("pincode", e.target.value)}
+                      onChange={(e) => {
+                        handleChange("pincode", e.target.value);
+                        if (e.target.value.replace(/\D/g, "").length === 6) {
+                          lookupPincode(
+                            e.target.value,
+                            (result) => {
+                              handleChange("city", result.city);
+                              handleChange("state", result.state);
+                              setCityLocked(true);
+                            },
+                            () => {
+                              setCityLocked(false);
+                            }
+                          );
+                        } else {
+                          setCityLocked(false);
+                        }
+                      }}
                       placeholder="6-digit postal code"
                       className={inputCls}
                       required
@@ -328,9 +394,21 @@ export default function Checkout({ token }) {
                   </div>
                 </div>
 
+                {pincodeLoading && (
+                  <div className="flex items-center gap-2 text-xs text-indigo-400 mt-1">
+                    <Loader size={14} className="animate-spin" />
+                    Fetching location...
+                  </div>
+                )}
+
+                {pincodeError && (
+                  <div className="text-xs text-rose-400 mt-1">{pincodeError}</div>
+                )}
+
                 <div>
                   <label className={labelCls}>Address *</label>
                   <textarea
+                    name="address"
                     value={form.address}
                     onChange={(e) => handleChange("address", e.target.value)}
                     rows={3}
@@ -344,21 +422,31 @@ export default function Checkout({ token }) {
                   <div>
                     <label className={labelCls}>City *</label>
                     <input
+                      name="city"
                       value={form.city}
-                      onChange={(e) => handleChange("city", e.target.value)}
+                      onChange={(e) => {
+                        handleChange("city", e.target.value);
+                        setCityLocked(false);
+                      }}
                       placeholder="e.g., Mumbai"
                       className={inputCls}
                       required
+                      readOnly={cityLocked}
                     />
                   </div>
                   <div>
                     <label className={labelCls}>State/Province *</label>
                     <input
+                      name="state"
                       value={form.state}
-                      onChange={(e) => handleChange("state", e.target.value)}
+                      onChange={(e) => {
+                        handleChange("state", e.target.value);
+                        setCityLocked(false);
+                      }}
                       placeholder="e.g., Maharashtra"
                       className={inputCls}
                       required
+                      readOnly={cityLocked}
                     />
                   </div>
                 </div>

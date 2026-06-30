@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePincodeLookup } from "../hooks/usePincodeLookup.js";
 import {
   User,
   Package,
@@ -68,6 +69,7 @@ export default function Dashboard() {
     phone: "",
     address: "",
     city: "",
+    pincode: "",
   });
   const [notification, setNotification] = useState("");
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -83,6 +85,8 @@ export default function Dashboard() {
   const [reviewMessage, setReviewMessage] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [cityLocked, setCityLocked] = useState(false);
+  const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
 useEffect(() => {
      loadDashboardData();
@@ -145,6 +149,7 @@ useEffect(() => {
         phone: userData?.phone || "",
         address: userData?.address || "",
         city: userData?.city || "",
+        pincode: userData?.pincode || "",
       });
     } catch (err) {
       console.warn("Dashboard load error:", err);
@@ -562,12 +567,49 @@ useEffect(() => {
                           <input
                             type="text"
                             value={form.city}
-                            onChange={(e) =>
-                              setForm({ ...form, city: e.target.value })
-                            }
+                            onChange={(e) => {
+                              setForm({ ...form, city: e.target.value });
+                              setCityLocked(false);
+                            }}
                             className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            readOnly={cityLocked}
                           />
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                          Pincode
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pincode}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                            setForm({ ...form, pincode: value });
+                            if (value.length === 6) {
+                              lookupPincode(
+                                value,
+                                (result) => {
+                                  setForm({ ...form, pincode: value, city: result.city });
+                                  setCityLocked(true);
+                                },
+                                () => {
+                                  setCityLocked(false);
+                                }
+                              );
+                            } else {
+                              setCityLocked(false);
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        />
+                        {pincodeLoading && (
+                          <p className="text-xs text-blue-400 mt-1">Fetching location...</p>
+                        )}
+                        {pincodeError && (
+                          <p className="text-xs text-rose-400 mt-1">{pincodeError}</p>
+                        )}
                       </div>
 
                       <div className="flex gap-3 pt-2 border-t border-slate-800 mt-6">

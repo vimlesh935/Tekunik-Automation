@@ -997,6 +997,64 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
   }
 });
 
+/** GET /api/products/search?q=keyword - Public: fast search for suggestions */
+const searchProducts = asyncHandler(async (req, res) => {
+  try {
+    const rawQuery = (req.query.q || req.query.search || "").trim();
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 8));
+
+    if (rawQuery.length < 1) {
+      return success(res, "Search ready", { products: [], total: 0 });
+    }
+
+    const searchTerm = `%${rawQuery}%`;
+
+    const where = [
+      "p.status = 'active'",
+      "AND (p.name LIKE ? OR p.short_description LIKE ? OR p.description LIKE ? OR p.brand LIKE ? OR p.sku LIKE ? OR p.features LIKE ? OR pc.name LIKE ?)",
+    ];
+
+    const params = [
+      searchTerm,
+      searchTerm,
+      searchTerm,
+      searchTerm,
+      searchTerm,
+      searchTerm,
+      searchTerm,
+      limit,
+    ];
+
+    const products = await query(
+      `SELECT p.id, p.name, p.short_description, p.price, p.stock_quantity, p.stock_status, p.image_url,
+              p.brand, p.sku, pc.name AS category_name
+       FROM products p
+       LEFT JOIN product_categories pc ON p.category_id = pc.id
+       WHERE ${where.join(" ")}
+       ORDER BY p.featured DESC, p.created_at DESC
+       LIMIT ?`,
+      params,
+    );
+
+    const normalized = products.map((product) => ({
+      ...withNormalizedImageUrl(product),
+    }));
+
+    return success(res, "Search results fetched", {
+      products: normalized,
+      total: normalized.length,
+    });
+  } catch (error) {
+    console.error("[PRODUCT SEARCH ERROR]", error);
+    if (error.statusCode) throw error;
+    throw new AppError(
+      error.message || "Failed to search products",
+      500,
+      "DATABASE_ERROR",
+    );
+  }
+});
+
 /** GET /api/products/applications/counts - Public: get product counts per application */
 const getApplicationCounts = asyncHandler(async (req, res) => {
   try {
@@ -1047,4 +1105,5 @@ module.exports = {
   reorderGalleryImages,
   getProductsByApplication,
   getApplicationCounts,
+  searchProducts,
 };
