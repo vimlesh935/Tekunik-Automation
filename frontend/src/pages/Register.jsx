@@ -137,6 +137,13 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
   const [backHover, setBackHover] = useState(false);
+  const [cityLocked, setCityLocked] = useState(false);
+  const [stateLocked, setStateLocked] = useState(false);
+  const {
+    loading: pincodeLoading,
+    error: pincodeError,
+    lookup: lookupPincode,
+  } = usePincodeLookup();
 
 
   const updateField = (field, value) => {
@@ -164,6 +171,7 @@ export default function Register() {
         age: form.age,
         address: form.address.trim(),
         city: form.city.trim(),
+        state: form.state.trim(),
         pincode: form.pincode.trim(),
       });
       setSuccess(true);
