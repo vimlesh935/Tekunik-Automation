@@ -134,25 +134,26 @@ export default function HomeWrapper({ token }) {
     }
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
-          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-100 mb-2">
-            Connection Issues
-          </h2>
-          <p className="text-slate-400 text-sm mb-6 leading-relaxed">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-600/20"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Error modal disabled - allow page to render with available data
+  // if (error) {
+  //   return (
+  //     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
+  //       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
+  //         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+  //         <h2 className="text-xl font-bold text-slate-100 mb-2">
+  //           Connection Issues
+  //         </h2>
+  //         <p className="text-slate-400 text-sm mb-6 leading-relaxed">{error}</p>
+  //         <button
+  //           onClick={() => window.location.reload()}
+  //           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-600/20"
+  //         >
+  //           Try Again
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
