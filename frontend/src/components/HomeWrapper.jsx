@@ -191,7 +191,7 @@ export default function HomeWrapper({ token }) {
 
       {/* Hero Section */}
       <HomeHero />
-      <TrustHome/>
+      {/* <TrustHome/> */}
 
       {/* Trending Categories Carousel */}
       <HomeCategories categories={categories} />
