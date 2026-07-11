@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import apiCall, { setGlobalLogoutCallback } from "../services/api";
+import apiCall, { setGlobalLogoutCallback, authService } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -28,7 +28,14 @@ export function AuthProvider({ children }) {
     setValidated(false);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // 🛡️ MUST call backend to clear the httpOnly cookie before clearing local state
+    try {
+      await authService.logout();
+    } catch (e) {
+      // Backend might be down - still clear local state
+    }
+    // Then clear all local auth data
     clearAllAuth();
   }, [clearAllAuth]);
 
@@ -85,14 +92,11 @@ export function AuthProvider({ children }) {
           // Ignore parse errors for cached user
         }
       } catch (error) {
-        // Token is invalid - clear everything
-        if (error?.status === 401) {
-          clearAllAuth();
-        } else {
-          // Network error - keep token but mark as not validated
-          console.warn("[Auth] Network error during validation - keeping token");
-          setValidated(true);
-        }
+        // 🛡️ ANY error during validation means the token is not valid.
+        // This includes network errors - we must NOT keep the user logged in
+        // because the cookie/httpOnly token may have been cleared server-side.
+        // A network error is not a reason to assume the token is still valid.
+        clearAllAuth();
       } finally {
         setLoading(false);
       }

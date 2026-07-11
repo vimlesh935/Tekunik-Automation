@@ -29,10 +29,12 @@ import Dashboard from "./pages/Dashboard.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
 import ContactUs from "./pages/ContactUs.jsx";
+import SmartHomePlanner from "./pages/SmartHomePlanner.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { ToastProvider } from "./components/Toast.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+import { WebsiteSettingsProvider } from "./context/WebsiteSettingsContext.jsx";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -57,9 +59,11 @@ function App() {
     <ThemeProvider>
       <CartProvider>
         <ToastProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
+      <AuthProvider>
+        <WebsiteSettingsProvider>
+          <AppContent />
+        </WebsiteSettingsProvider>
+      </AuthProvider>
         </ToastProvider>
       </CartProvider>
     </ThemeProvider>
@@ -146,6 +150,7 @@ function AppContent() {
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/smart-home-planner" element={<SmartHomePlanner />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route
             path="/dashboard"

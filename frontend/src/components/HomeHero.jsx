@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Play, X, Sun, Moon, Shield, Lightbulb, Thermometer, Camera, Zap } from "lucide-react";
 
@@ -259,9 +260,9 @@ function RoomCarousel({ isDark }) {
 /* ------------------------------------------------------------------ */
 function AutomateButton() {
   return (
-    <a
-      href="/automate"
-      className="group relative w-full sm:w-auto p-[2px] rounded-xl overflow-hidden cursor-pointer"
+    <Link
+      to="/smart-home-planner"
+      className="group relative w-full sm:w-auto p-[2px] rounded-xl overflow-hidden cursor-pointer inline-block"
     >
       <motion.span
         aria-hidden
@@ -278,7 +279,7 @@ function AutomateButton() {
         Automate My Home
         <ChevronRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
       </span>
-    </a>
+    </Link>
   );
 }
 

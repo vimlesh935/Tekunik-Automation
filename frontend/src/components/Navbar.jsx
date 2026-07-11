@@ -4,26 +4,21 @@ import {
   Search,
   UserCircle,
   LogOut,
-  LayoutDashboard,
   Menu,
   X,
   Zap,
   ChevronDown,
   ShoppingCart,
-  Package,
-  ArrowUpRight,
-  Cpu,
-  Store,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { productService } from "../services/api";
-import SafeImage from "../components/SafeImage.jsx";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import SmartSearch from "../components/SmartSearch.jsx";
 
 export default function Navbar() {
   const { isAuthenticated: token, logout } = useAuth();
+  const { websiteName } = useWebsiteSettings();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -54,13 +49,6 @@ export default function Navbar() {
     navigate(`/shop?search=${encodeURIComponent(query.trim())}`);
     setQuery("");
     setSmartSearchOpen(false);
-  };
-
-
-  const handleSearchBlur = () => {
-    if (!query.trim()) {
-      setSearchExpanded(false);
-    }
   };
 
   const handleSmartSearchClose = () => {
@@ -97,9 +85,9 @@ export default function Navbar() {
     }
   }, [itemCount]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowUserMenu(false);
-    logout();
+    await logout();
     navigate("/");
   };
 
@@ -128,7 +116,7 @@ export default function Navbar() {
                 <Zap size={16} className="text-white fill-white" />
               </motion.div>
               <span className="text-xl font-black text-white tracking-tight">
-                Tek<span className="text-indigo-400 bg-clip-text">Node</span>
+                {websiteName?.split(" ")[0] || "Tek"}<span className="text-indigo-400 bg-clip-text">{websiteName?.split(" ").slice(1).join(" ") || "Node"}</span>
               </span>
             </Link>
 
@@ -220,10 +208,7 @@ export default function Navbar() {
                           </p>
                         </div>
                         <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            logout();
-                          }}
+                          onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-rose-400 hover:bg-rose-500/10 transition-all duration-200 text-left"
                         >
                           <LogOut size={14} />
