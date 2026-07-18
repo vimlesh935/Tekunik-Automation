@@ -8,6 +8,7 @@ const {
   searchProducts,
 } = require("../controllers/productController");
 const { submitContactForm } = require("../controllers/contactController");
+const { createProductReview, getProductReviews } = require("../controllers/reviewController");
 
 const router = express.Router();
 
@@ -51,6 +52,18 @@ router.get("/api/products/featured", (req, res, next) => {
  * MUST be defined BEFORE /api/products/:id to avoid :id catching "search" as a param
  */
 router.get("/api/products/search", searchProducts);
+
+/**
+ * POST /api/products/:id/reviews - Public product review submission
+ * Must be defined BEFORE /api/products/:id to avoid route conflict
+ */
+router.post("/api/products/:id/reviews", createProductReview);
+
+/**
+ * GET /api/products/:id/reviews - Public product reviews (approved only)
+ * Must be defined BEFORE /api/products/:id to avoid route conflict
+ */
+router.get("/api/products/:id/reviews", getProductReviews);
 
 /**
  * GET /api/products/:id - Public single product (active only)

@@ -27,13 +27,49 @@ const saveCartItems = (items) => {
   }
 };
 
+const DISCOUNT_ENABLED = false;
+
+/**
+ * Calculate discount price fields for a product.
+ * Returns: { original_price, discount_percent, discount_amount, final_price }
+ */
+const calculateDiscountPrice = (product) => {
+  if (!DISCOUNT_ENABLED) {
+    const price = parseFloat(product.price) || 0;
+    return {
+      original_price: price,
+      discount_percent: 0,
+      discount_amount: 0,
+      final_price: price,
+    };
+  }
+
+  const originalPrice = parseFloat(product.price) || 0;
+  let discountPercent = 0;
+  
+  if (product.discount_percent !== null && product.discount_percent !== undefined) {
+    discountPercent = Math.max(0, Math.min(100, parseFloat(product.discount_percent) || 0));
+  }
+  
+  const discountAmount = Math.max(0, originalPrice * discountPercent / 100);
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
+  
+  return {
+    original_price: originalPrice,
+    discount_percent: discountPercent,
+    discount_amount: Math.round(discountAmount * 100) / 100,
+    final_price: Math.round(finalPrice * 100) / 100,
+  };
+};
+
 const calculateCart = (items) => {
   const totalQuantity = items.reduce(
     (sum, item) => sum + Number(item.quantity),
     0,
   );
+  // Use final_price if available (from API), otherwise use price
   const totalAmount = items.reduce(
-    (sum, item) => sum + Number(item.price) * Number(item.quantity),
+    (sum, item) => sum + Number(item.final_price || item.price) * Number(item.quantity),
     0,
   );
   return {
@@ -43,16 +79,26 @@ const calculateCart = (items) => {
   };
 };
 
-const normalizeCartItem = (product, quantity = 1) => ({
-  product_id: product.id,
-  name: product.name || "Untitled product",
-  image_url: product.image_url || "",
-  price: Number(product.price) || 0,
-  quantity: Math.max(1, Number(quantity) || 1),
-  max_quantity: Number(product.stock_quantity ?? 99),
-  product_status: product.status || "active",
-  stock_quantity: Number(product.stock_quantity ?? 0),
-});
+const normalizeCartItem = (product, quantity = 1) => {
+  const discountFields = calculateDiscountPrice(product);
+  return {
+    product_id: product.id,
+    name: product.name || "Untitled product",
+    image_url: product.image_url || "",
+    // Store original_price for display
+    original_price: discountFields.original_price,
+    // Store final_price for calculations (includes discount)
+    price: discountFields.final_price,
+    // Store discount fields for display
+    discount_percent: discountFields.discount_percent,
+    discount_amount: discountFields.discount_amount,
+    final_price: discountFields.final_price,
+    quantity: Math.max(1, Number(quantity) || 1),
+    max_quantity: Number(product.stock_quantity ?? 99),
+    product_status: product.status || "active",
+    stock_quantity: Number(product.stock_quantity ?? 0),
+  };
+};
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);

@@ -372,10 +372,14 @@ export default function ContactUs() {
           .main-grid { grid-template-columns: 1fr !important; }
           .contact-cards { grid-template-columns: 1fr !important; }
           .info-card { padding: 24px !important; }
+          .contact-logo { width: clamp(140px, 18vw, 170px) !important; }
+          .hero-logo { width: clamp(180px, 22vw, 220px) !important; }
         }
         @media (max-width: 480px) {
           .hero-section { padding: 80px 20px 60px !important; }
           .section-pad { padding: 60px 20px !important; }
+          .contact-logo { width: clamp(100px, 15vw, 130px) !important; }
+          .hero-logo { width: clamp(140px, 18vw, 180px) !important; }
         }
       `}</style>
 
@@ -413,28 +417,16 @@ export default function ContactUs() {
           <div style={{ position: "relative", maxWidth: 900, margin: "0 auto" }}>
             <FadeIn delay={0}>
               <div style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 20px",
-                borderRadius: 100,
-                background: "rgba(124,58,237,0.1)",
-                border: "1px solid rgba(124,58,237,0.3)",
+                display: "flex",
+                justifyContent: "center",
                 marginBottom: 32,
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 11,
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-                color: VIOLET_LIGHT,
               }}>
-                <span style={{
-                  width: 7, height: 7, borderRadius: "50%",
-                  background: VIOLET_LIGHT,
-                  boxShadow: `0 0 8px ${VIOLET_LIGHT}`,
-                  animation: "pulse 2s ease-in-out infinite",
-                  display: "inline-block",
+                <img src="/assest/logo.png" alt="TekNode" className="hero-logo" style={{
+                  height: "auto",
+                  width: "clamp(220px, 25vw, 280px)",
+                  maxWidth: "100%",
+                  objectFit: "contain",
                 }} />
-                Contact Us
               </div>
             </FadeIn>
 
@@ -621,10 +613,12 @@ export default function ContactUs() {
                       />
                       <ValidatedEmailInput
                         label="Email"
+                        name="email"
                         value={formData.email}
                         onChange={(e) => handleChange(e)}
                         placeholder="your@email.com"
                         required
+                        validateOnChange={false}
                       />
                       <FloatingInput
                         label="Phone" name="phone" type="tel" value={formData.phone}
@@ -678,31 +672,24 @@ export default function ContactUs() {
                   }} />
 
                   <div style={{
-                    display: "flex", alignItems: "center", gap: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
                     marginBottom: 28,
                   }}>
+                    <img src="/assest/logo.png" alt="TekNode" className="contact-logo" style={{
+                      height: "auto",
+                      width: "clamp(180px, 20vw, 220px)",
+                      maxWidth: "100%",
+                      objectFit: "contain",
+                    }} />
                     <div style={{
-                      width: 40, height: 40,
-                      borderRadius: 10,
-                      background: "rgba(124,58,237,0.15)",
-                      border: "1px solid rgba(124,58,237,0.3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 18,
-                    }}>⚡</div>
-                    <div>
-                      <h3 style={{
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        fontWeight: 700, fontSize: 18, color: "#fff",
-                      }}>
-                        Tek Node
-                      </h3>
-                      <div style={{
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: 10, letterSpacing: "0.15em",
-                        textTransform: "uppercase", color: VIOLET_LIGHT,
-                      }}>
-                        Automation Studio
-                      </div>
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 10, letterSpacing: "0.15em",
+                      textTransform: "uppercase", color: VIOLET_LIGHT,
+                      marginTop: 20,
+                    }}>
+                      Smart Living
                     </div>
                   </div>
 

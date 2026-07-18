@@ -60,9 +60,7 @@ const buildApiBaseCandidates = () => {
       window.location.hostname === "127.0.0.1";
 
     if (isLocalHost) {
-      // Vite dev proxy fallback (/api -> backend) when env URL is wrong/unreachable.
       addCandidate("");
-      // Direct local backend fallback when proxy isn't active.
       addCandidate(LOCAL_BACKEND_FALLBACK);
     }
   }
@@ -104,7 +102,6 @@ const apiCall = async (endpoint, options = {}) => {
   if (token) {
     requestHeaders.Authorization = `Bearer ${token}`;
   }
-  // Prevent browser from serving stale cached GET responses
   if (!options.method || options.method === "GET") {
     requestHeaders["Cache-Control"] = "no-cache, no-store, must-revalidate";
     requestHeaders["Pragma"] = "no-cache";
@@ -139,7 +136,7 @@ const apiCall = async (endpoint, options = {}) => {
 
       if (baseUrl !== API_BASE_URL) {
         console.warn(
-          `[API] Recovered using fallback base URL: ${baseUrl || "(same-origin /api proxy)"}`,
+          `[API] Recovered using fallback base URL: ${baseUrl || "(same-origin /api proxy)"}`
         );
       }
 
@@ -157,7 +154,7 @@ const apiCall = async (endpoint, options = {}) => {
 
       lastNetworkError = { ...error, requestUrl };
       console.warn(
-        `[API] Network error for ${requestUrl}: ${error.message || error.name}`,
+        `[API] Network error for ${requestUrl}: ${error.message || error.name}`
       );
     }
   }
@@ -170,7 +167,7 @@ const apiCall = async (endpoint, options = {}) => {
     requestUrl: lastNetworkError?.requestUrl || getApiUrl(endpoint),
     details: {
       attemptedBaseUrls: buildApiBaseCandidates().map(
-        (baseUrl) => baseUrl || "(same-origin /api proxy)",
+        (baseUrl) => baseUrl || "(same-origin /api proxy)"
       ),
     },
   };
@@ -186,25 +183,21 @@ export const authService = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-
   register: (payload) =>
     apiCall("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-
   sendOtp: (email) =>
     apiCall("/api/auth/login/send-otp", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
-
   verifyOtp: (email, otp) =>
     apiCall("/api/auth/login/verify-otp", {
       method: "POST",
       body: JSON.stringify({ email, otp }),
     }),
-
   logout: () => {
     localStorage.removeItem("authToken");
     return apiCall("/api/auth/logout", { method: "POST" });
@@ -264,7 +257,7 @@ export const productService = {
   },
   getProductsByCategory: (categoryId, page = 1, limit = 12) =>
     apiCall(
-      `/api/products?category_id=${categoryId}&page=${page}&limit=${limit}`,
+      `/api/products?category_id=${categoryId}&page=${page}&limit=${limit}`
     ),
   getProductsByApplication: (application, page = 1, limit = 12) =>
     apiCall(`/api/products/application/${encodeURIComponent(application)}?page=${page}&limit=${limit}`),
@@ -319,6 +312,47 @@ export const cartService = {
   clearCart: () => apiCall("/api/cart/clear", { method: "DELETE" }),
   checkout: (orderData) =>
     apiCall("/api/orders", { method: "POST", body: JSON.stringify(orderData) }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// SMART HOME PROPOSAL SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const smartHomeProposalService = {
+  create: (data) =>
+    apiCall("/api/smart-home/proposals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  list: (filters = {}) => {
+    const query = new URLSearchParams();
+    if (filters.status) query.set("status", filters.status);
+    if (filters.search) query.set("search", filters.search);
+    if (filters.home_type) query.set("home_type", filters.home_type);
+    if (filters.assigned_admin) query.set("assigned_admin", filters.assigned_admin);
+    if (filters.date_from) query.set("date_from", filters.date_from);
+    if (filters.date_to) query.set("date_to", filters.date_to);
+    if (filters.page) query.set("page", filters.page);
+    if (filters.limit) query.set("limit", filters.limit);
+    if (filters.sort) query.set("sort", filters.sort);
+    const qs = query.toString();
+    return apiCall(`/api/smart-home/proposals${qs ? `?${qs}` : ""}`);
+  },
+  get: (id) => apiCall(`/api/smart-home/proposals/${id}`),
+  update: (id, data) =>
+    apiCall(`/api/smart-home/proposals/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  remove: (id) => apiCall(`/api/smart-home/proposals/${id}`, { method: "DELETE" }),
+  updateStatus: (id, status, notes) =>
+    apiCall(`/api/smart-home/proposals/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, notes }),
+    }),
+  convert: (id) =>
+    apiCall(`/api/smart-home/proposals/${id}/convert-order`, { method: "POST" }),
+  getStats: () => apiCall("/api/smart-home/proposals/stats"),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -388,9 +422,21 @@ export const orderService = {
       getApiUrl(`/api/guest/orders/download-invoice?${params.toString()}`),
       {
         credentials: "include",
-      },
+      }
     );
   },
+  createRazorpayOrder: (orderId) =>
+    apiCall("/api/orders/razorpay/create-order", {
+      method: "POST",
+      body: JSON.stringify({ order_id: orderId }),
+    }),
+  verifyRazorpayPayment: (data) =>
+    apiCall("/api/orders/razorpay/verify", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getRazorpayPayment: (orderId) =>
+    apiCall(`/api/orders/razorpay/${orderId}`),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -441,7 +487,13 @@ export const adminDashboardService = {
 // ─────────────────────────────────────────────────────────────
 
 export const reviewService = {
-  // Product Reviews
+  // New method: Submit product review (guest or authenticated)
+  submitProductReview: (productId, data) =>
+    apiCall(`/api/products/${productId}/reviews`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  // Legacy method: Submit review with order (authenticated only)
   createReview: (data) =>
     apiCall("/api/reviews", {
       method: "POST",
@@ -482,8 +534,6 @@ export const reviewService = {
     params.set("limit", limit);
     return apiCall(`/api/reviews/public?${params.toString()}`);
   },
-
-  // Website Reviews
   createWebsiteReview: (data) =>
     apiCall("/api/website-reviews", {
       method: "POST",
@@ -508,14 +558,12 @@ export const reviewService = {
 
 export const demoEnquiryService = {
   submit: async (data) => {
-    // First try the primary endpoint
     try {
       return await apiCall("/api/demo-enquiry", {
         method: "POST",
         body: JSON.stringify(data),
       });
     } catch (primaryError) {
-      // If primary endpoint returns 404/ROUTE_NOT_FOUND, try legacy
       if (primaryError?.status === 404 || primaryError?.code === "ROUTE_NOT_FOUND") {
         console.warn("[DEMO] Primary endpoint failed, trying legacy route");
         return await apiCall("/api/enquiry/demo", {
@@ -528,7 +576,6 @@ export const demoEnquiryService = {
           }),
         });
       }
-      // Re-throw all other errors
       throw primaryError;
     }
   },
@@ -544,10 +591,8 @@ export const emailValidationService = {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
-
   validateEmailFormat: (email) =>
     apiCall(`/api/validation/email/format?email=${encodeURIComponent(email)}`),
-
   validateEmailsBatch: (emails) =>
     apiCall("/api/validation/email/batch", {
       method: "POST",
@@ -573,6 +618,37 @@ export const adminDemoEnquiryService = {
     }),
   delete: (id) =>
     apiCall(`/api/admin/demo-enquiries/${id}`, { method: "DELETE" }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN SETTINGS SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const adminSettingsService = {
+  getAll: () => apiCall("/api/admin/settings"),
+  save: (settings) =>
+    apiCall("/api/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify({ settings }),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// SMART HOME STEP SERVICES (step-by-step auto-save)
+// ─────────────────────────────────────────────────────────────
+
+export const smartHomeStepService = {
+  saveStep: (sessionId, step, data) =>
+    apiCall("/api/smart-home/steps", {
+      method: "POST",
+      body: JSON.stringify({ sessionId, step, data }),
+    }),
+  getSession: (id) => apiCall(`/api/smart-home/steps/${id}`),
+  resumeSession: (email) =>
+    apiCall("/api/smart-home/steps/resume", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
 };
 
 export default apiCall;

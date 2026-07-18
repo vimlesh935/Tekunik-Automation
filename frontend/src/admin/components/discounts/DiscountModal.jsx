@@ -1,0 +1,64 @@
+import { X, Save, RefreshCw } from "lucide-react";
+
+export default function DiscountModal({ show, editingDiscount, discountForm, discountError, discountSaving, products, onFieldChange, onClose, onSave }) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">{editingDiscount ? "Edit Discount" : "Add Discount"}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={20} /></button>
+        </div>
+        {discountError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{discountError}</div>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Discount Name *</label>
+            <input type="text" value={discountForm.name} onChange={(e) => onFieldChange("name", e.target.value)}
+              placeholder="e.g. Summer Sale" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Type</label>
+            <select value={discountForm.type} onChange={(e) => onFieldChange("type", e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
+              <option value="percentage">Percentage (%)</option>
+              <option value="fixed">Fixed Amount (₹)</option>
+              <option value="bogo">Buy 1 Get 1 (BOGO)</option>
+            </select></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Value *</label>
+            <input type="number" step="0.01" min="0" value={discountForm.value}
+              onChange={(e) => onFieldChange("value", e.target.value)}
+              placeholder={discountForm.type === "percentage" ? "10" : "99.99"}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Product (optional)</label>
+            <select value={discountForm.product_id} onChange={(e) => onFieldChange("product_id", e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
+              <option value="">All Products</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Min Order Value</label>
+            <input type="number" step="0.01" min="0" value={discountForm.min_order_value}
+              onChange={(e) => onFieldChange("min_order_value", e.target.value)}
+              placeholder="50.00" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Active</label>
+            <label className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer">
+              <input type="checkbox" checked={discountForm.is_active}
+                onChange={(e) => onFieldChange("is_active", e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
+              <span className="text-sm text-gray-300">Active</span>
+            </label></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Start Date</label>
+            <input type="datetime-local" value={discountForm.starts_at}
+              onChange={(e) => onFieldChange("starts_at", e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Expiry Date</label>
+            <input type="datetime-local" value={discountForm.expires_at}
+              onChange={(e) => onFieldChange("expires_at", e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+        </div>
+        <div className="flex gap-3 pt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition font-semibold">Cancel</button>
+          <button onClick={onSave} disabled={discountSaving}
+            className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            {discountSaving ? <><RefreshCw size={16} className="animate-spin" /> Saving...</> : <><Save size={16} /> {editingDiscount ? "Update" : "Create"}</>}</button>
+        </div>
+      </div>
+    </div>
+  );
+}

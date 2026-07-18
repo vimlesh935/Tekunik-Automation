@@ -213,7 +213,7 @@
 //           {/* Spacer for alignment */}
 //           <div className="min-w-[calc((100vw-1280px)/2)] flex-shrink-0 hidden xl:block"></div>
           
-//           {featuredProducts.slice(0, 4).map((product, idx) => (
+//           {featuredProducts.map((product, idx) => (
 //             <motion.div
 //               key={product.id}
 //               initial={{ opacity: 0, scale: 0.9 }}
@@ -390,7 +390,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
           {/* Spacer for alignment */}
           <div className="min-w-[calc((100vw-1280px)/2)] flex-shrink-0 hidden xl:block"></div>
           
-          {featuredProducts.slice(0, 4).map((product, idx) => (
+          {featuredProducts.map((product, idx) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, scale: 0.9 }}

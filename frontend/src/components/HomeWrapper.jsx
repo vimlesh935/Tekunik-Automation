@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, Sparkles, AlertCircle, Home as HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer } from "lucide-react";
+import { MessageCircle, Sparkles, Home as HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
 import { productService, cartService, categoryService } from "../services/api";
 import HomeHero from "./HomeHero";
 import HomeCategories from "./HomeCategories";
 import HomeProducts from "./HomeProducts";
-import HomeApplications from "./HomeApplications";
 import HomeReviews from "./HomeReviews";
-import TrustHome from "./TrustHome.jsx";
 import WhyTeknode from "./WhyTeknode.jsx";
 import HowWorks from "./HowWorks.jsx";
 import SmartHome from "./SmartHome.jsx";
@@ -26,9 +24,6 @@ export default function HomeWrapper({ token }) {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [error, setError] = useState(null);
-  const [applicationCounts, setApplicationCounts] = useState(null);
-  const [loadingApps, setLoadingApps] = useState(true);
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -36,28 +31,22 @@ export default function HomeWrapper({ token }) {
         setError(null);
 
         const [prodRes, catRes] = await Promise.allSettled([
-          productService.getAllProducts(1, 8),
+          productService.getAllProducts(1, 50),
           categoryService.getAllCategories(),
         ]);
 
         // Handle products response with detailed logging
         if (prodRes.status === 'fulfilled') {
           const response = prodRes.value;
-          console.log("[HomeWrapper] Products API response:", JSON.stringify(response).slice(0, 500));
           const products = response?.data?.products || response?.products || [];
-          console.log(`[HomeWrapper] Products found: ${products.length}`);
           if (products.length > 0) {
-            setFeaturedProducts(products.slice(0, 8));
+            setFeaturedProducts(products);
           } else {
-            // Fallback 1: Try without featured filter (get any active products)
-            console.log("[HomeWrapper] No featured products, trying general product fetch...");
             try {
-              const fallbackRes = await productService.getAllProducts(1, 8);
+              const fallbackRes = await productService.getAllProducts(1, 50);
               const fallbackProducts = fallbackRes?.data?.products || fallbackRes?.products || [];
-              console.log(`[HomeWrapper] Fallback products found: ${fallbackProducts.length}`);
-              setFeaturedProducts(fallbackProducts.slice(0, 8));
+              setFeaturedProducts(fallbackProducts);
             } catch (fbErr) {
-              console.error("[HomeWrapper] Fallback also failed:", fbErr);
               setFeaturedProducts([]);
             }
           }
@@ -96,20 +85,6 @@ export default function HomeWrapper({ token }) {
     };
 
     loadData();
-  }, [token]);
-
-  useEffect(() => {
-    const loadAppCounts = async () => {
-      try {
-        const res = await productService.getApplicationCounts();
-        setApplicationCounts(res.data?.counts || null);
-      } catch (err) {
-        console.warn("Failed to load application counts:", err);
-      } finally {
-        setLoadingApps(false);
-      }
-    };
-    loadAppCounts();
   }, [token]);
 
   const handleAddToCart = async (product, e) => {
@@ -163,7 +138,7 @@ export default function HomeWrapper({ token }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open WhatsApp support chat"
-        className="fixed bottom-5 right-4 sm:bottom-8 sm:right-8 z-[60] group inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-emerald-500/25 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:bg-emerald-400 hover:shadow-emerald-400/35 active:scale-95 sm:px-5"
+        className="fixed bottom-5 right-4 sm:bottom-8 sm:right-8 z-[60] group inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-indigo-600/25 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:bg-indigo-500 hover:shadow-indigo-500/35 active:scale-95 sm:px-5"
       >
         <MessageCircle
           size={18}
@@ -193,31 +168,24 @@ export default function HomeWrapper({ token }) {
       <HomeHero />
       {/* <TrustHome/> */}
 
-      {/* Trending Categories Carousel */}
-      <HomeCategories categories={categories} />
-
-      <WhyTeknode/>
-      <HowWorks/>
-
       {/* Featured Products Grid */}
       <HomeProducts
         featuredProducts={featuredProducts}
         loading={loading}
         handleAddToCart={handleAddToCart}
       />
+
+      <WhyTeknode/>
+      <HowWorks/>
+
+      {/* Trending Categories Carousel */}
+      <HomeCategories categories={categories} />
        <SmartHome/>
       <HomeScene/>
 <HomeCounter/>
 <HomeApp/>
-      {/* Shop by Application */}
-      {/* <HomeApplications
-        applicationCounts={applicationCounts}
-        loadingApps={loadingApps}
-      /> */}
-
       {/* Customer Reviews */}
       <HomeReviews />
-      <FaqHome/>
       <ReadyHome/>
     </div>
   );

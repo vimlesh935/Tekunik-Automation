@@ -18,6 +18,7 @@ import { productService, cartService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
+import { formatPrice, hasDiscount } from "../utils/discount.js";
 
 /**
  * Formats a number to Indian currency notation (e.g. ₹50,000)
@@ -310,22 +311,23 @@ export default function Shop({ token }) {
                       )}
                     </div>
 
-                    {/* Precise Pricing Structural Geometry */}
+                    {/* Precise Pricing Structural Geometry - Dynamic Discount Display */}
                     <div className="flex items-baseline justify-between pt-2">
                       <div className="flex flex-col">
+                        {/* Display final_price (discounted) prominently */}
                         <span className="text-xl font-black text-white tracking-tight">
-                          {formatIndianPrice(product.price)}
+                          {formatIndianPrice(product.final_price || product.price)}
                         </span>
-                        {product.sale_price &&
-                          parseFloat(product.sale_price) <
-                            parseFloat(product.price) && (
-                            <span className="text-xs text-slate-500 line-through mt-0.5">
-                              {formatIndianPrice(product.sale_price)}
-                            </span>
-                          )}
+                        {/* Show original price with strikethrough when discount exists */}
+                        {hasDiscount(product) && (
+                          <span className="text-xs text-slate-500 line-through mt-0.5">
+                            {formatIndianPrice(product.original_price || product.price)}
+                          </span>
+                        )}
                       </div>
-                      {product.discount_percent > 0 && (
-                        <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-black px-2 py-1 rounded-md tracking-wider uppercase">
+                      {/* Green discount badge */}
+                      {hasDiscount(product) && (
+                        <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black px-2 py-1 rounded-md tracking-wider uppercase shadow-sm">
                           {Math.round(product.discount_percent)}% OFF
                         </span>
                       )}

@@ -15,14 +15,29 @@ import {
   RefreshCw,
   Layers,
   Sparkles,
+  Edit,
 } from "lucide-react";
 import { productService, cartService, reviewService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import SafeImage from "../components/SafeImage.jsx";
+import { formatPrice, hasDiscount } from "../utils/discount.js";
+import ProductReviewsModal from "../components/ProductReviewsModal.jsx";
+
+// Theme constants matching ContactUs.jsx and website design
+const VIOLET = "#7C3AED";
+const CYAN = "#06B6D4";
+const VIOLET_LIGHT = "#A78BFA";
+const CYAN_LIGHT = "#67E8F9";
+const BORDER = "#1E2640";
+const TEXT = "#E2E8F0";
+const MUTED = "#64748B";
+const BG = "#080B14";
 
 export default function ProductDetails({ token }) {
   const { id } = useParams();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToast } = useToast();
@@ -33,6 +48,58 @@ export default function ProductDetails({ token }) {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, totalReviews: 0, fiveStar: 0, fourStar: 0, threeStar: 0, twoStar: 0, oneStar: 0 });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  // Inline styles for review section
+  const reviewSectionStyle = {
+    marginTop: "80px",
+  };
+
+  const sectionHeaderStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "32px",
+  };
+
+  const accentBarStyle = {
+    width: "4px",
+    height: "32px",
+    background: `linear-gradient(180deg, ${VIOLET}, ${CYAN})`,
+    borderRadius: "2px",
+  };
+
+  const statsCardStyle = {
+    background: "rgba(255,255,255,0.02)",
+    border: `1px solid ${BORDER}`,
+    borderRadius: "16px",
+    padding: "24px",
+    marginBottom: "32px",
+  };
+
+  const reviewCardStyle = {
+    background: "rgba(255,255,255,0.02)",
+    border: `1px solid ${BORDER}`,
+    borderRadius: "16px",
+    padding: "24px",
+  };
+
+  const buttonStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 24px",
+    borderRadius: "12px",
+    fontSize: "12px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    border: "none",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    background: `linear-gradient(135deg, ${VIOLET}, ${CYAN})`,
+    color: "#fff",
+  };
 
   // Get all available images (gallery + main)
   const allImages = product
@@ -46,6 +113,24 @@ export default function ProductDetails({ token }) {
 
   const currentImage =
     allImages[selectedImageIndex] || product?.image_url || null;
+
+  // Refresh reviews after submission
+  const refreshReviews = () => {
+    reviewService.getProductReviews(id).then((res) => {
+      const d = res.data;
+      const s = d?.statistics || {};
+      setReviews(d?.reviews || []);
+      setReviewStats({
+        averageRating: s.averageRating || 0,
+        totalReviews: s.totalReviews || 0,
+        fiveStar: s.fiveStar || 0,
+        fourStar: s.fourStar || 0,
+        threeStar: s.threeStar || 0,
+        twoStar: s.twoStar || 0,
+        oneStar: s.oneStar || 0,
+      });
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     // Reset all state on every id change so stale data never shows
@@ -221,13 +306,6 @@ export default function ProductDetails({ token }) {
                     </button>
                   </div>
                 )}
-
-                {/* Micro highlights badge mapping absolute view */}
-                {/* <div className="absolute top-4 left-4">
-                  <span className="bg-slate-950/80 backdrop-blur-sm border border-slate-800 text-indigo-400 font-mono font-bold text-[10px] px-3 py-1 rounded-md tracking-wider shadow-md">
-                    LIVE INSPECTION
-                  </span>
-                </div> */}
               </div>
 
               {/* Grid Thumbnail Index Selection Pipeline */}
@@ -312,14 +390,27 @@ export default function ProductDetails({ token }) {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-500/[0.02] to-transparent rounded-bl-full pointer-events-none" />
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* System Pricing Grid Block */}
+                  {/* System Pricing Grid Block - Dynamic Discount Display */}
                   <div className="rounded-xl bg-slate-950/80 border border-slate-900 p-4 text-left">
                     <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
                       Unit Cost Matrix
                     </p>
-                    <p className="mt-2 text-2xl font-black text-white">
-                      ₹{parseFloat(product.price).toFixed(2)}
+                    {/* Show original price with strikethrough when discount exists */}
+                    {hasDiscount(product) && (
+                      <p className="text-xs text-slate-500 line-through mb-1">
+                        Original: {formatPrice(product.original_price || product.price)}
+                      </p>
+                    )}
+                    {/* Display final_price prominently */}
+                    <p className="mt-1 text-2xl font-black text-white">
+                      {formatPrice(product.final_price || product.price)}
                     </p>
+                    {/* Show savings when discount exists */}
+                    {hasDiscount(product) && (
+                      <span className="text-[10px] text-emerald-400 font-mono mt-1 block">
+                        You Save: {formatPrice(product.discount_amount || 0)} ({Math.round(product.discount_percent)}% OFF)
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-500 font-mono mt-1 block">
                       Inc. GST Logistics
                     </span>
@@ -415,7 +506,7 @@ export default function ProductDetails({ token }) {
                 </div>
               </div>
 
-              {/* E-Commerce Premium Trust Pipeline Badges */}
+                {/* E-Commerce Premium Trust Pipeline Badges */}
               <div className="grid grid-cols-3 gap-2 text-center pt-2">
                 <div className="p-3 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col items-center justify-center">
                   <ShieldCheck size={16} className="text-indigo-400 mb-1" />
@@ -465,93 +556,300 @@ export default function ProductDetails({ token }) {
         )}
 
         {/* ═══ CUSTOMER REVIEWS SECTION ═══ */}
-        {reviews.length > 0 && (
-          <div className="mt-20">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full" />
-              <div>
-                <h2 className="text-xl font-black text-white tracking-tight">
-                  Customer Reviews
-                </h2>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">
-                  {reviewStats.totalReviews} VERIFIED REVIEW{reviewStats.totalReviews > 1 ? "S" : ""}
-                </p>
-              </div>
+        <div style={reviewSectionStyle}>
+          <div style={sectionHeaderStyle}>
+            <div style={accentBarStyle} />
+            <div>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: TEXT,
+                  margin: 0,
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+              >
+                Customer Reviews
+              </h2>
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: MUTED,
+                  fontFamily: "'DM Mono', monospace",
+                  marginTop: "4px",
+                  margin: 0,
+                }}
+              >
+                {reviewStats.totalReviews} VERIFIED REVIEW{reviewStats.totalReviews > 1 ? "S" : ""}
+              </p>
             </div>
+          </div>
 
-            {/* Review Statistics Breakdown */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 mb-8">
-              <div className="grid md:grid-cols-2 gap-6">
+          {/* Review Statistics Breakdown */}
+          {reviewStats.totalReviews > 0 && (
+            <div style={statsCardStyle}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "24px",
+                }}
+              >
                 <div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-5xl font-black text-white font-mono">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "48px",
+                        fontWeight: 700,
+                        color: TEXT,
+                        fontFamily: "'Space Grotesk', sans-serif",
+                      }}
+                    >
                       {reviewStats.averageRating > 0 ? reviewStats.averageRating.toFixed(1) : "0.0"}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-amber-400">
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
                         {[1, 2, 3, 4, 5].map((s) => (
-                          <Star key={s} size={18} className={s <= Math.round(reviewStats.averageRating) ? "fill-current" : "text-slate-600"} />
+                          <Star
+                            key={s}
+                            size={18}
+                            color={s <= Math.round(reviewStats.averageRating) ? "#FCD34D" : "#475569"}
+                            fill={s <= Math.round(reviewStats.averageRating) ? "#FCD34D" : "none"}
+                          />
                         ))}
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">Based on {reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? "s" : ""}</p>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: MUTED,
+                          marginTop: "4px",
+                          margin: 0,
+                        }}
+                      >
+                        Based on {reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? "s" : ""}
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {[5, 4, 3, 2, 1].map((star) => {
                     const count = star === 5 ? (reviewStats.fiveStar || 0) : star === 4 ? (reviewStats.fourStar || 0) : star === 3 ? (reviewStats.threeStar || 0) : star === 2 ? (reviewStats.twoStar || 0) : (reviewStats.oneStar || 0);
                     const pct = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews) * 100 : 0;
                     return (
-                      <div key={star} className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-300 w-8">{star}★</span>
-                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
+                      <div
+                        key={star}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: TEXT,
+                            width: "24px",
+                          }}
+                        >
+                          {star}★
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: "8px",
+                            background: "#1E293B",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: "100%",
+                              background: "#FCD34D",
+                              borderRadius: "4px",
+                              width: `${pct}%`,
+                            }}
+                          />
                         </div>
-                        <span className="text-xs font-mono text-slate-500 w-8 text-right">{count}</span>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontFamily: "'DM Mono', monospace",
+                            color: MUTED,
+                            width: "24px",
+                            textAlign: "right",
+                          }}
+                        >
+                          {count}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="space-y-5">
+          {/* Reviews List */}
+          {reviews.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex items-center gap-0.5">
+                <div key={review.id} style={reviewCardStyle}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginBottom: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "2px",
+                      }}
+                    >
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
                           key={s}
                           size={15}
-                          className={s <= review.rating ? "fill-amber-400 text-amber-400" : "text-slate-600"}
+                          color={s <= review.rating ? "#FCD34D" : "#475569"}
+                          fill={s <= review.rating ? "#FCD34D" : "none"}
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✅ Verified Buyer</span>
-                    <span className="text-xs font-bold text-slate-300">
-                      {review.first_name || review.last_name ? `${review.first_name || ""} ${review.last_name || ""}`.trim() : "Verified Customer"}
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        background: "rgba(52, 211, 153, 0.1)",
+                        color: "#6EE7B7",
+                        border: "1px solid rgba(52, 211, 153, 0.3)",
+                      }}
+                    >
+                      ✅ Verified Buyer
                     </span>
-                    <span className="text-[10px] text-slate-500">
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: TEXT,
+                      }}
+                    >
+                      {review.first_name || review.last_name
+                        ? `${review.first_name || ""} ${review.last_name || ""}`.trim()
+                        : "Verified Customer"}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: MUTED,
+                      }}
+                    >
                       {new Date(review.created_at).toLocaleDateString("en-IN", {
-                        year: "numeric", month: "short", day: "numeric"
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
                       })}
                     </span>
                   </div>
                   {review.review_title && (
-                    <h4 className="text-sm font-bold text-white mb-1">{review.review_title}</h4>
+                    <h4
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: TEXT,
+                        marginBottom: "4px",
+                        margin: 0,
+                      }}
+                    >
+                      {review.review_title}
+                    </h4>
                   )}
                   {review.review_message && (
-                    <p className="text-sm text-slate-400 leading-relaxed">{review.review_message}</p>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: MUTED,
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      {review.review_message}
+                    </p>
                   )}
                 </div>
               ))}
             </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <p style={{ color: MUTED, fontSize: "14px", margin: 0 }}>
+                No reviews yet. Be the first to review this product!
+              </p>
+            </div>
+          )}
+
+          {/* Write a Review Button */}
+          <div style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
+            <button
+              type="button"
+              onClick={() => setShowReviewModal(true)}
+              disabled={product?.stock_quantity === 0}
+              style={{
+                ...buttonStyle,
+                ...(product?.stock_quantity === 0
+                  ? {
+                      background: "rgba(255,255,255,0.02)",
+                      color: MUTED,
+                      cursor: "not-allowed",
+                    }
+                  : {}),
+              }}
+              onMouseEnter={(e) => {
+                if (product?.stock_quantity > 0) {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #6D28D9, #0891B2)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(124,58,237,0.4)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (product?.stock_quantity > 0) {
+                  e.currentTarget.style.background = `linear-gradient(135deg, ${VIOLET}, ${CYAN})`;
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.boxShadow = "none";
+                }
+              }}
+            >
+              <Edit size={14} />
+              Write a Review
+            </button>
           </div>
-        )}
+        </div>
+
+        {/* Review Modal */}
+        <ProductReviewsModal
+          productId={id}
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          onSuccess={refreshReviews}
+        />
 
         {/* ═══ RELATED PRODUCTS SECTION ═══ */}
         {relatedProducts.length > 0 && (
@@ -619,15 +917,26 @@ export default function ProductDetails({ token }) {
                     </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="p-3 flex flex-col gap-1.5 flex-1">
-                    <p className="text-xs font-semibold text-slate-200 leading-snug line-clamp-2 group-hover:text-white transition-colors">
-                      {rp.name}
-                    </p>
-                    <p className="text-xs font-black text-indigo-400 font-mono mt-auto">
-                      ₹{parseFloat(rp.price).toFixed(2)}
-                    </p>
-                  </div>
+                   {/* Info */}
+                   <div className="p-3 flex flex-col gap-1.5 flex-1">
+                     <p className="text-xs font-semibold text-slate-200 leading-snug line-clamp-2 group-hover:text-white transition-colors">
+                       {rp.name}
+                     </p>
+                     {hasDiscount(rp) ? (
+                       <>
+                         <p className="text-xs font-black text-indigo-400 font-mono mt-auto">
+                           ₹{parseFloat(rp.final_price || rp.price).toFixed(2)}
+                         </p>
+                         <p className="text-[10px] text-slate-500 line-through">
+                           ₹{parseFloat(rp.original_price || rp.price).toFixed(2)}
+                         </p>
+                       </>
+                     ) : (
+                       <p className="text-xs font-black text-indigo-400 font-mono mt-auto">
+                         ₹{parseFloat(rp.price).toFixed(2)}
+                       </p>
+                     )}
+                   </div>
                 </Link>
             ))}
             </div>

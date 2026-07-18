@@ -6,19 +6,19 @@ import {
   LogOut,
   Menu,
   X,
-  Zap,
   ChevronDown,
   ShoppingCart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import SmartSearch from "../components/SmartSearch.jsx";
 
 export default function Navbar() {
   const { isAuthenticated: token, logout } = useAuth();
-  const { websiteName } = useWebsiteSettings();
+  const { theme } = useTheme();
+
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -88,7 +88,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     setShowUserMenu(false);
     await logout();
-    navigate("/");
+    navigate("/home");
   };
 
   return (
@@ -99,25 +99,16 @@ export default function Navbar() {
           : "bg-slate-950 border-slate-900/60 h-20"
       } flex items-center`}
     >
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full sm:px-2 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           {/* LEFT SECTION: Logo + Navigation Links */}
           <div className="nav-left flex items-center gap-6">
             {/* Logo Brand Frame */}
             <Link
-              to="/"
+              to="/home"
               className="flex items-center gap-2.5 group flex-shrink-0"
             >
-              <motion.div
-                whileHover={{ rotate: 15, scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
-              >
-                <Zap size={16} className="text-white fill-white" />
-              </motion.div>
-              <span className="text-xl font-black text-white tracking-tight">
-                {websiteName?.split(" ")[0] || "Tek"}<span className="text-indigo-400 bg-clip-text">{websiteName?.split(" ").slice(1).join(" ") || "Node"}</span>
-              </span>
+              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-20 w-auto" />
             </Link>
 
             {/* Premium Desktop Navigation Links */}
@@ -235,7 +226,7 @@ export default function Navbar() {
             <motion.div animate={cartBounce ? { scale: [1, 1.08, 1] } : {}}>
               <Link
                 to="/cart"
-                className={`relative inline-flex items-center gap-2 text-slate-300 hover:text-white font-bold transition-all duration-300 h-9 px-3.5 rounded-xl border ${
+                className={`relative inline-flex items-center gap-1.5 text-slate-300 hover:text-white font-bold transition-all duration-300 h-7 px-2.5 rounded-lg border ${
                   itemCount > 0
                     ? "border-indigo-500/30 bg-indigo-500/5 text-indigo-400"
                     : "border-slate-900 bg-slate-900/30 hover:border-slate-800"
@@ -244,18 +235,18 @@ export default function Navbar() {
               >
                 <div className="relative">
                   <ShoppingCart
-                    size={16}
+                    size={13}
                     className={
                       itemCount > 0 ? "text-indigo-400" : "text-slate-400"
                     }
                   />
                   {itemCount > 0 && (
-                    <span className="absolute -right-3 -top-1.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-indigo-500 text-[8px] font-black text-white px-1 shadow-[0_0_10px_rgba(99,102,241,0.6)]">
+                    <span className="absolute -right-2.5 -top-1.5 inline-flex h-3 min-w-[0.75rem] items-center justify-center rounded-full bg-indigo-500 text-[7px] font-black text-white px-0.5 shadow-[0_0_8px_rgba(99,102,241,0.6)]">
                       {itemCount > 99 ? "99+" : itemCount}
                     </span>
                   )}
                 </div>
-                <span className="hidden sm:inline tracking-wide text-xs">
+                <span className="hidden sm:inline tracking-wide text-[10px]">
                   Cart
                 </span>
               </Link>

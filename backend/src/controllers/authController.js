@@ -19,11 +19,12 @@ const requirePassword = (password) => {
   }
 };
 
-const getCookieOptions = () => ({
+const getCookieOptions = (rememberMe = false) => ({
   httpOnly: true,
   sameSite: "lax",
   secure: env.nodeEnv === "production",
-  maxAge: 24 * 60 * 60 * 1000,
+  path: "/",
+  maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
 });
 
 const selectUserFields = `
@@ -142,8 +143,12 @@ const login = asyncHandler(async (req, res) => {
     throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
   }
 
+  // 🛡️ Clear any existing cookie first to prevent stale session reuse
+  res.clearCookie(env.cookieName, { path: "/" });
+
   const token = signToken({ id: user.id, email: user.email });
-  res.cookie(env.cookieName, token, getCookieOptions());
+  const rememberMe = req.body.remember_me === true;
+  res.cookie(env.cookieName, token, getCookieOptions(rememberMe));
 
   const formattedUser = formatUser(user);
 
@@ -178,14 +183,24 @@ const dashboard = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /logout — Clear session
+ * POST /logout — Clear session completely
+ * Clears the auth cookie and sets proper headers to prevent caching
  */
 const logout = asyncHandler(async (req, res) => {
+  // 🛡️ Clear cookie with path=/ to ensure it's removed from all routes
   res.clearCookie(env.cookieName, {
     httpOnly: true,
     sameSite: "lax",
     secure: env.nodeEnv === "production",
+    path: "/",
   });
+
+  // 🛡️ Also set headers to prevent caching of authenticated pages
+  res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+
+  console.log("[auth] User logged out successfully");
   return success(res, "Logout successful");
 });
 

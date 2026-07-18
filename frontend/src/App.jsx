@@ -9,6 +9,7 @@ import {
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import Home from "./pages/Home.jsx";
+import ComingSoon from "./pages/ComingSoon.jsx";
 import HomeTopOffers from "./components/HomeTopOffers.jsx";
 import Shop from "./pages/Shop.jsx";
 import Login from "./pages/Login.jsx";
@@ -30,6 +31,8 @@ import AdminPanel from "./pages/AdminPanel.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
 import ContactUs from "./pages/ContactUs.jsx";
 import SmartHomePlanner from "./pages/SmartHomePlanner.jsx";
+import SmartHomeProposals from "./pages/SmartHomeProposals.jsx";
+import SmartHomeProposalDetail from "./pages/SmartHomeProposalDetail.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { ToastProvider } from "./components/Toast.jsx";
@@ -59,11 +62,11 @@ function App() {
     <ThemeProvider>
       <CartProvider>
         <ToastProvider>
-      <AuthProvider>
-        <WebsiteSettingsProvider>
-          <AppContent />
-        </WebsiteSettingsProvider>
-      </AuthProvider>
+          <AuthProvider>
+            <WebsiteSettingsProvider>
+              <AppContent />
+            </WebsiteSettingsProvider>
+          </AuthProvider>
         </ToastProvider>
       </CartProvider>
     </ThemeProvider>
@@ -72,11 +75,12 @@ function App() {
 
 function AppContent() {
   const { isAuthenticated, loading, logout } = useAuth();
+
   const location = useLocation();
   const isAdminRoute =
     location.pathname === "/admin-login" ||
     location.pathname.startsWith("/admin");
-  const showHomeTopOffers = location.pathname === "/";
+  const showHomeTopOffers = location.pathname === "/home";
 
   if (loading) {
     return (
@@ -109,9 +113,17 @@ function AppContent() {
               <Navigate to="/admin-login" replace />
             )
           }
-        />
+        >
+          <Route path="smart-home-proposals" element={<SmartHomeProposals />} />
+          <Route path="smart-home-proposals/:id" element={<SmartHomeProposalDetail />} />
+        </Route>
       </Routes>
     );
+  }
+
+  // Root path shows standalone Coming Soon page
+  if (location.pathname === "/") {
+    return <ComingSoon />;
   }
 
   return (
@@ -120,7 +132,7 @@ function AppContent() {
       <Navbar />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -160,7 +172,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </main>
       <Footer />

@@ -18,6 +18,7 @@ import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
+import { formatPrice, hasDiscount } from "../utils/discount.js";
 
 export default function Cart({ token }) {
   const navigate = useNavigate();
@@ -153,7 +154,7 @@ export default function Cart({ token }) {
             <div className="space-y-4 lg:max-h-[82vh] lg:overflow-y-auto lg:pr-2 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
               <div className="flex items-center gap-4 mb-1">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-500 font-mono">
-                  Selected Modules ({currentCart.itemCount})
+                  Selected Products ({currentCart.itemCount})
                 </p>
                 <span className="h-px flex-grow bg-slate-800" />
               </div>
@@ -207,12 +208,25 @@ export default function Cart({ token }) {
                                 : "Unavailable"}
                             </p>
                           </div>
-                          <p className="text-xs font-black text-slate-400 pt-1 font-mono">
-                            ₹{parseFloat(item.price || 0).toFixed(2)}{" "}
-                            <span className="text-[10px] text-slate-600 font-sans font-medium">
-                              / unit
-                            </span>
-                          </p>
+                          {/* Dynamic Price Display with Discount */}
+                          <div className="text-xs font-black text-slate-400 pt-1 font-mono">
+                            {hasDiscount(item) ? (
+                              <>
+                                <span className="text-slate-500 line-through mr-2">
+                                  {formatPrice(item.original_price)}
+                                </span>
+                                <span className="text-white">
+                                  {formatPrice(item.final_price)}
+                                </span>
+                                <span className="text-emerald-400 ml-1">
+                                  ({Math.round(item.discount_percent)}% OFF)
+                                </span>
+                              </>
+                            ) : (
+                              <span>{formatPrice(item.price)}</span>
+                            )}
+                            <span className="text-[10px] text-slate-600 font-sans font-medium"> / unit</span>
+                          </div>
                         </div>
                       </div>
 
@@ -296,7 +310,7 @@ export default function Cart({ token }) {
                 </p>
               </div>
 
-              {/* Invoice Calculations */}
+              {/* Invoice Calculations - Uses discounted totalAmount */}
               <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-3.5 shadow-inner">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="flex items-center gap-2">

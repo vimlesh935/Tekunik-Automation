@@ -18,7 +18,7 @@ const requireAdmin = (req, res, next) => {
     const token = authHeader.slice(7);
     const payload = verifyToken(token);
 
-    if (payload.role !== "admin") {
+    if (payload.role !== "admin" && payload.role !== "super_admin") {
       throw new AppError("Admin access required", 403, "ADMIN_FORBIDDEN");
     }
 

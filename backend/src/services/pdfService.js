@@ -67,6 +67,16 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
       const taxAmount = parseFloat((totalVal - totalVal / 1.18).toFixed(2));
       const baseAmount = parseFloat((totalVal - taxAmount).toFixed(2));
 
+      // ── Calculate total savings from items ─────────────────────────────────
+      const totalSavings = items.reduce((sum, item) => {
+        const originalPrice = parseFloat(item.original_price || item.price || 0);
+        const finalPrice = parseFloat(item.final_price || item.price || 0);
+        return sum + (originalPrice - finalPrice) * item.quantity;
+      }, 0);
+      const originalSubtotal = items.reduce((sum, item) => {
+        return sum + parseFloat(item.original_price || item.price || 0) * item.quantity;
+      }, 0);
+
       // ─────────────────────────────────────────────────────────────────────
       // 1. HEADER  (full-width dark band, height 130)
       // ─────────────────────────────────────────────────────────────────────
@@ -250,13 +260,14 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
       // ─────────────────────────────────────────────────────────────────────
       const tY = pBarY + 44;
 
-      // column x positions & widths
+      // column x positions & widths (updated for discount display)
       const col = {
         num: { x: L, w: 24 },
-        name: { x: L + 28, w: 220 },
-        qty: { x: L + 258, w: 50 },
-        price: { x: L + 318, w: 95 },
-        total: { x: L + 418, w: 97 },
+        name: { x: L + 28, w: 160 },
+        qty: { x: L + 210, w: 40 },
+        price: { x: L + 262, w: 70 },
+        discount: { x: L + 332, w: 45 },
+        total: { x: L + 377, w: 98 },
       };
 
       // Table header row
@@ -266,11 +277,15 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
       doc.text("#", col.num.x + 4, thY, { width: col.num.w });
       doc.text("PRODUCT", col.name.x, thY, { width: col.name.w });
       doc.text("QTY", col.qty.x, thY, { width: col.qty.w, align: "center" });
-      doc.text("UNIT PRICE", col.price.x, thY, {
+      doc.text("PRICE", col.price.x, thY, {
         width: col.price.w,
         align: "right",
       });
-      doc.text("AMOUNT", col.total.x, thY, {
+      doc.text("DISCOUNT", col.discount.x, thY, {
+        width: col.discount.w,
+        align: "right",
+      });
+      doc.text("TOTAL", col.total.x, thY, {
         width: col.total.w,
         align: "right",
       });
@@ -285,7 +300,10 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
         }
 
         const rowH = 26;
-        const itemTotal = parseFloat(item.price) * item.quantity;
+        const originalPrice = parseFloat(item.original_price || item.price || 0);
+        const finalPrice = parseFloat(item.final_price || item.price || 0);
+        const discountPercent = item.discount_percent || 0;
+        const itemTotal = finalPrice * item.quantity;
         const isEven = rowNum % 2 === 0;
 
         // row background
@@ -312,11 +330,34 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
           width: col.qty.w,
           align: "center",
         });
-        doc.text(fmt(item.price), col.price.x, ty, {
-          width: col.price.w,
-          align: "right",
-        });
 
+        // Show original price with strikethrough if discounted
+        if (discountPercent > 0) {
+          doc.fontSize(7).fillColor(MUTED).text(fmt(originalPrice), col.price.x, ty, {
+            width: col.price.w,
+            align: "right",
+          });
+        } else {
+          doc.text(fmt(originalPrice), col.price.x, ty, {
+            width: col.price.w,
+            align: "right",
+          });
+        }
+
+        // Discount column
+        if (discountPercent > 0) {
+          doc.fillColor(GREEN).text(`${discountPercent}%`, col.discount.x, ty, {
+            width: col.discount.w,
+            align: "right",
+          });
+        } else {
+          doc.text("-", col.discount.x, ty, {
+            width: col.discount.w,
+            align: "right",
+          });
+        }
+
+        // Total column (final price)
         doc.fontSize(8).font("Helvetica-Bold").fillColor(NAVY);
         doc.text(fmt(itemTotal), col.total.x, ty, {
           width: col.total.w,
@@ -358,6 +399,11 @@ const generateInvoicePDF = async (order, items, companyInfo = {}) => {
         tRow += 16;
       };
 
+      // Show savings if any
+      if (totalSavings > 0) {
+        summaryRow("Original Total", fmt(originalSubtotal));
+        summaryRow("You Save", `-${fmt(totalSavings)}`, false, GREEN);
+      }
       summaryRow("Subtotal", fmt(baseAmount));
       summaryRow("Shipping", "FREE", false, GREEN);
       summaryRow("GST (18% incl.)", fmt(taxAmount));

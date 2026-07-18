@@ -12,6 +12,29 @@ const {
   generateTrackingNumber,
 } = require("../config/orderMigration");
 
+/**
+ * Calculate discount price fields for a product.
+ * Returns: { original_price, discount_percent, discount_amount, final_price }
+ */
+const calculateDiscountPrice = (product) => {
+  const originalPrice = parseFloat(product.price) || 0;
+  let discountPercent = 0;
+  
+  if (product.discount_percent !== null && product.discount_percent !== undefined) {
+    discountPercent = Math.max(0, Math.min(100, parseFloat(product.discount_percent) || 0));
+  }
+  
+  const discountAmount = Math.max(0, originalPrice * discountPercent / 100);
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
+  
+  return {
+    original_price: originalPrice,
+    discount_percent: discountPercent,
+    discount_amount: Math.round(discountAmount * 100) / 100,
+    final_price: Math.round(finalPrice * 100) / 100,
+  };
+};
+
 const normalizeOrderItemImages = (items) =>
   items.map((item) => ({
     ...item,
@@ -29,7 +52,7 @@ const clearUserCart = async (userId) => {
 
 const ALLOWED_PAYMENT_METHODS = ["cod", "online", "card", "upi"];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[+()\-\.\s\d]{7,20}$/;
+const PHONE_REGEX = /^[+().\s\d-]{7,20}$/;
 const REQUIRED_CHECKOUT_FIELDS = [
   "full_name",
   "email",
@@ -204,14 +227,16 @@ const createOrder = asyncHandler(async (req, res) => {
         );
       }
 
+      const itemPrice = parseFloat(product.price) || 0;
+
       validatedItems.push({
         product_id,
         quantity: parseInt(quantity, 10),
         product_name: product.name,
-        price: parseFloat(product.price),
+        price: itemPrice,
       });
 
-      totalAmount += parseFloat(product.price) * parseInt(quantity, 10);
+      totalAmount += itemPrice * parseInt(quantity, 10);
     }
 
     const timestamp = Date.now();
@@ -271,13 +296,7 @@ const createOrder = asyncHandler(async (req, res) => {
       await query(
         `INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
          VALUES (?, ?, ?, ?, ?)`,
-        [
-          orderId,
-          item.product_id,
-          item.product_name,
-          item.price,
-          item.quantity,
-        ],
+        [orderId, item.product_id, item.product_name, item.price, item.quantity],
       );
 
       const [product] = await query("SELECT * FROM products WHERE id = ?", [
@@ -998,25 +1017,26 @@ const cancelOrder = asyncHandler(async (req, res) => {
   );
 
   const items = await query(
-    "SELECT oi.*, p.stock_quantity, p.low_stock_limit FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?",
+    `SELECT oi.*, p.image_url AS product_image
+     FROM order_items oi
+     LEFT JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = ?`,
     [orderId],
   );
 
+  // Restore stock for each item
   for (const item of items) {
-    const newStock = (item.stock_quantity || 0) + item.quantity;
-    let stockStatus = "in_stock";
-    if (newStock === 0) stockStatus = "out_of_stock";
-    else if (newStock <= item.low_stock_limit) stockStatus = "limited_stock";
-
-    await query(
-      "UPDATE products SET stock_quantity = ?, stock_status = ?, stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [newStock, stockStatus, newStock, item.product_id],
+    const [product] = await query(
+      "SELECT * FROM products WHERE id = ?",
+      [item.product_id],
     );
-
-    await query(
-      "INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes) VALUES (?, ?, ?, 'order_cancel', ?, ?)",
-      [item.product_id, item.stock_quantity, newStock, req.user.id, `Cancelled order #${order.order_number}`],
-    );
+    if (product) {
+      const newStock = product.stock_quantity + item.quantity;
+      await query(
+        "UPDATE products SET stock_quantity = ?, stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [newStock, newStock, item.product_id],
+      );
+    }
   }
 
   const [updated] = await query("SELECT * FROM orders WHERE id = ?", [orderId]);
@@ -1025,12 +1045,12 @@ const cancelOrder = asyncHandler(async (req, res) => {
 
 module.exports = {
   createOrder,
-  listOrders,
-  getOrder,
-  updateOrderStatus,
   trackOrder,
   getUserOrders,
   getUserOrder,
+  listOrders,
+  getOrder,
+  updateOrderStatus,
   regenerateInvoice,
   downloadInvoice,
   downloadUserInvoice,

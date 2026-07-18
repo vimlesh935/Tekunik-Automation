@@ -18,7 +18,6 @@ import { PackageSearch, Wrench, SmartphoneNfc, Sparkles } from "lucide-react";
 const steps = [
   {
     id: 1,
-    code: "P01",
     title: "Choose Device",
     desc: "Select from our premium range.",
     icon: PackageSearch,
@@ -26,7 +25,6 @@ const steps = [
   },
   {
     id: 2,
-    code: "P02",
     title: "Professional Installation",
     desc: "Expert setup with zero damage.",
     icon: Wrench,
@@ -34,7 +32,6 @@ const steps = [
   },
   {
     id: 3,
-    code: "P03",
     title: "Connect Mobile App",
     desc: "Sync devices seamlessly.",
     icon: SmartphoneNfc,
@@ -42,7 +39,6 @@ const steps = [
   },
   {
     id: 4,
-    code: "P04",
     title: "Enjoy Smart Living",
     desc: "Experience true automation.",
     icon: Sparkles,
@@ -193,12 +189,6 @@ export default function HowItWorksSection() {
                 </div>
 
                 <div className="min-w-0 pt-0.5 lg:pt-0">
-                  <div
-                    className="mb-1 font-mono text-[10px] font-semibold tracking-[0.2em] sm:mb-1.5 sm:text-[11px]"
-                    style={{ color: `rgb(${step.accent})` }}
-                  >
-                    {step.code}
-                  </div>
                   <h3 className="mb-1 text-base font-bold sm:mb-2 sm:text-lg lg:text-xl">
                     {step.title}
                   </h3>

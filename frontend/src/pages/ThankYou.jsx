@@ -38,7 +38,7 @@ export default function ThankYou() {
         </p>
 
         <Link
-          to="/"
+          to="/home"
           className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25"
         >
           <Home className="w-5 h-5" />

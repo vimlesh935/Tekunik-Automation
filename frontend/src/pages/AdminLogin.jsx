@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Lock, Mail, Loader, ArrowLeft, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { getApiUrl } from "../services/api";
+import { useAuth } from "../context/AuthContext.jsx";
 
 /* ── Brand tokens (shared with user Login page) ── */
 const V = "#7C3AED";
@@ -69,6 +70,7 @@ function CircuitPanel() {
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,17 +82,13 @@ export default function AdminLogin() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !secretKey.trim()) {
-      setError("Please enter both email and secret key.");
-      return;
-    }
     setLoading(true);
     setError("");
     try {
       const res = await fetch(getApiUrl("/api/admin/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), secretKey: secretKey.trim() }),
+        body: JSON.stringify({ email: email.trim(), password: secretKey.trim() }),
       });
       let data;
       try {
@@ -105,9 +103,13 @@ export default function AdminLogin() {
       }
       const adminToken = data.data?.token;
       if (!adminToken) throw new Error("No token received from server.");
-      localStorage.setItem("authToken", adminToken);
+      
+      // Store token and update auth context state
+      login(adminToken, { email: email.trim(), role: "admin" });
       setSuccess(true);
-      setTimeout(() => { window.location.href = "/admin/dashboard"; }, 1600);
+      
+      // Navigate to admin dashboard without full page reload
+      setTimeout(() => { navigate("/admin/dashboard"); }, 1600);
     } catch (err) {
       setError(
         err.message === "Failed to fetch" || err.name === "TypeError"

@@ -297,10 +297,14 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-10"
+          className="flex justify-center mb-10"
         >
-          <Zap size={14} />
-          <span className="text-xs font-black uppercase tracking-widest">Smart Automation</span>
+          <img src="/assest/logo.png" alt="TekNode" className="hero-logo" style={{
+            height: "auto",
+            width: "clamp(220px, 25vw, 280px)",
+            maxWidth: "100%",
+            objectFit: "contain",
+          }} />
         </motion.div>
 
         <motion.h1
@@ -604,8 +608,17 @@ function CTA() {
 
 export default function AboutUs() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-      <Hero />
+    <>
+      <style>{`
+        @media (max-width: 768px) {
+          .hero-logo { width: clamp(180px, 22vw, 220px) !important; }
+        }
+        @media (max-width: 480px) {
+          .hero-logo { width: clamp(140px, 18vw, 180px) !important; }
+        }
+      `}</style>
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+        <Hero />
       <WhoWeAre />
       <Mission />
       <ProductCarousel />
@@ -614,6 +627,7 @@ export default function AboutUs() {
       <StatsBand />
       <TestimonialCarousel />
       <CTA />
-    </div>
+      </div>
+    </>
   );
 }

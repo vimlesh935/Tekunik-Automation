@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext.jsx";
 import {
   Zap,
   Mail,
@@ -46,6 +47,7 @@ const itemVariants = {
 
 export default function Footer() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   return (
     <footer className="relative mt-auto border-t border-slate-900 bg-slate-950 text-slate-400 overflow-hidden">
@@ -86,19 +88,10 @@ export default function Footer() {
           {/* Brand panel */}
           <motion.div
             variants={itemVariants}
-            className="sm:col-span-2 lg:col-span-4 space-y-6"
+            className="sm:col-span-2 lg:col-span-2 space-y-3"
           >
-            <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <motion.div
-                whileHover={{ rotate: 15, scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
-              >
-                <Zap size={16} className="text-white fill-white" />
-              </motion.div>
-              <span className="text-xl font-black text-white tracking-tight">
-                Tek<span className="text-indigo-400">Node</span>
-              </span>
+            <Link to="/home" className="flex items-center gap-2.5 group w-fit">
+              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-25 w-auto" />
             </Link>
 
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">

@@ -134,9 +134,38 @@ const ensureOrderCancellationColumns = async () => {
   }
 };
 
+const ensurePaymentColumns = async () => {
+  try {
+    console.log("[MIGRATE] Checking payment columns...");
+    await ensureColumn("orders", "razorpay_order_id", "razorpay_order_id VARCHAR(100) NULL AFTER payment_status");
+    await ensureColumn("orders", "razorpay_payment_id", "razorpay_payment_id VARCHAR(100) NULL AFTER razorpay_order_id");
+    await ensureColumn("orders", "razorpay_signature", "razorpay_signature VARCHAR(255) NULL AFTER razorpay_payment_id");
+    await ensureColumn("orders", "transaction_id", "transaction_id VARCHAR(100) NULL AFTER razorpay_signature");
+    await ensureColumn("orders", "paid_at", "paid_at DATETIME NULL AFTER transaction_id");
+    console.log("✅ [MIGRATE] Payment columns ready");
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure payment columns:", error.message);
+  }
+};
+
+const ensureOrderItemDiscountColumns = async () => {
+  try {
+    console.log("[MIGRATE] Checking order_items discount columns...");
+    await ensureColumn("order_items", "original_price", "original_price DECIMAL(10,2) DEFAULT NULL AFTER price");
+    await ensureColumn("order_items", "discount_percent", "discount_percent DECIMAL(5,2) DEFAULT NULL AFTER original_price");
+    await ensureColumn("order_items", "discount_amount", "discount_amount DECIMAL(10,2) DEFAULT NULL AFTER discount_percent");
+    await ensureColumn("order_items", "final_price", "final_price DECIMAL(10,2) DEFAULT NULL AFTER discount_amount");
+    console.log("✅ [MIGRATE] Order items discount columns ready");
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure order_items discount columns:", error.message);
+  }
+};
+
 module.exports = {
   ensureOrderTrackingTable,
   ensureOrderCancellationColumns,
+  ensurePaymentColumns,
+  ensureOrderItemDiscountColumns,
   getTrackingSteps,
   getEstimatedDelivery,
   generateTrackingNumber,

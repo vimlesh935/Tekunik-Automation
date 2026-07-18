@@ -8,9 +8,11 @@ const {
   ensureUsersOtpColumns,
   ensureReviewsTable,
   ensureAdminTables,
+  ensureSystemSettingsTable,
 } = require("./src/config/migrate");
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
+const { ensurePaymentColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -19,6 +21,7 @@ const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
 const simpleCookieParser = require("./src/middleware/simpleCookieParser");
 const { notFound, errorHandler } = require("./src/middleware/errorMiddleware");
+const { requireAdmin } = require("./src/middleware/adminMiddleware");
 
 // Routes
 const authRoutes = require("./src/routes/authRoutes");
@@ -38,6 +41,9 @@ const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const demoEnquiryRoutes = require("./src/routes/demoEnquiryRoutes");
 const validationRoutes = require("./src/routes/validationRoutes");
+const settingsRoutes = require("./src/routes/settingsRoutes");
+const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
+const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -165,11 +171,37 @@ app.use(userAdminRoutes);
 app.use(inventoryRoutes);
 app.use(discountRoutes);
 app.use(cartRoutes);
+const paymentRoutes = require("./src/routes/paymentRoutes");
+app.use("/api/orders", paymentRoutes);
 app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
 app.use(demoEnquiryRoutes);
 app.use(validationRoutes);
+app.use(settingsRoutes);
 app.use("/api/admin/upload", uploadRoutes);
+app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
+app.use("/api/smart-home/steps", smartHomeStepRoutes);
+
+// Website mode settings
+const settingsPath = path.join(__dirname, "website-mode.json");
+app.get("/api/settings/website-mode", (req, res) => {
+  try {
+    const data = fs.existsSync(settingsPath)
+      ? JSON.parse(fs.readFileSync(settingsPath, "utf8"))
+      : { mode: "live" };
+    res.json({ success: true, data });
+  } catch (err) {
+    res.json({ success: true, data: { mode: "live" } });
+  }
+});
+app.put("/api/settings/website-mode", requireAdmin, (req, res) => {
+  const { mode } = req.body;
+  if (!["live", "coming_soon"].includes(mode)) {
+    return res.status(400).json({ success: false, message: "Invalid mode. Must be 'live' or 'coming_soon'" });
+  }
+  fs.writeFileSync(settingsPath, JSON.stringify({ mode }, null, 2));
+  res.json({ success: true, data: { mode } });
+});
 
 // Static files
 const uploadDir = ensureUploadsDir();
@@ -229,6 +261,8 @@ const startServer = async () => {
     await ensureAdminTables();
     await ensureDemoEnquiriesTable();
     await ensureProductUpgradeTables();
+    await ensurePaymentColumns();
+    await ensureSystemSettingsTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);

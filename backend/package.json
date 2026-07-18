@@ -21,6 +21,7 @@
     "mysql2": "^3.22.3",
     "nodemailer": "^9.0.1",
     "pdfkit": "^0.18.0",
+    "razorpay": "^2.9.6",
     "validator": "^13.15.35"
   }
 }

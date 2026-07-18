@@ -17,11 +17,11 @@ import {
   Calendar,
   Hash,
   User,
-  Sparkles,
   ChevronRight,
 } from "lucide-react";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
+import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 
 export default function OrderConfirmation({ token }) {
   const location = useLocation();
@@ -29,7 +29,7 @@ export default function OrderConfirmation({ token }) {
   const [copied, setCopied] = React.useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = React.useState(false);
 
-  if (!order) return <Navigate to="/" replace />;
+  if (!order) return <Navigate to="/home" replace />;
 
   const {
     order_number,
@@ -50,6 +50,21 @@ export default function OrderConfirmation({ token }) {
     created_at,
     estimated_delivery,
   } = order;
+
+  // Calculate subtotal (original prices) and total savings from discount
+  const { subtotal, totalSavings } = items.reduce(
+    (acc, i) => {
+      const itemOriginalPrice = parseFloat(i.original_price || i.price || 0);
+      const itemFinalPrice = parseFloat(i.final_price || i.price || 0);
+      const itemOriginalTotal = itemOriginalPrice * Number(i.quantity || 0);
+      const itemFinalTotal = itemFinalPrice * Number(i.quantity || 0);
+      return {
+        subtotal: acc.subtotal + itemOriginalTotal,
+        totalSavings: acc.totalSavings + (itemOriginalTotal - itemFinalTotal),
+      };
+    },
+    { subtotal: 0, totalSavings: 0 }
+  );
 
   const copyOrderNumber = () => {
     navigator.clipboard.writeText(order_number);
@@ -88,7 +103,7 @@ export default function OrderConfirmation({ token }) {
   // Upgraded Status Configuration matching Premium Palette Architecture
   const statusConfig = {
     pending: {
-      label: "Pending System Release",
+      label: "Pending",
       bg: "bg-amber-400/10",
       border: "border-amber-400/30",
       text: "text-amber-400",
@@ -175,11 +190,6 @@ export default function OrderConfirmation({ token }) {
     }
   };
 
-  const subtotal = items.reduce(
-    (s, i) => s + parseFloat(i.price || 0) * Number(i.quantity || 0),
-    0,
-  );
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased relative overflow-x-hidden selection:bg-indigo-600 selection:text-white">
       {/* ── Premium High-Tech Background Aesthetics ────────────────── */}
@@ -191,7 +201,7 @@ export default function OrderConfirmation({ token }) {
       <div className="relative pt-12 pb-8 border-b border-slate-900/60 bg-slate-950/40 backdrop-blur-md z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            {/* Left Column: Authentic Thank You Core Branding */}
+            {/* Left Column: Success Icon + Thank You */}
             <div className="flex items-start gap-5 animate-[fadeIn_0.6s_ease-out]">
               <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center flex-shrink-0 relative shadow-[0_0_30px_rgba(79,70,229,0.25)] border border-indigo-400/20 group">
                 <CheckCircle
@@ -201,19 +211,11 @@ export default function OrderConfirmation({ token }) {
                 <div className="absolute -inset-1 bg-indigo-600 rounded-2xl blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-300 pointer-events-none" />
               </div>
               <div>
-                <span className="inline-flex items-center gap-1.5 bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md mb-2">
-                  <Sparkles
-                    size={10}
-                    className="text-amber-400 fill-amber-400"
-                  />{" "}
-                  Transaction Authorized
-                </span>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                   Thank you for your order
                 </h1>
                 <p className="text-slate-400 text-sm mt-1.5 font-medium max-w-xl">
-                  Your platform request has been successfully finalized. System
-                  provisioning logs have been updated.
+                  Your platform request has been successfully finalized.
                 </p>
               </div>
             </div>
@@ -224,7 +226,7 @@ export default function OrderConfirmation({ token }) {
               <div className="relative bg-slate-900 rounded-2xl px-6 py-5 min-w-[280px] border border-slate-800/80 shadow-2xl">
                 <div className="flex items-center justify-between gap-4 mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Order System Key
+                    Order Number
                   </span>
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${sc.bg} ${sc.border} ${sc.text}`}
@@ -243,7 +245,7 @@ export default function OrderConfirmation({ token }) {
                   <button
                     onClick={copyOrderNumber}
                     className="p-1.5 rounded-md bg-slate-900 hover:bg-indigo-600/20 text-slate-400 hover:text-indigo-400 border border-slate-800/80 hover:border-indigo-500/30 transition-all duration-300"
-                    title="Copy System Key"
+                    title="Copy Order Number"
                   >
                     {copied ? (
                       <Check size={13} className="text-emerald-400" />
@@ -255,7 +257,7 @@ export default function OrderConfirmation({ token }) {
 
                 {created_at && (
                   <p className="text-[11px] text-slate-500 mt-3 font-semibold flex items-center gap-1.5 justify-end">
-                    <Clock size={12} className="text-slate-600" /> System Date:{" "}
+                    <Clock size={12} className="text-slate-600" /> Order Date:{" "}
                     {formatDate(created_at)}
                   </p>
                 )}
@@ -266,9 +268,9 @@ export default function OrderConfirmation({ token }) {
           {/* Secure System Strip */}
           <div className="mt-8 pt-4 border-t border-slate-900/60 flex flex-wrap items-center gap-x-6 gap-y-3">
             {[
-              { icon: ShieldCheck, text: "SSL Secure Platform Handshake" },
-              { icon: Truck, text: "3–5 Operational Express Pipeline" },
-              { icon: Mail, text: "Automated Cryptographic Invoice Sent" },
+              { icon: ShieldCheck, text: "SSL Secure Platform" },
+              { icon: Truck, text: "Within 5-6 days delivery" },
+              { icon: Mail, text: "Automated Email Invoice Sent" },
             ].map(({ icon: Icon, text }) => (
               <div
                 key={text}
@@ -296,14 +298,14 @@ export default function OrderConfirmation({ token }) {
               <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-800/50 bg-slate-900/50">
                 <MapPin size={16} className="text-indigo-400" />
                 <h2 className="text-xs font-black text-white uppercase tracking-wider">
-                  Logistics & Destination Parameters
+                  Personal Information
                 </h2>
               </div>
               <div className="p-6">
                 <div className="grid gap-6 sm:grid-cols-2 mb-6">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                      Primary Consignee
+                      Name
                     </p>
                     <div className="flex items-center gap-3 bg-slate-950 border border-slate-800/80 rounded-xl p-3">
                       <div className="w-9 h-9 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
@@ -316,7 +318,7 @@ export default function OrderConfirmation({ token }) {
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                      Comms Endpoint
+                      Name and Email
                     </p>
                     <div className="space-y-1.5 bg-slate-950 border border-slate-800/80 rounded-xl p-3 h-[62px] flex flex-col justify-center">
                       {guest_email && (
@@ -336,7 +338,7 @@ export default function OrderConfirmation({ token }) {
                 </div>
                 <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 relative">
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                    Routing Physical Address
+                    User Address
                   </p>
                   <p className="text-sm text-slate-200 font-medium leading-relaxed">
                     {delivery_address || "—"}
@@ -357,66 +359,87 @@ export default function OrderConfirmation({ token }) {
               <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-800/50 bg-slate-900/50">
                 <Package size={16} className="text-indigo-400" />
                 <h2 className="text-xs font-black text-white uppercase tracking-wider">
-                  Itemized Hardware Manifest
+                  Order Information
                 </h2>
               </div>
 
               <div className="divide-y divide-slate-800/40 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-                {items.map((item) => (
-                  <div
-                    key={item.product_id || item.id}
-                    className="flex items-center gap-4 px-6 py-4 hover:bg-slate-950/30 transition-colors duration-200"
-                  >
-                    <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-950 border border-slate-800/80 flex-shrink-0 p-1 flex items-center justify-center">
-                      {item.product_image ? (
-                        <SafeImage
-                          src={item.product_image}
-                          alt={item.product_name}
-                          className="h-full w-full object-contain filter brightness-95 contrast-105"
-                          fallback={
-                            <div className="flex h-full items-center justify-center text-slate-600">
-                              <Package size={18} />
-                            </div>
-                          }
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-slate-600">
-                          <Package size={18} />
-                        </div>
-                      )}
-                    </div>
+                {items.map((item) => {
+                  const discountInfo = calculateDiscount(item);
+                  return (
+                    <div
+                      key={item.product_id || item.id}
+                      className="flex items-center gap-4 px-6 py-4 hover:bg-slate-950/30 transition-colors duration-200"
+                    >
+                      <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-950 border border-slate-800/80 flex-shrink-0 p-1 flex items-center justify-center">
+                        {item.product_image ? (
+                          <SafeImage
+                            src={item.product_image}
+                            alt={item.product_name}
+                            className="h-full w-full object-contain filter brightness-95 contrast-105"
+                            fallback={
+                              <div className="flex h-full items-center justify-center text-slate-600">
+                                <Package size={18} />
+                              </div>
+                            }
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-slate-600">
+                            <Package size={18} />
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white text-sm tracking-tight truncate">
-                        {item.product_name}
-                      </p>
-                      <p className="text-xs text-slate-400 font-medium mt-1 font-mono">
-                        QTY{" "}
-                        <span className="text-indigo-400 font-bold">
-                          {item.quantity}
-                        </span>{" "}
-                        × {formatCurrency(item.price)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm tracking-tight truncate">
+                          {item.product_name}
+                        </p>
+                        <p className="text-xs text-slate-400 font-medium mt-1 font-mono">
+                          QTY{" "}
+                          <span className="text-indigo-400 font-bold">
+                            {item.quantity}
+                          </span>{" "}
+                          ×{" "}
+                          {hasDiscount(item) ? (
+                            <>
+                              <span className="line-through">{formatCurrency(item.original_price || item.price)}</span>
+                              <span className="ml-1">{formatCurrency(item.final_price || item.price)}</span>
+                            </>
+                          ) : (
+                            formatCurrency(item.price)
+                          )}
+                        </p>
+                      </div>
+
+                      <p className="text-sm font-black text-white font-mono tracking-tight flex-shrink-0">
+                        {formatCurrency(
+                          parseFloat(item.final_price || item.price || 0) * item.quantity
+                        )}
                       </p>
                     </div>
-
-                    <p className="text-sm font-black text-white font-mono tracking-tight flex-shrink-0">
-                      {formatCurrency(parseFloat(item.price) * item.quantity)}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Aggregation Frame Block */}
               <div className="px-6 py-5 border-t border-slate-800/60 bg-slate-950/40 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-400">Subtotal Stream</span>
+                  <span className="text-slate-400">Subtotal Amount</span>
                   <span className="font-bold text-slate-200 font-mono">
                     {formatCurrency(subtotal)}
                   </span>
                 </div>
+                {totalSavings > 0 && (
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-emerald-400">You Save</span>
+                    <span className="font-semibold text-emerald-400">
+                      -{formatCurrency(totalSavings)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-xs font-semibold">
                   <span className="text-slate-400">
-                    Pipeline Transport Route
+                    Delivery Amount
                   </span>
                   <span className="font-black text-amber-400 tracking-wider text-[10px] bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
                     FREE FREIGHT
@@ -424,7 +447,7 @@ export default function OrderConfirmation({ token }) {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-800/60">
                   <span className="text-sm font-black text-white uppercase tracking-wider">
-                    Gross Total Settled
+                    Total Amount
                   </span>
                   <span className="text-xl font-black text-indigo-400 font-mono drop-shadow-[0_0_15px_rgba(129,140,248,0.2)]">
                     {formatCurrency(total_amount)}
@@ -451,10 +474,10 @@ export default function OrderConfirmation({ token }) {
                 </div>
                 <div>
                   <p className="text-sm font-black text-white tracking-tight">
-                    Telemetry Pipeline
+                    Doorstep delivery
                   </p>
                   <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                    Real-time status tracking active
+                    Track your order
                   </p>
                 </div>
               </div>
@@ -469,20 +492,20 @@ export default function OrderConfirmation({ token }) {
               <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-800/50 bg-slate-900/50">
                 <CreditCard size={15} className="text-indigo-400" />
                 <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                  Payment Metrics
+                  Payment Details
                 </h3>
               </div>
               <div className="p-5 space-y-3.5 font-medium">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Gateway Method</span>
+                  <span className="text-slate-400">Payment Method</span>
                   <span className="font-bold text-slate-200">
                     {payment_method === "online"
-                      ? "Digital Network Token"
+                      ? "Online"
                       : "Cash Settlement Layer"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Ledger Status</span>
+                  <span className="text-slate-400">Payment Status</span>
                   <span
                     className={`font-bold px-2.5 py-0.5 rounded-md text-[11px] border ${
                       payment_status === "paid"
@@ -490,11 +513,11 @@ export default function OrderConfirmation({ token }) {
                         : "bg-amber-400/10 border-amber-400/30 text-amber-400"
                     }`}
                   >
-                    {payment_status === "paid" ? "Cleared" : "Pending Sync"}
+                    {payment_status === "paid" ? "Paid" : "Pending Sync"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-400">Captured Amount</span>
+                  <span className="text-slate-400">Total Amount</span>
                   <span className="font-bold text-indigo-400 font-mono">
                     {formatCurrency(total_amount)}
                   </span>
@@ -506,7 +529,7 @@ export default function OrderConfirmation({ token }) {
 
                 {invoice_number && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Invoice Hash</span>
+                    <span className="text-slate-400">Invoice Number</span>
                     <span className="font-mono text-[11px] font-bold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded">
                       {invoice_number}
                     </span>
@@ -514,7 +537,7 @@ export default function OrderConfirmation({ token }) {
                 )}
                 {tracking_number && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Tracking Node</span>
+                    <span className="text-slate-400">Tracking Number</span>
                     <span className="font-mono text-[11px] font-bold text-indigo-400 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded">
                       {tracking_number}
                     </span>
@@ -529,15 +552,12 @@ export default function OrderConfirmation({ token }) {
               <div className="flex items-center gap-2 mb-3">
                 <Clock size={16} className="text-indigo-400" />
                 <p className="text-xs font-black text-indigo-400 uppercase tracking-wider">
-                  Estimated Fulfillment Window
+                  Delivery Date
                 </p>
               </div>
               <p className="text-lg font-black text-white tracking-tight">
                 {formatDeliveryDate(estimated_delivery) ||
                   "3–5 System Business Days"}
-              </p>
-              <p className="text-[11px] text-slate-400 font-medium mt-1">
-                Standard processing matrix applied nationwide.
               </p>
             </div>
 
@@ -549,7 +569,7 @@ export default function OrderConfirmation({ token }) {
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                    Node Placement Complete
+                    Order Placement Date
                   </p>
                   <p className="text-xs font-bold text-slate-200 mt-0.5">
                     {formatDate(created_at)}

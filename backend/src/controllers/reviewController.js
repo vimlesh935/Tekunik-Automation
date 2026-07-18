@@ -22,7 +22,109 @@ const normalizeReview = (review) => ({
 });
 
 // ─────────────────────────────────────────────────────────────
-// CUSTOMER: Submit Review
+// Email Validation Helper
+// ─────────────────────────────────────────────────────────────
+
+const validateEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email.trim());
+};
+
+// ─────────────────────────────────────────────────────────────
+// GUEST OR AUTHENTICATED: Submit Product Review
+// Supports both logged-in users and guests
+// ─────────────────────────────────────────────────────────────
+
+const createProductReview = asyncHandler(async (req, res) => {
+  // Get product_id from params (route is /api/products/:id/reviews)
+  const product_id = req.params.id || req.body.product_id;
+  const { rating, review_title, review_message, customer_name, customer_email, order_id } = req.body;
+  
+  // Check if user is authenticated
+  const user_id = req.user?.id || null;
+
+  if (!product_id || !rating) {
+    throw new AppError("product_id and rating are required", 400);
+  }
+  if (rating < 1 || rating > 5) {
+    throw new AppError("Rating must be between 1 and 5", 400);
+  }
+
+  // Validate product exists
+  const [product] = await query("SELECT id FROM products WHERE id = ?", [product_id]);
+  if (!product) throw new AppError("Product not found", 404);
+
+  // Get customer info
+  let customerName = customer_name || null;
+  let customerEmail = customer_email || null;
+
+  // If user is authenticated, get info from profile
+  if (user_id) {
+    const [profile] = await query(
+      "SELECT first_name, last_name, email FROM user_profiles up JOIN users u ON up.user_id = u.id WHERE up.user_id = ?",
+      [user_id]
+    );
+    if (profile) {
+      customerName = customerName || `${profile.first_name} ${profile.last_name}`.trim();
+      customerEmail = customerEmail || profile.email;
+    }
+  }
+
+  // For guests or when email is missing, require email
+  if (!customerEmail) {
+    throw new AppError("Email is required for review submission", 400);
+  }
+
+  // Validate email format
+  if (!validateEmail(customerEmail)) {
+    throw new AppError("Please provide a valid email address", 400);
+  }
+
+  // Check for duplicate review from same email for same product (optional - can be disabled for authenticated users)
+  const [existing] = await query(
+    "SELECT id FROM product_reviews WHERE product_id = ? AND customer_email = ?",
+    [product_id, customerEmail.trim()]
+  );
+  if (existing) {
+    throw new AppError("You have already submitted a review for this product", 400);
+  }
+
+  const imagesJson = null; // For simplicity, images not supported in guest reviews
+
+  const result = await query(
+    `INSERT INTO product_reviews
+      (product_id, order_id, user_id, customer_name, customer_email, rating, review_title, review_message, review_images, review_status, is_approved, show_on_website, website_visibility)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, 'hidden')`,
+    [
+      product_id,
+      order_id || null,
+      user_id,
+      customerName || 'Anonymous',
+      customerEmail.trim(),
+      rating,
+      review_title || null,
+      review_message || null,
+      imagesJson,
+    ]
+  );
+
+  return success(res, "Thank you! Your review has been submitted and is awaiting admin approval.", {
+    review: {
+      id: result.insertId,
+      product_id,
+      rating,
+      review_title,
+      review_message,
+      customer_name: customerName || 'Anonymous',
+      customer_email: customerEmail.trim(),
+      review_status: "pending",
+    },
+  }, 201);
+});
+
+// ─────────────────────────────────────────────────────────────
+// AUTHENTICATED: Submit Review for Order (legacy - kept for backward compatibility)
 // ─────────────────────────────────────────────────────────────
 
 const createReview = asyncHandler(async (req, res) => {
@@ -64,7 +166,7 @@ const createReview = asyncHandler(async (req, res) => {
 
   // Get customer name
   const [profile] = await query(
-    "SELECT first_name, last_name FROM user_profiles WHERE user_id = ?",
+    "SELECT first_name, last_name, email FROM user_profiles up JOIN users u ON up.user_id = u.id WHERE up.user_id = ?",
     [user_id]
   );
   const customerName = profile
@@ -77,13 +179,14 @@ const createReview = asyncHandler(async (req, res) => {
 
   const result = await query(
     `INSERT INTO product_reviews
-      (order_id, product_id, user_id, customer_name, rating, review_title, review_message, review_images, review_status, is_approved, show_on_website, website_visibility)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, 'hidden')`,
+      (order_id, product_id, user_id, customer_name, customer_email, rating, review_title, review_message, review_images, review_status, is_approved, show_on_website, website_visibility)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, 'hidden')`,
     [
       order_id,
       product_id,
       user_id,
       customerName,
+      profile?.email || null,
       rating,
       review_title || null,
       review_message || null,
@@ -457,6 +560,7 @@ const hideReviewFromWebsite = asyncHandler(async (req, res) => {
 
 module.exports = {
   createReview,
+  createProductReview,
   getProductReviews,
   getPublicReviews,
   getUserReviewForOrder,

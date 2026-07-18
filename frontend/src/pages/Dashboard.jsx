@@ -89,21 +89,21 @@ export default function Dashboard() {
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
 useEffect(() => {
-     loadDashboardData();
-     loadRecommendedProducts();
+    loadDashboardData();
+    loadRecommendedProducts();
 
-     const onVisible = () => {
-       if (document.visibilityState === "visible") loadDashboardData();
-     };
-     document.addEventListener("visibilitychange", onVisible);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadDashboardData();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
-     const interval = setInterval(() => loadDashboardData(), 30000);
+    const interval = setInterval(() => loadDashboardData(), 30000);
 
-     return () => {
-       document.removeEventListener("visibilitychange", onVisible);
-       clearInterval(interval);
-     };
-   }, []);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(interval);
+    };
+  }, []);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -283,21 +283,21 @@ useEffect(() => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "pending":
-        return <Clock size={14} className="text-amber-400" />;
+        return <Clock size={14} className="text-cyan-400" />;
       case "confirmed":
         return <CheckCircle size={14} className="text-cyan-400" />;
       case "processing":
-        return <Loader size={14} className="text-blue-400 animate-spin" />;
+        return <Loader size={14} className="text-cyan-400 animate-spin" />;
       case "packed":
-        return <Package size={14} className="text-purple-400" />;
+        return <Package size={14} className="text-cyan-400" />;
       case "shipped":
-        return <Truck size={14} className="text-indigo-400" />;
+        return <Truck size={14} className="text-cyan-400" />;
       case "out_for_delivery":
-        return <Truck size={14} className="text-orange-400" />;
+        return <Truck size={14} className="text-cyan-400" />;
       case "delivered":
-        return <CheckCircle size={14} className="text-emerald-400" />;
+        return <CheckCircle size={14} className="text-cyan-400" />;
       case "cancelled":
-        return <XCircle size={14} className="text-rose-400" />;
+        return <XCircle size={14} className="text-cyan-400" />;
       default:
         return <Clock size={14} className="text-gray-400" />;
     }
@@ -306,21 +306,21 @@ useEffect(() => {
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "confirmed":
         return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "processing":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "packed":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "shipped":
-        return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "out_for_delivery":
-        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "delivered":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "cancelled":
-        return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       default:
         return "bg-gray-500/10 text-gray-400 border-gray-500/20";
     }
@@ -333,9 +333,9 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070f1e] flex items-center justify-center">
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <div className="relative w-14 h-14">
-          <div className="absolute inset-0 rounded-full border-4 border-white/5 border-t-blue-600 animate-spin" />
+          <div className="absolute inset-0 rounded-full border-4 border-white/5 border-t-cyan-400 animate-spin" />
         </div>
       </div>
     );
@@ -344,7 +344,7 @@ useEffect(() => {
   const recentOrders = orders.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#070f1e] text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans antialiased selection:bg-cyan-400 selection:text-white">
       {/* Toast Notification Layer */}
       <AnimatePresence>
         {notification && (
@@ -354,7 +354,7 @@ useEffect(() => {
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             className={`fixed top-6 right-6 z-50 bg-slate-900/95 shadow-2xl backdrop-blur-xl border rounded-xl px-5 py-3.5 text-sm max-w-sm ${
               notifType === "success"
-                ? "border-emerald-500/30"
+                ? "border-cyan-500/30"
                 : "border-rose-500/30"
             }`}
           >
@@ -362,12 +362,12 @@ useEffect(() => {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
                   notifType === "success"
-                    ? "bg-emerald-500/10"
+                    ? "bg-cyan-500/10"
                     : "bg-rose-500/10"
                 }`}
               >
                 {notifType === "success" ? (
-                  <CheckCircle size={15} className="text-emerald-400" />
+                  <CheckCircle size={15} className="text-cyan-400" />
                 ) : (
                   <XCircle size={15} className="text-rose-400" />
                 )}
@@ -384,13 +384,12 @@ useEffect(() => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center shadow-inner">
-                <UserCircle size={32} className="text-amber-400" />
+                <UserCircle size={32} className="text-cyan-400" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                   Welcome{profile?.first_name ? `, ${profile.first_name}` : ""}
                 </h1>
-                {/* <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">{profile?.email || "Customer Account Panel"}</p> */}
               </div>
             </div>
 
@@ -401,7 +400,7 @@ useEffect(() => {
               >
                 <Link
                   to="/shop"
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-600/15 transition-colors"
                 >
                   <ShoppingBag size={16} /> Continue Shopping
                 </Link>
@@ -437,7 +436,7 @@ useEffect(() => {
               onClick={() => setActiveTab("profile")}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "profile"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
+                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
@@ -447,7 +446,7 @@ useEffect(() => {
               onClick={() => setActiveTab("orders")}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "orders"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
+                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
@@ -457,7 +456,7 @@ useEffect(() => {
               onClick={() => setActiveTab("addresses")}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "addresses"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
+                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
@@ -511,7 +510,7 @@ useEffect(() => {
                             onChange={(e) =>
                               setForm({ ...form, first_name: e.target.value })
                             }
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                             required
                           />
                         </div>
@@ -525,7 +524,7 @@ useEffect(() => {
                             onChange={(e) =>
                               setForm({ ...form, last_name: e.target.value })
                             }
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                             required
                           />
                         </div>
@@ -541,7 +540,7 @@ useEffect(() => {
                           onChange={(e) =>
                             setForm({ ...form, phone: e.target.value })
                           }
-                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                         />
                       </div>
 
@@ -555,7 +554,7 @@ useEffect(() => {
                             setForm({ ...form, address: e.target.value })
                           }
                           rows={3}
-                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all resize-none"
                         />
                       </div>
 
@@ -571,7 +570,7 @@ useEffect(() => {
                               setForm({ ...form, city: e.target.value });
                               setCityLocked(false);
                             }}
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                             readOnly={cityLocked}
                           />
                         </div>
@@ -602,10 +601,10 @@ useEffect(() => {
                               setCityLocked(false);
                             }
                           }}
-                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                         />
                         {pincodeLoading && (
-                          <p className="text-xs text-blue-400 mt-1">Fetching location...</p>
+                          <p className="text-xs text-cyan-400 mt-1">Fetching location...</p>
                         )}
                         {pincodeError && (
                           <p className="text-xs text-rose-400 mt-1">{pincodeError}</p>
@@ -616,7 +615,7 @@ useEffect(() => {
                         <button
                           type="submit"
                           disabled={saving}
-                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-md disabled:opacity-50 transition-colors"
+                          className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-lg shadow-md disabled:opacity-50 transition-colors"
                         >
                           {saving ? "Saving Changes..." : "Update Profile"}
                         </button>
@@ -633,7 +632,7 @@ useEffect(() => {
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <User size={12} className="text-amber-400" /> Full
+                          <User size={12} className="text-cyan-400" /> Full
                           Name
                         </div>
                         <p className="text-white text-sm font-semibold">
@@ -643,7 +642,7 @@ useEffect(() => {
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Mail size={12} className="text-amber-400" /> Email
+                          <Mail size={12} className="text-cyan-400" /> Email
                           Address
                         </div>
                         <p className="text-white text-sm font-semibold break-all">
@@ -653,7 +652,7 @@ useEffect(() => {
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Phone size={12} className="text-amber-400" /> Phone
+                          <Phone size={12} className="text-cyan-400" /> Phone
                           Number
                         </div>
                         <p className="text-white text-sm font-semibold">
@@ -663,7 +662,7 @@ useEffect(() => {
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Home size={12} className="text-amber-400" /> City
+                          <Home size={12} className="text-cyan-400" /> City
                         </div>
                         <p className="text-white text-sm font-semibold">
                           {profile?.city || "Not set"}
@@ -672,7 +671,7 @@ useEffect(() => {
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4 sm:col-span-2">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <MapPin size={12} className="text-amber-400" />{" "}
+                          <MapPin size={12} className="text-cyan-400" />{" "}
                           Address
                         </div>
                         <p className="text-slate-300 text-sm leading-relaxed">
@@ -705,7 +704,7 @@ useEffect(() => {
                     </div>
                     <Link
                       to="/orders"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
                     >
                       Complete History <ChevronRight size={14} />
                     </Link>
@@ -730,7 +729,7 @@ useEffect(() => {
                               y: -2,
                               backgroundColor: "rgba(30, 41, 59, 0.4)",
                             }}
-                            className="rounded-lg bg-slate-950 border border-slate-800 p-4 hover:border-blue-500/30 transition-all cursor-pointer"
+                            className="rounded-lg bg-slate-950 border border-slate-800 p-4 hover:border-cyan-500/30 transition-all cursor-pointer"
                             onClick={() => navigate(`/orders/${order.id}`)}
                           >
                             {/* Top Row: Order Number + Status */}
@@ -765,7 +764,7 @@ useEffect(() => {
 
                             {/* Bottom Row: Amount + Action Buttons */}
                             <div className="flex items-center justify-between border-t border-slate-800/60 pt-2 mt-1">
-                              <p className="text-base font-black text-amber-400">
+                              <p className="text-base font-black text-cyan-400">
                                 ₹{parseFloat(order.total_amount || 0).toFixed(2)}
                               </p>
                               <div className="flex items-center gap-2">
@@ -777,7 +776,7 @@ useEffect(() => {
                                       e.stopPropagation();
                                       openReviewModal(order);
                                     }}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-400 hover:bg-amber-500/20 transition-colors"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-bold text-cyan-400 hover:bg-cyan-500/20 transition-colors"
                                   >
                                     <Star size={12} /> Write Review
                                   </button>
@@ -822,7 +821,7 @@ useEffect(() => {
                       </p>
                       <Link
                         to="/shop"
-                        className="inline-flex items-center justify-center text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white shadow-md transition-colors"
+                        className="inline-flex items-center justify-center text-xs font-bold rounded-lg bg-cyan-600 hover:bg-cyan-500 px-4 py-2 text-white shadow-md transition-colors"
                       >
                         Start Shopping
                       </Link>
@@ -833,13 +832,13 @@ useEffect(() => {
                     <div className="mt-5 rounded-lg bg-slate-950 border border-slate-800 p-3.5 flex items-center gap-3">
                       <Truck
                         size={16}
-                        className="text-amber-400 flex-shrink-0"
+                        className="text-cyan-400 flex-shrink-0"
                       />
                       <p className="text-xs text-slate-400 font-medium">
                         Track your order status in real time.{" "}
                         <Link
                           to="/track-order"
-                          className="text-blue-400 hover:underline font-semibold inline-flex items-center gap-0.5"
+                          className="text-cyan-400 hover:underline font-semibold inline-flex items-center gap-0.5"
                         >
                           Track Order <ChevronRight size={12} />
                         </Link>
@@ -870,7 +869,7 @@ useEffect(() => {
 
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-5">
                     <div className="flex items-start gap-3.5">
-                      <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400 flex-shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 flex-shrink-0">
                         <MapPin size={16} />
                       </div>
                       <div className="space-y-1">
@@ -896,69 +895,6 @@ useEffect(() => {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* HIGH END RECOMMENDED DECK GRID (Always Visible for E-com retention) */}
-            {/* {recommendedProducts.length > 0 && (
-              <motion.div
-                variants={fadeInContainer}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-40px" }}
-                className="rounded-xl bg-slate-900 border border-slate-800/80 p-5 sm:p-7 shadow-xl"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/5 border border-amber-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2">
-                      <Sparkles size={10} /> Algorithmic Alignment
-                    </div>
-                    <h2 className="text-base font-bold text-white">Suggested Curations</h2>
-                  </div>
-                  <Link to="/shop" className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center gap-0.5">
-                    All Catalogs <ChevronRight size={14} />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {recommendedProducts.map((product) => (
-                    <motion.div
-                      key={product.id}
-                      variants={fadeInUpItem}
-                      className="group relative rounded-lg bg-slate-950 border border-slate-800 p-3.5 flex flex-col justify-between hover:border-slate-700/80 transition-all"
-                    >
-                      <Link to={`/product/${product.id}`} className="block space-y-3">
-                        <div className="relative h-32 w-full overflow-hidden rounded bg-slate-900 border border-slate-800/40">
-                          {product.image_url ? (
-                            <SafeImage
-                              src={product.image_url}
-                              alt={product.name}
-                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                              fallback={<div className="flex h-full items-center justify-center text-slate-700"><Package size={24} className="opacity-40" /></div>}
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-slate-700">
-                              <Package size={24} className="opacity-40" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="text-xs font-bold text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-1">{product.name}</h3>
-                          <p className="text-sm font-black text-amber-400 mt-1">₹{parseFloat(product.price || 0).toFixed(2)}</p>
-                        </div>
-                      </Link>
-
-                      <motion.button
-                        whileTap={{ scale: 0.96 }}
-                        onClick={(e) => handleAddToCart(product, e)}
-                        disabled={product.stock_quantity <= 0}
-                        className="mt-3.5 w-full rounded-md bg-blue-600 hover:bg-blue-700 py-2 text-[11px] font-bold text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                      >
-                        <ShoppingCart size={12} /> Procure Unit
-                      </motion.button>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )} */}
           </div>
         </div>
       </div>
@@ -971,7 +907,7 @@ useEffect(() => {
       >
         <Link
           to="/checkout"
-          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 border border-blue-500/30 transition-colors group"
+          className="w-14 h-14 rounded-full bg-cyan-600 hover:bg-cyan-500 flex items-center justify-center text-white shadow-2xl shadow-cyan-600/40 border border-cyan-500/30 transition-colors group"
         >
           <ShoppingCart
             size={20}
@@ -1023,7 +959,7 @@ useEffect(() => {
                   <select
                     value={selectedProduct || ""}
                     onChange={(e) => setSelectedProduct(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500"
                   >
                     {reviewProducts.map((item) => (
                       <option key={item.product_id} value={item.product_id}>
@@ -1058,7 +994,7 @@ useEffect(() => {
                             size={32}
                             className={`transition-colors duration-150 ${
                               star <= (hoverRating || rating)
-                                ? "fill-amber-400 text-amber-400"
+                                ? "fill-cyan-400 text-cyan-400"
                                 : "text-slate-600"
                             }`}
                           />
@@ -1076,7 +1012,7 @@ useEffect(() => {
                       value={reviewTitle}
                       onChange={(e) => setReviewTitle(e.target.value)}
                       placeholder="Great product!"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-amber-500"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-500"
                     />
                   </div>
 
@@ -1089,7 +1025,7 @@ useEffect(() => {
                       onChange={(e) => setReviewMessage(e.target.value)}
                       placeholder="Share your experience with this product..."
                       rows={4}
-                      className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-amber-500"
+                      className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-500"
                     />
                   </div>
                 </>
@@ -1107,7 +1043,7 @@ useEffect(() => {
                   type="button"
                   onClick={handleSubmitReview}
                   disabled={!rating || !selectedProduct || submittingReview || reviewProducts.length === 0 || reviewSuccess}
-                  className="motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] flex-1 inline-flex items-center justify-center gap-2 rounded-[12px] bg-blue-600 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(37,99,235,0.25)] transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] flex-1 inline-flex items-center justify-center gap-2 rounded-[12px] bg-cyan-600 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(37,99,235,0.25)] transition-all duration-300 hover:bg-cyan-500 hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {reviewSuccess ? (
                     <>

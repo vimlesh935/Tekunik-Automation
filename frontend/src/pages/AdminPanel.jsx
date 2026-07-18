@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { formatCurrency } from "../utils/currency.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { adminUserService, adminDemoEnquiryService, reviewService } from "../services/api";
+
+import { adminUserService, adminDemoEnquiryService, reviewService, smartHomeProposalService } from "../services/api";
 import {
   LayoutDashboard,
   Package,
@@ -37,398 +38,29 @@ import {
   Eye,
   Loader2,
   Star,
-
+  Settings,
+  ClipboardList,
+  Home,
+  Wrench,
+  Sparkles,
 } from "lucide-react";
 import { categoryService, getApiUrl } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
-import DashboardAnalytics from "../components/admin/DashboardAnalytics.jsx";
+import DashboardAnalytics from "../admin/components/dashboard/DashboardAnalytics.jsx";
+import AdminSettings from "../components/AdminSettings.jsx";
 
-const ImageUploadField = React.memo(({ target, currentUrl, previewUrl, uploading, uploadTarget, onSelectFile, onUploadFile, onClearSelection }) => (
-  <div className="space-y-3">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-cyan-500/50 transition">
-        {uploading && uploadTarget === target ? <RefreshCw size={16} className="animate-spin" /> : <Upload size={16} />}
-        {uploading && uploadTarget === target ? "Uploading..." : "Choose image"}
-        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => onSelectFile(e.target.files?.[0])} className="hidden" />
-      </label>
-      <div className="flex items-center gap-2">
-        <button type="button" onClick={onUploadFile} disabled={!previewUrl || uploading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-black rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition">
-          <Upload size={14} /> Upload
-        </button>
-        <button type="button" onClick={onClearSelection}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700 transition">
-          Clear
-        </button>
-      </div>
-    </div>
-    {(previewUrl || currentUrl) && (
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-28 h-20 rounded-2xl overflow-hidden border border-gray-700 bg-black/30">
-          <SafeImage src={previewUrl || currentUrl} alt="Preview" className="w-full h-full object-cover" />
-        </div>
-        <div className="text-sm text-gray-400">
-          <p>{previewUrl ? "Selected preview" : "Current image"}</p>
-          <p className="text-xs text-gray-500">Supported: jpg, png, webp, up to 5MB.</p>
-        </div>
-      </div>
-    )}
-  </div>
-));
+import Toast from "../admin/components/common/Toast.jsx";
+import CategoryModal from "../admin/components/categories/CategoryModal.jsx";
+import ProductModal from "../admin/components/products/ProductModal.jsx";
+import DiscountModal from "../admin/components/discounts/DiscountModal.jsx";
+import UserProfileModal from "../admin/components/users/UserProfileModal.jsx";
+import RecentProposals from "../admin/components/dashboard/RecentProposals.jsx";
 
-function Toast({ toast }) {
-  if (!toast) return null;
-  return (
-    <div className={`fixed bottom-6 right-6 z-50 rounded-2xl px-5 py-4 shadow-2xl ${toast.type === "error" ? "bg-red-500/95 text-white" : "bg-emerald-500/95 text-black"}`}>
-      <p className="text-sm font-semibold">{toast.message}</p>
-    </div>
-  );
-}
+// UserProfileModal extracted to admin/components/users/UserProfileModal.jsx
 
-function CategoryModal({ show, editingCategory, categoryForm, categoryError, categorySaving, onChange, onClose, onSave, onSelectImage, onUploadImage, onClearImage, categoryImageFile, categoryImagePreview, uploadingImage, uploadTarget }) {
-  if (!show) return null;
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{editingCategory ? "Edit Category" : "Add Category"}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={20} /></button>
-        </div>
-        {categoryError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{categoryError}</div>}
-        <div className="space-y-4">
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category Name *</label>
-            <input type="text" value={categoryForm.name} onChange={(e) => onChange("name", e.target.value)}
-              placeholder="e.g. Home Automation" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Description</label>
-            <textarea value={categoryForm.description} onChange={(e) => onChange("description", e.target.value)}
-              placeholder="Category description..." rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category Image</label>
-            <ImageUploadField target="category" currentUrl={categoryForm.image_url} previewUrl={categoryImagePreview} uploading={uploadingImage} uploadTarget={uploadTarget} onSelectFile={(file) => onSelectImage(file, "category")} onUploadFile={() => onUploadImage(categoryImageFile, "category")} onClearSelection={onClearImage} /></div>
-          <div className="flex gap-3 pt-4">
-            <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition font-semibold">Cancel</button>
-            <button onClick={onSave} disabled={categorySaving}
-              className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
-              {categorySaving ? <><RefreshCw size={16} className="animate-spin" /> Saving...</> : <><Save size={16} /> {editingCategory ? "Update" : "Create"}</>}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ProductModal extracted to admin/components/products/ProductModal.jsx
 
-function UserProfileModal({ show, user, onClose, onToggleStatus }) {
-  if (!show || !user) return null;
-
-  const formatShortDate = (dateStr) => {
-    if (!dateStr) return "N/A";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-IN", {
-        year: "numeric", month: "short", day: "numeric"
-      });
-    } catch { return dateStr; }
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-      confirmed: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
-      processing: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-      shipped: "text-purple-400 bg-purple-500/10 border-purple-500/20",
-      out_for_delivery: "text-orange-400 bg-orange-500/10 border-orange-500/20",
-      delivered: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    };
-    return colors[status] || "text-gray-400 bg-gray-500/10 border-gray-500/20";
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
-      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-fade-in">
-        <div className="sticky top-0 bg-[#0f172a]/80 backdrop-blur-xl border-b border-slate-800 p-6 sm:p-8 flex items-center justify-between z-10">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-lg">
-              <User size={28} />
-            </div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {user?.first_name || "N/A"} {user?.last_name || ""}
-              </h2>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900 px-2 py-0.5 rounded">ID: {user?.id}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${user?.is_verified ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                  {user?.is_verified ? 'Verified' : 'Unverified'}
-                </span>
-              </div>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-center">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Orders</p>
-                  <p className="text-2xl font-black text-cyan-400 font-mono">{user?.order_count || 0}</p>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-center">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Spend</p>
-                  <p className="text-2xl font-black text-emerald-400 font-mono">₹{(parseFloat(user?.total_spent || 0)).toLocaleString()}</p>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-center sm:col-span-2 lg:col-span-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Last Order Date</p>
-                  <p className="text-lg font-black text-amber-400 font-mono">{formatShortDate(user?.last_order_date)}</p>
-                </div>
-              </div>
-              
-              <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-6 space-y-6">
-                <div className="space-y-5">
-                   <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500"><Mail size={16} /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Email</p>
-                      <p className="text-sm text-slate-200 font-bold truncate">{user?.email || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500"><Phone size={16} /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Contact</p>
-                      <p className="text-sm text-slate-200 font-bold">{user?.phone || "N/A"}</p>
-                    </div>
-                  </div>
-                   <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500"><Calendar size={16} /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Age Profile</p>
-                      <p className="text-sm text-slate-200 font-bold">{user?.age || "N/A"}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-2 space-y-8">
-               <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-8">
-                 <div className="flex items-center gap-3 mb-6">
-                  <MapPin size={20} className="text-orange-500" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Shipping Repository</h3>
-                </div>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-2">Detailed Address</p>
-                      <p className="text-sm text-slate-300 font-medium leading-relaxed">{user?.address || "No records found."}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">City</p>
-                      <p className="text-sm text-slate-100 font-bold">{user?.city || "N/A"}</p>
-                    </div>
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Pincode</p>
-                      <p className="text-sm text-slate-100 font-bold font-mono">{user?.pincode || "N/A"}</p>
-                    </div>
-                  </div>
-                </div>
-               </div>
-
-               <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] overflow-hidden">
-                <div className="px-8 py-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/30">
-                  <div className="flex items-center gap-3">
-                    <ShoppingCart size={18} className="text-cyan-400" />
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Transaction History</h3>
-                  </div>
-                  <span className="text-[10px] font-black px-3 py-1 bg-slate-900 text-slate-400 rounded-full border border-slate-800">{user?.orders?.length || 0} Records</span>
-                </div>
-                <div className="overflow-x-auto custom-scrollbar max-h-[400px]">
-                   <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-[#0f172a] border-b border-slate-800 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
-                        <th className="p-6">Order ID</th>
-                        <th className="p-6">Products</th>
-                        <th className="p-6">Timeline</th>
-                        <th className="p-6">Status</th>
-                        <th className="p-6 text-right">Valuation</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {(user?.orders || []).map(order => (
-                        <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="p-6 text-xs font-mono font-black text-cyan-400 tracking-tighter">{order?.order_number}</td>
-                          <td className="p-6">
-                            <div className="flex flex-col gap-1">
-                              {order.items?.map((item, idx) => (
-                                <p key={idx} className="text-[10px] text-slate-300 font-medium truncate max-w-[150px]">{item.product_name} <span className="text-slate-500">x{item.quantity}</span></p>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="p-6 text-xs text-slate-300 font-bold">{order?.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</td>
-                          <td className="p-6">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-md text-[10px] font-black border uppercase tracking-widest ${getStatusColor(order?.status)}`}>
-                              {order?.status?.replace(/_/g, " ")}
-                            </span>
-                          </td>
-                          <td className="p-6 text-right text-sm font-black text-emerald-400 font-mono">₹{parseFloat(order?.total_amount || 0).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                      {(!user?.orders || user?.orders.length === 0) && (
-                        <tr><td colSpan={4} className="p-20 text-center text-xs font-bold uppercase tracking-widest text-slate-600">No transaction logs available.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProductModal({ show, editingProduct, productForm, productError, productSaving, categories, onFieldChange, onClose, onSave, onSelectImage, onUploadImage, onClearImage, productImageFile, productImagePreview, uploadingImage, uploadTarget }) {
-  if (!show) return null;
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{editingProduct ? "Edit Product" : "Add Product"}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={20} /></button>
-        </div>
-        {productError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{productError}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Product Name *</label>
-            <input type="text" value={productForm.name} onChange={(e) => onFieldChange("name", e.target.value)}
-              placeholder="e.g. Smart Thermostat Pro" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Description</label>
-            <textarea value={productForm.description} onChange={(e) => onFieldChange("description", e.target.value)}
-              placeholder="Product description..." rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Price *</label>
-            <input type="number" step="0.01" min="0" value={productForm.price} onChange={(e) => onFieldChange("price", e.target.value)}
-              placeholder="99.99" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Stock</label>
-            <input type="number" min="0" value={productForm.stock} onChange={(e) => onFieldChange("stock", e.target.value)}
-              placeholder="10" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category</label>
-            <select value={productForm.category_id} onChange={(e) => onFieldChange("category_id", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
-              <option value="">-- Select Category --</option>
-              {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-            </select></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Brand</label>
-            <input type="text" value={productForm.brand} onChange={(e) => onFieldChange("brand", e.target.value)}
-              placeholder="e.g. Tekunik" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Features (one per line)</label>
-            <textarea value={productForm.features} onChange={(e) => onFieldChange("features", e.target.value)}
-              placeholder="WiFi enabled&#10;Voice control" rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Status</label>
-            <select value={productForm.status} onChange={(e) => onFieldChange("status", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
-              <option value="active">Active</option><option value="inactive">Inactive</option><option value="draft">Draft</option>
-            </select></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Featured</label>
-            <label className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer">
-              <input type="checkbox" checked={productForm.featured} onChange={(e) => onFieldChange("featured", e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
-              <span className="text-sm text-gray-300">Show on homepage</span>
-            </label></div>
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Product Image</label>
-            <ImageUploadField target="product" currentUrl={productForm.image_url} previewUrl={productImagePreview} uploading={uploadingImage} uploadTarget={uploadTarget} onSelectFile={(file) => onSelectImage(file, "product")} onUploadFile={() => onUploadImage(productImageFile, "product")} onClearSelection={onClearImage} /></div>
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Application Usage</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {["Smart Home", "Office Automation", "Hotel Solutions", "Hospital Automation", "School & College Solutions", "Industrial Automation"].map((app) => {
-                const selected = (productForm.applications || []).includes(app);
-                return (
-                  <label key={app} className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition ${selected ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-gray-800 border-gray-700 hover:border-gray-600'}`}>
-                    <input type="checkbox" checked={selected} onChange={() => {
-                      const current = productForm.applications || [];
-                      const updated = selected ? current.filter(a => a !== app) : [...current, app];
-                      onFieldChange("applications", updated);
-                    }} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
-                    <span className="text-sm text-gray-300">{app}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 pt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition font-semibold">Cancel</button>
-          <button onClick={onSave} disabled={productSaving}
-            className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
-            {productSaving ? <><RefreshCw size={16} className="animate-spin" /> Saving...</> : <><Save size={16} /> {editingProduct ? "Update" : "Create"}</>}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DiscountModal({ show, editingDiscount, discountForm, discountError, discountSaving, products, onFieldChange, onClose, onSave }) {
-  if (!show) return null;
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{editingDiscount ? "Edit Discount" : "Add Discount"}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={20} /></button>
-        </div>
-        {discountError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{discountError}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2"><label className="block text-sm font-semibold text-gray-300 mb-2">Discount Name *</label>
-            <input type="text" value={discountForm.name} onChange={(e) => onFieldChange("name", e.target.value)}
-              placeholder="e.g. Summer Sale" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Type</label>
-            <select value={discountForm.type} onChange={(e) => onFieldChange("type", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
-              <option value="percentage">Percentage (%)</option>
-              <option value="fixed">Fixed Amount (₹)</option>
-              <option value="bogo">Buy 1 Get 1 (BOGO)</option>
-            </select></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Value *</label>
-            <input type="number" step="0.01" min="0" value={discountForm.value}
-              onChange={(e) => onFieldChange("value", e.target.value)}
-              placeholder={discountForm.type === "percentage" ? "10" : "99.99"}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Product (optional)</label>
-            <select value={discountForm.product_id} onChange={(e) => onFieldChange("product_id", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
-              <option value="">All Products</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Min Order Value</label>
-            <input type="number" step="0.01" min="0" value={discountForm.min_order_value}
-              onChange={(e) => onFieldChange("min_order_value", e.target.value)}
-              placeholder="50.00" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Active</label>
-            <label className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer">
-              <input type="checkbox" checked={discountForm.is_active}
-                onChange={(e) => onFieldChange("is_active", e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
-              <span className="text-sm text-gray-300">Active</span>
-            </label></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Start Date</label>
-            <input type="datetime-local" value={discountForm.starts_at}
-              onChange={(e) => onFieldChange("starts_at", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Expiry Date</label>
-            <input type="datetime-local" value={discountForm.expires_at}
-              onChange={(e) => onFieldChange("expires_at", e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-        </div>
-        <div className="flex gap-3 pt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition font-semibold">Cancel</button>
-          <button onClick={onSave} disabled={discountSaving}
-            className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
-            {discountSaving ? <><RefreshCw size={16} className="animate-spin" /> Saving...</> : <><Save size={16} /> {editingDiscount ? "Update" : "Create"}</>}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// DiscountModal extracted to admin/components/discounts/DiscountModal.jsx
 
 export default function AdminPanel() {
   const { token, logout: onLogout } = useAuth();
@@ -437,6 +69,18 @@ export default function AdminPanel() {
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
+  const [installRequests, setInstallRequests] = useState([]);
+  const [installPage, setInstallPage] = useState(1);
+  const [installTotal, setInstallTotal] = useState(0);
+  const [installTotalPages, setInstallTotalPages] = useState(1);
+  const [installStatusFilter, setInstallStatusFilter] = useState("");
+  const [installDetail, setInstallDetail] = useState(null);
+  const [selectedProposalId, setSelectedProposalId] = useState(null);
+  const [proposalStats, setProposalStats] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deleteInstallId, setDeleteInstallId] = useState(null);
+  const [showDeleteInstallModal, setShowDeleteInstallModal] = useState(false);
+
 
   const [inventoryStats, setInventoryStats] = useState(null);
   const [inventoryList, setInventoryList] = useState([]);
@@ -493,6 +137,7 @@ export default function AdminPanel() {
   const [discountError, setDiscountError] = useState("");
   const [discountPage, setDiscountPage] = useState(1);
   const [discountTotalPages, setDiscountTotalPages] = useState(1);
+  const [allProductsForDiscount, setAllProductsForDiscount] = useState([]);
 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadTarget, setUploadTarget] = useState(null);
@@ -537,7 +182,7 @@ export default function AdminPanel() {
   useEffect(() => {
     const segments = location.pathname.split("/").filter(Boolean);
     const lastSegment = segments[segments.length - 1];
-    const validTabs = ["dashboard", "products", "categories", "inventory", "discounts", "orders", "users", "demobooking", "reviews"];
+    const validTabs = ["dashboard", "products", "categories", "inventory", "orders", "users", "demobooking", "reviews", "installations", "settings"];
     if (validTabs.includes(lastSegment)) {
       setActiveTab(lastSegment);
     }
@@ -728,6 +373,28 @@ export default function AdminPanel() {
     }
     setLoading(false);
   }, [apiCall, activeTab, page, search, discountPage, orderFilter]);
+
+  // Fetch installation requests
+  const fetchInstallRequests = useCallback(async () => {
+    try {
+      const filters = { page: installPage, limit: 20 };
+      if (installStatusFilter) filters.status = installStatusFilter;
+      const res = await smartHomeProposalService.list(filters);
+      const d = res?.data || res;
+      setInstallRequests(d?.proposals || []);
+      setInstallTotal(d?.pagination?.total || 0);
+      setInstallTotalPages(d?.pagination?.totalPages || 1);
+    } catch (err) {
+      console.warn("[InstallRequests] Failed:", err?.message);
+    }
+  }, [installPage, installStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === "installations") {
+      setLoading(true);
+      fetchInstallRequests().finally(() => setLoading(false));
+    }
+  }, [activeTab, fetchInstallRequests]);
 
   useEffect(() => {
     fetchData();
@@ -931,10 +598,21 @@ export default function AdminPanel() {
     catch (err) { alert(err.message); }
   };
 
+  const fetchAllProducts = useCallback(async () => {
+    try {
+      const res = await apiCall("/api/admin/products?limit=1000");
+      const p = res.data;
+      if (p?.products) setAllProductsForDiscount(p.products);
+    } catch (e) {
+      console.warn("[AdminPanel] Failed to fetch all products for discount:", e?.message);
+    }
+  }, [apiCall]);
+
   const openAddDiscount = () => {
     setEditingDiscount(null);
     setDiscountForm({ name: "", type: "percentage", value: "", product_id: "", min_order_value: "", starts_at: "", expires_at: "", is_active: true });
     setDiscountError("");
+    fetchAllProducts();
     setShowDiscountModal(true);
   };
 
@@ -948,6 +626,7 @@ export default function AdminPanel() {
       is_active: d.is_active ? true : false,
     });
     setDiscountError("");
+    fetchAllProducts();
     setShowDiscountModal(true);
   };
 
@@ -1156,14 +835,16 @@ export default function AdminPanel() {
         </div>
         <nav className="flex-1 space-y-1">
           <NavItem id="dashboard" label="Dashboard" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
-          <NavItem id="products" label="Products" icon={Package} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="categories" label="Categories" icon={FolderTree} activeTab={activeTab} onClick={setActiveTab} />
+          <NavItem id="products" label="Products" icon={Package} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="inventory" label="Inventory" icon={Warehouse} activeTab={activeTab} onClick={setActiveTab} />
-          <NavItem id="discounts" label="Discounts" icon={Percent} activeTab={activeTab} onClick={setActiveTab} />
+           {/* NavItem id="discounts" label="Discounts" icon={Percent} activeTab={activeTab} onClick={setActiveTab} — hidden until discount re-enabled */}
           <NavItem id="orders" label="Orders" icon={ShoppingCart} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="users" label="Users" icon={Users} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="demobooking" label="Demo Bookings" icon={Calendar} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="reviews" label="Reviews" icon={Star} activeTab={activeTab} onClick={setActiveTab} />
+          <NavItem id="installations" label="Installation Requests" icon={Wrench} activeTab={activeTab} onClick={setActiveTab} />
+          {/* NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} onClick={setActiveTab} — hidden until ready */}
         </nav>
         <button onClick={onLogout}
           className="mt-auto w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition font-semibold text-sm border border-red-500/20">
@@ -1222,9 +903,10 @@ export default function AdminPanel() {
             </div>
           ) : (
             <>
-              {activeTab === "dashboard" && (
+              {activeTab === "dashboard" && (<>
                 <DashboardAnalytics toast={toast} fetchData={fetchData} refreshInterval={30000} />
-              )}
+                <div className="mt-6"><RecentProposals /></div>
+              </>)}
 
               {activeTab === "products" && (
                 <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
@@ -1612,18 +1294,21 @@ export default function AdminPanel() {
                               </div>
                             </div>
 
-                            {/* Right: Customer & Product Info */}
-                            <div className="flex-shrink-0 w-full lg:w-56 space-y-2">
-                              <div className="bg-black/30 border border-gray-800/60 rounded-xl p-3">
-                                <p className="text-[9px] uppercase tracking-widest text-gray-600 font-bold">Customer</p>
-                                <p className="text-xs font-bold text-white mt-1 truncate">{r.customer_name || 'N/A'}</p>
-                              </div>
-                              <div className="bg-black/30 border border-gray-800/60 rounded-xl p-3">
-                                <p className="text-[9px] uppercase tracking-widest text-gray-600 font-bold">Product</p>
-                                <p className="text-xs font-semibold text-cyan-300 mt-1 truncate">{r.product_name || `Product #${r.product_id}`}</p>
-                                <p className="text-[10px] text-gray-600 mt-0.5">ID: {r.product_id}</p>
-                              </div>
-                            </div>
+                             {/* Right: Customer & Product Info */}
+                             <div className="flex-shrink-0 w-full lg:w-56 space-y-2">
+                               <div className="bg-black/30 border border-gray-800/60 rounded-xl p-3">
+                                 <p className="text-[9px] uppercase tracking-widest text-gray-600 font-bold">Customer</p>
+                                 <p className="text-xs font-bold text-white mt-1 truncate">{r.customer_name || 'N/A'}</p>
+                                 {r.customer_email && (
+                                   <p className="text-[10px] text-gray-500 mt-0.5 truncate">{r.customer_email}</p>
+                                 )}
+                               </div>
+                               <div className="bg-black/30 border border-gray-800/60 rounded-xl p-3">
+                                 <p className="text-[9px] uppercase tracking-widest text-gray-600 font-bold">Product</p>
+                                 <p className="text-xs font-semibold text-cyan-300 mt-1 truncate">{r.product_name || `Product #${r.product_id}`}</p>
+                                 <p className="text-[10px] text-gray-600 mt-0.5">ID: {r.product_id}</p>
+                               </div>
+                             </div>
 
                             {/* Actions */}
                             <div className="flex-shrink-0 flex flex-row lg:flex-col items-center gap-2">
@@ -1819,6 +1504,87 @@ export default function AdminPanel() {
                 </>
               )}
 
+              {activeTab === "settings" && (
+                <AdminSettings token={token} />
+              )}
+
+              {activeTab === "installations" && (
+                <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-3 p-4 border-b border-gray-800">
+                    <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Filter:</span>
+                    {["", "Draft", "New", "Contacted", "Under Review", "Quotation Sent", "Completed", "Cancelled"].map(s => (
+                      <button key={s} onClick={() => { setInstallPage(1); setInstallStatusFilter(s); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${installStatusFilter === s ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "text-gray-400 hover:text-white bg-gray-800/50 border border-gray-700/50"}`}>
+                        {s || "All"}
+                      </button>
+                    ))}
+                  </div>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-black/50 border-b border-gray-800 text-xs uppercase tracking-wider text-gray-400">
+                <th className="p-4 font-semibold">Customer</th>
+                        <th className="p-4 font-semibold">Contact</th>
+                        <th className="p-4 font-semibold">Home Type</th>
+                        <th className="p-4 font-semibold text-center">Rooms</th>
+                        <th className="p-4 font-semibold text-center">Devices</th>
+                        <th className="p-4 font-semibold text-center">Date</th>
+                        <th className="p-4 font-semibold text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/50">
+                      {installRequests.map(p => {
+                        const rooms = p.rooms_json ? (typeof p.rooms_json === 'string' ? JSON.parse(p.rooms_json) : p.rooms_json) : [];
+                        const totalDevices = rooms.reduce((sum, r) => sum + Object.values(r.devices || {}).filter(d => d.enabled).length, 0);
+                        return (
+                          <tr key={p.id} className="hover:bg-white/[0.02] transition">
+                            <td className="p-4">
+                              <p className="text-sm font-bold text-white">{p.full_name}</p>
+                              <p className="text-[10px] text-slate-500">{p.city || "—"}</p>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-slate-300 flex items-center gap-1"><Mail size={10} />{p.email}</span>
+                                <span className="text-xs text-slate-300 flex items-center gap-1"><Phone size={10} />{p.phone || "—"}</span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-xs text-slate-300 uppercase font-bold">
+                              <span className="flex items-center gap-1"><Home size={12} />{p.home_type || "—"}</span>
+                            </td>
+                            <td className="p-4 text-center text-sm font-bold text-white">{rooms.length}</td>
+                            <td className="p-4 text-center text-sm font-bold text-cyan-400">{totalDevices}</td>
+                            <td className="p-4 text-xs text-slate-500 font-mono">{p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</td>
+                            <td className="p-4 text-center">
+                              <div className="flex justify-center gap-1.5">
+                                <button onClick={() => setInstallDetail(p)}
+                                  className="p-1.5 text-gray-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-md transition" title="View Details">
+                                  <Eye size={15} />
+                                </button>
+                                <button onClick={() => { setDeleteInstallId(p.id); setShowDeleteInstallModal(true); }}
+                                  className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition" title="Delete">
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {installRequests.length === 0 && (
+                        <tr><td colSpan={7} className="p-8 text-center text-gray-500">No installation requests found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {installTotalPages > 1 && (
+                    <div className="flex justify-center gap-2 p-4 border-t border-gray-800">
+                      <button onClick={() => setInstallPage(Math.max(1, installPage - 1))} disabled={installPage === 1}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Previous</button>
+                      <span className="px-4 py-2 text-gray-300 text-sm">Page {installPage} of {installTotalPages}</span>
+                      <button onClick={() => setInstallPage(Math.min(installTotalPages, installPage + 1))} disabled={installPage === installTotalPages}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 hover:bg-gray-700 transition text-sm">Next</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeTab === "orders" && (
                 <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
                   {/* Order status filter */}
@@ -1964,7 +1730,7 @@ export default function AdminPanel() {
           discountForm={discountForm}
           discountError={discountError}
           discountSaving={discountSaving}
-          products={products}
+          products={allProductsForDiscount}
           onFieldChange={handleDiscountFieldChange}
           onClose={() => setShowDiscountModal(false)}
           onSave={saveDiscount}
@@ -1978,6 +1744,41 @@ export default function AdminPanel() {
           onToggleStatus={toggleUserStatus}
         />
       )}
+      {/* Delete Installation Request Modal */}
+      {showDeleteInstallModal && deleteInstallId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+          <div className="bg-gray-900 border border-red-500/20 rounded-[1.5rem] w-full max-w-md p-8 shadow-2xl shadow-red-500/5 animate-fade-in">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-red-500/10 border border-red-500/20 mb-6">
+              <AlertTriangle size={28} className="text-red-400" />
+            </div>
+            <h3 className="text-xl font-black text-white text-center tracking-tight">Delete Installation Request</h3>
+            <p className="mt-3 text-sm text-gray-400 text-center leading-relaxed">
+              Are you sure you want to delete this installation request? This action cannot be undone.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => { setShowDeleteInstallModal(false); setDeleteInstallId(null); }}
+                className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition font-bold text-sm">
+                Cancel
+              </button>
+              <button onClick={async () => {
+                try {
+                  await smartHomeProposalService.remove(deleteInstallId);
+                  showToast("Installation request deleted successfully", "success");
+                  setShowDeleteInstallModal(false);
+                  setDeleteInstallId(null);
+                  fetchInstallRequests();
+                } catch (err) {
+                  showToast(err.message || "Failed to delete", "error");
+                }
+              }}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-bold text-sm flex items-center justify-center gap-2">
+                <Trash2 size={15} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedOrderDetail && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">

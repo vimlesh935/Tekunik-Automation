@@ -3,10 +3,10 @@ const path = require("node:path");
 const express = require("express");
 const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
-const { ensureUsersOtpColumns } = require("./src/config/migrate");
+const { ensureUsersOtpColumns, ensureAdminsTable, ensureSystemSettingsTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
-const { ensureGuestOrderColumns, ensureEnquiriesTable } = require("./src/config/migrate");
-const { ensureOrderTrackingTable, ensureOrderCancellationColumns } = require("./src/config/orderMigration");
+const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable } = require("./src/config/migrate");
+const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -29,6 +29,9 @@ const cartRoutes = require("./src/routes/cartRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
+const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
+const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
+const settingsRoutes = require("./src/routes/settingsRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -100,8 +103,12 @@ app.use(discountRoutes);
 app.use(cartRoutes);
 app.use('/api/admin/upload', uploadRoutes);
 app.use(demoEnquiryRoutes);
+app.use("/api/orders", require("./src/routes/paymentRoutes"));
 app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
+app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
+app.use("/api/smart-home/steps", smartHomeStepRoutes);
+app.use(settingsRoutes);
 
 // Ensure uploads dir exists and serve static files
 const uploadDir = ensureUploadsDir();
@@ -192,6 +199,30 @@ const startServer = async () => {
     console.log("✅ [STARTUP] Order cancellation columns ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Order cancellation columns setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring smart home proposals table...");
+    await ensureSmartHomeProposalsTable();
+    console.log("✅ [STARTUP] Smart home proposals table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Smart home proposals table setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring payment columns...");
+    await ensurePaymentColumns();
+    console.log("✅ [STARTUP] Payment columns ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Payment columns setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring system settings table...");
+    await ensureSystemSettingsTable();
+    console.log("✅ [STARTUP] System settings table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Payment columns setup failed:", error.message, "\n");
   }
 
   // Start HTTP server immediately

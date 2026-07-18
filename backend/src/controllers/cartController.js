@@ -4,6 +4,29 @@ const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { withNormalizedImageUrl } = require("../utils/uploadPaths");
 
+/**
+ * Calculate discount price fields for a product.
+ * Returns: { original_price, discount_percent, discount_amount, final_price }
+ */
+const calculateDiscountPrice = (product) => {
+  const originalPrice = parseFloat(product.price) || 0;
+  let discountPercent = 0;
+  
+  if (product.discount_percent !== null && product.discount_percent !== undefined) {
+    discountPercent = Math.max(0, Math.min(100, parseFloat(product.discount_percent) || 0));
+  }
+  
+  const discountAmount = Math.max(0, originalPrice * discountPercent / 100);
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
+  
+  return {
+    original_price: originalPrice,
+    discount_percent: discountPercent,
+    discount_amount: Math.round(discountAmount * 100) / 100,
+    final_price: Math.round(finalPrice * 100) / 100,
+  };
+};
+
 const findOrCreateCart = async (userId) => {
   const [existingCart] = await query("SELECT * FROM carts WHERE user_id = ?", [userId]);
   if (existingCart) return existingCart;
@@ -16,19 +39,26 @@ const findOrCreateCart = async (userId) => {
 const getCartDetails = async (cartId) => {
   const items = await query(
     `SELECT ci.id AS cart_item_id, ci.quantity, p.id AS product_id, p.name, p.slug, p.price, p.image_url,
-            p.stock_quantity, p.stock_status, p.status AS product_status
+            p.stock_quantity, p.stock_status, p.status AS product_status, p.discount_percent
      FROM cart_items ci
      LEFT JOIN products p ON ci.product_id = p.id
      WHERE ci.cart_id = ?`,
     [cartId]
   );
 
-  const validItems = items.map((item) => ({
-    ...withNormalizedImageUrl(item),
-    max_quantity: item.stock_quantity,
-    is_available: item.product_status === "active" && item.stock_quantity > 0,
-    total_price: Number(item.price) * Number(item.quantity),
-  }));
+  const validItems = items.map((item) => {
+    const itemPrice = parseFloat(item.price) || 0;
+    return {
+      ...withNormalizedImageUrl(item),
+      original_price: itemPrice,
+      discount_percent: 0,
+      discount_amount: 0,
+      final_price: itemPrice,
+      max_quantity: item.stock_quantity,
+      is_available: item.product_status === "active" && item.stock_quantity > 0,
+      total_price: itemPrice * Number(item.quantity),
+    };
+  });
 
   const totalAmount = validItems.reduce((sum, item) => sum + item.total_price, 0);
   const totalQuantity = validItems.reduce((sum, item) => sum + Number(item.quantity), 0);

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
-import { cartService, guestOrderService, userService } from "../services/api";
+import { cartService, guestOrderService, userService, orderService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
+import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 import { motion, AnimatePresence } from "framer-motion";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 import {
@@ -204,6 +205,64 @@ export default function Checkout({ token }) {
     return true;
   };
 
+  const handleRazorpayPayment = async (order) => {
+    try {
+      const result = await orderService.createRazorpayOrder(order.id);
+      if (!result?.success) throw new Error(result?.message || "Failed to initiate payment");
+      const rpData = result?.data?.razorpay_order_id ? result.data : result?.message;
+      if (!rpData?.razorpay_order_id) {
+        console.error("[Razorpay] Invalid response:", JSON.stringify(result));
+        throw new Error("Failed to initiate payment");
+      }
+
+      return new Promise((resolve, reject) => {
+        const options = {
+          key: rpData.key_id,
+          amount: rpData.amount,
+          currency: rpData.currency,
+          name: "TekNode",
+          description: `Order ${order.order_number}`,
+          order_id: rpData.razorpay_order_id,
+          prefill: {
+            name: form.full_name,
+            email: form.email,
+            contact: form.phone,
+          },
+          theme: { color: "#6366F1" },
+          handler: async (response) => {
+            try {
+              const verifyRes = await orderService.verifyRazorpayPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              if (verifyRes?.success) {
+                resolve(verifyRes);
+              } else {
+                reject(new Error(verifyRes?.message || "Payment verification failed"));
+              }
+            } catch (err) {
+              reject(err);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              reject(new Error("Payment cancelled"));
+            },
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on("payment.failed", (resp) => {
+          reject(new Error(resp.error?.description || "Payment failed"));
+        });
+        rzp.open();
+      });
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const handleSubmit = async (event) => {
     event?.preventDefault();
     console.log("[Checkout] Submit attempt with email:", form.email);
@@ -235,13 +294,18 @@ export default function Checkout({ token }) {
       console.log("[Checkout] API response:", JSON.stringify(response));
       const order = response?.data?.order;
       if (!order) throw new Error("Order could not be created.");
+
+      if (form.payment_method === "online") {
+        await handleRazorpayPayment(order);
+        order.payment_status = "paid";
+      }
+
       if (isAuthenticated) {
-        try {
-          await cartService.clearCart();
-        } catch {}
+        try { await cartService.clearCart(); } catch {}
       } else {
         guestCart.clearCart();
       }
+
       addToast("Order placed successfully! 🎉", "success");
       navigate("/order-confirmation", { state: { order } });
     } catch (err) {
@@ -281,9 +345,19 @@ export default function Checkout({ token }) {
     );
   }
 
-  const subtotal = checkoutItems.reduce(
-    (s, i) => s + parseFloat(i.price || 0) * Number(i.quantity || 0),
-    0,
+  // Calculate subtotal (original prices) and total savings from discount
+  const { subtotal, totalSavings } = checkoutItems.reduce(
+    (acc, i) => {
+      const itemOriginalPrice = parseFloat(i.original_price || i.price || 0);
+      const itemFinalPrice = parseFloat(i.final_price || i.price || 0);
+      const itemOriginalTotal = itemOriginalPrice * Number(i.quantity || 0);
+      const itemFinalTotal = itemFinalPrice * Number(i.quantity || 0);
+      return {
+        subtotal: acc.subtotal + itemOriginalTotal,
+        totalSavings: acc.totalSavings + (itemOriginalTotal - itemFinalTotal),
+      };
+    },
+    { subtotal: 0, totalSavings: 0 }
   );
 
   return (
@@ -514,37 +588,37 @@ export default function Checkout({ token }) {
                 </label>
               </div>
 
-            {/* Premium Feature Badges */}
-            <div className="bg-slate-900/40 border border-slate-800/60 backdrop-blur-xl rounded-2xl p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                    <Lock size={18} className="text-indigo-400" />
+              {/* Premium Feature Badges */}
+              <div className="bg-slate-900/40 border border-slate-800/60 backdrop-blur-xl rounded-2xl p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                      <Lock size={18} className="text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Secure Checkout</p>
+                      <p className="text-[10px] text-slate-500">SSL Encrypted</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Secure Checkout</p>
-                    <p className="text-[10px] text-slate-500">SSL Encrypted</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <Zap size={18} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Fast Processing</p>
+                      <p className="text-[10px] text-slate-500">Instant Confirmation</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck size={18} className="text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Protected Orders</p>
+                      <p className="text-[10px] text-slate-500">Buyer Guarantee</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                    <Zap size={18} className="text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Fast Processing</p>
-                    <p className="text-[10px] text-slate-500">Instant Confirmation</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-                    <ShieldCheck size={18} className="text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Protected Orders</p>
-                    <p className="text-[10px] text-slate-500">Buyer Guarantee</p>
-                  </div>
-                </div>
-              </div>
               </div>
             </div>
           </form>
@@ -592,13 +666,30 @@ export default function Checkout({ token }) {
                         <p className="text-sm font-semibold text-white truncate">
                           {item.name}
                         </p>
+                        {hasDiscount(item) ? (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-slate-400 line-through">
+                              {formatCurrency(item.original_price || item.price)}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                              {Math.round(item.discount_percent)}% OFF
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              × {formatCurrency(item.final_price)}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            × {formatCurrency(item.price || 0)}
+                          </p>
+                        )}
                         <p className="text-xs text-slate-400 mt-0.5">
-                          Qty {item.quantity} × {formatCurrency(item.price || 0)}
+                          Qty {item.quantity}
                         </p>
                       </div>
                       <p className="text-sm font-bold text-indigo-400 flex-shrink-0">
                         {formatCurrency(
-                          parseFloat(item.price || 0) *
+                          parseFloat(item.final_price || item.price || 0) *
                             Number(item.quantity || 0),
                         )}
                       </p>
@@ -610,11 +701,19 @@ export default function Checkout({ token }) {
               {/* Price Breakdown */}
               <div className="px-6 py-5 border-t border-slate-800 bg-slate-950/30 space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Subtotal</span>
+                  <span className="text-slate-400">Subtotal (Original)</span>
                   <span className="font-semibold text-white">
                     {formatCurrency(subtotal)}
                   </span>
                 </div>
+                {totalSavings > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-emerald-400">You Save</span>
+                    <span className="font-semibold text-emerald-400">
+                      -{formatCurrency(totalSavings)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">Shipping</span>
                   <span className="font-semibold text-emerald-400">FREE</span>

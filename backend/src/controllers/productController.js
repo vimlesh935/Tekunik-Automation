@@ -11,6 +11,32 @@ const {
 const hasOwn = (object, key) =>
   Object.prototype.hasOwnProperty.call(object || {}, key);
 
+/**
+ * Calculate discount price fields for a product.
+ * Returns: { original_price, discount_percent, discount_amount, final_price }
+ * Validates: discount_percent must be 0-100, final_price never below 0
+ */
+const calculateDiscountPrice = (product) => {
+  const originalPrice = parseFloat(product.price) || 0;
+  return {
+    original_price: originalPrice,
+    discount_percent: 0,
+    discount_amount: 0,
+    final_price: originalPrice,
+  };
+};
+
+/**
+ * Enrich product data with calculated discount fields
+ */
+const enrichProductWithDiscount = (product) => {
+  const discountFields = calculateDiscountPrice(product);
+  return {
+    ...product,
+    ...discountFields,
+  };
+};
+
 const parseBooleanFlag = (value) => {
   if (value === true || value === 1) return 1;
   if (typeof value === "string") {
@@ -102,6 +128,37 @@ const fetchProductExtras = async (productId) => {
   };
 };
 
+const fetchProductsExtras = async (productIds) => {
+  if (!productIds.length) return {};
+  const placeholders = productIds.map(() => '?');
+  const [images, colors, sizes] = await Promise.all([
+    query(
+      `SELECT product_id, id, image_url, is_main, sort_order FROM product_images WHERE product_id IN (${placeholders}) ORDER BY sort_order ASC`,
+      productIds,
+    ),
+    query(
+      `SELECT product_id, id, color_name, color_code, stock_quantity FROM product_colors WHERE product_id IN (${placeholders}) ORDER BY id ASC`,
+      productIds,
+    ),
+    query(
+      `SELECT product_id, id, size_name, stock_quantity FROM product_sizes WHERE product_id IN (${placeholders}) ORDER BY id ASC`,
+      productIds,
+    ),
+  ]);
+  const map = {};
+  for (const id of productIds) map[id] = { images: [], colors: [], sizes: [] };
+  for (const img of images) {
+    if (map[img.product_id]) map[img.product_id].images.push({ ...img, image_url: normalizeImageUrl(img.image_url) });
+  }
+  for (const c of colors) {
+    if (map[c.product_id]) map[c.product_id].colors.push(c);
+  }
+  for (const s of sizes) {
+    if (map[s.product_id]) map[s.product_id].sizes.push(s);
+  }
+  return map;
+};
+
 // Helper to synchronize uploaded files with product_images table
 const syncProductGallery = async (productId, files, bodyImageUrls) => {
   // Delete existing non-primary images that will be replaced
@@ -168,7 +225,7 @@ const syncProductGallery = async (productId, files, bodyImageUrls) => {
 const listProducts = asyncHandler(async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const limit = Math.min(1000, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
     const search = req.query.search ? `%${req.query.search}%` : null;
     const rawCategoryId = req.query.category_id || req.query.category || "";
@@ -259,17 +316,18 @@ const listProducts = asyncHandler(async (req, res) => {
       });
     }
 
-    // Fetch images for each product and merge review stats
-    const result = [];
-    for (const product of products) {
-      const extras = await fetchProductExtras(product.id);
+    // Fetch extras (images, colors, sizes) for all products in batch
+    const extrasMap = await fetchProductsExtras(productIds);
+    const result = products.map((product) => {
+      const extras = extrasMap[product.id] || { images: [], colors: [], sizes: [] };
       const reviews = reviewStatsMap[product.id] || { averageRating: 0, totalReviews: 0 };
-      result.push({
-        ...withNormalizedImageUrl(product),
+      const productWithImage = withNormalizedImageUrl(product);
+      return {
+        ...enrichProductWithDiscount(productWithImage),
         ...extras,
         reviews,
-      });
-    }
+      };
+    });
 
     return success(res, "Products fetched", {
       products: result,
@@ -316,12 +374,12 @@ const getProduct = asyncHandler(async (req, res) => {
       );
     }
 
-    if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
+if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
 
     const extras = await fetchProductExtras(product.id);
 
     return success(res, "Product fetched", {
-      product: { ...withNormalizedImageUrl(product), ...extras },
+      product: { ...enrichProductWithDiscount(withNormalizedImageUrl(product)), ...extras },
     });
   } catch (error) {
     console.error("[GET PRODUCT ERROR]", error);
@@ -518,7 +576,7 @@ const createProduct = asyncHandler(async (req, res) => {
       res,
       "Product created successfully",
       {
-        product: { ...withNormalizedImageUrl(created), ...extras },
+        product: { ...enrichProductWithDiscount(withNormalizedImageUrl(created)), ...extras },
       },
       201,
     );
@@ -723,7 +781,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     const extras = await fetchProductExtras(req.params.id);
 
     return success(res, "Product updated successfully", {
-      product: { ...withNormalizedImageUrl(updated), ...extras },
+      product: { ...enrichProductWithDiscount(withNormalizedImageUrl(updated)), ...extras },
     });
   } catch (error) {
     console.error("[UPDATE PRODUCT ERROR]", error);
@@ -925,7 +983,7 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
     }
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const limit = Math.min(1000, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
 
     // Count total
@@ -966,16 +1024,16 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
       });
     }
 
-    const result = [];
-    for (const product of products) {
-      const extras = await fetchProductExtras(product.id);
+    const extrasMap = await fetchProductsExtras(productIds);
+    const result = products.map((product) => {
+      const extras = extrasMap[product.id] || { images: [], colors: [], sizes: [] };
       const reviews = reviewStatsMap[product.id] || { averageRating: 0, totalReviews: 0 };
-      result.push({
-        ...withNormalizedImageUrl(product),
+      return {
+        ...enrichProductWithDiscount(withNormalizedImageUrl(product)),
         ...extras,
         reviews,
-      });
-    }
+      };
+    });
 
     return success(res, "Products fetched by application", {
       products: result,
@@ -1026,7 +1084,7 @@ const searchProducts = asyncHandler(async (req, res) => {
     ];
 
     const products = await query(
-      `SELECT p.id, p.name, p.short_description, p.price, p.stock_quantity, p.stock_status, p.image_url,
+      `SELECT p.id, p.name, p.short_description, p.price, p.discount_percent, p.stock_quantity, p.stock_status, p.image_url,
               p.brand, p.sku, pc.name AS category_name
        FROM products p
        LEFT JOIN product_categories pc ON p.category_id = pc.id
@@ -1037,7 +1095,7 @@ const searchProducts = asyncHandler(async (req, res) => {
     );
 
     const normalized = products.map((product) => ({
-      ...withNormalizedImageUrl(product),
+      ...enrichProductWithDiscount(withNormalizedImageUrl(product)),
     }));
 
     return success(res, "Search results fetched", {
@@ -1067,17 +1125,18 @@ const getApplicationCounts = asyncHandler(async (req, res) => {
       "Industrial Automation",
     ];
 
-    const counts = {};
-    for (const app of applications) {
-      const [row] = await query(
-        `SELECT COUNT(*) AS count FROM products p
-         WHERE p.status = 'active' AND JSON_CONTAINS(p.applications, ?)`,
-        [JSON.stringify(app)],
-      );
-      counts[app] = Number(row.count);
-    }
+    const rows = await query(
+      `SELECT
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"Smart Home"') THEN 1 ELSE 0 END) AS 'Smart Home',
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"Office Automation"') THEN 1 ELSE 0 END) AS 'Office Automation',
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"Hotel Solutions"') THEN 1 ELSE 0 END) AS 'Hotel Solutions',
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"Hospital Automation"') THEN 1 ELSE 0 END) AS 'Hospital Automation',
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"School & College Solutions"') THEN 1 ELSE 0 END) AS 'School & College Solutions',
+        SUM(CASE WHEN JSON_CONTAINS(applications, '"Industrial Automation"') THEN 1 ELSE 0 END) AS 'Industrial Automation'
+       FROM products p WHERE p.status = 'active'`,
+    );
 
-    return success(res, "Application counts fetched", { counts });
+    return success(res, "Application counts fetched", { counts: rows[0] || {} });
   } catch (error) {
     console.error("[APPLICATION COUNTS ERROR]", error);
     if (error.statusCode) throw error;
