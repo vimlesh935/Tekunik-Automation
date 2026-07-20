@@ -68,7 +68,7 @@ export default function RecentProposals() {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-[#0f172a] border-b border-slate-800 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
+            <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
               <th className="p-4">Customer</th>
               <th className="p-4">Contact</th>
               <th className="p-4">Home Type</th>

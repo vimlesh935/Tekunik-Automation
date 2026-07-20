@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Play, X, Sun, Moon, Shield, Lightbulb, Thermometer, Camera, Zap } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const DEMO_VIDEO_SRC = "/videos/finalvid.mp4";
 const DEMO_VIDEO_POSTER = "/videos/demo-poster.jpg";
@@ -287,12 +288,12 @@ function AutomateButton() {
 /*  Hero section                                                       */
 /* ------------------------------------------------------------------ */
 export default function HeroSection() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [isDark, setIsDark] = useState(true);
 
   const openVideo = useCallback(() => setIsVideoOpen(true), []);
   const closeVideo = useCallback(() => setIsVideoOpen(false), []);
-  const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
 
   return (
     <section

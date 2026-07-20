@@ -295,7 +295,7 @@ export default function Checkout() {
   // ── Empty cart state ──────────────────────────────────────────────────────
   if (!loading && checkoutItems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#070f1e] font-sans flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-background font-sans flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(99,102,241,0.08),transparent_70%)]" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -337,7 +337,7 @@ export default function Checkout() {
   );
 
   return (
-    <div className="min-h-screen bg-[#070f1e] font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-background font-sans relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_30%,rgba(99,102,241,0.07),transparent_70%)]" />
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none" />

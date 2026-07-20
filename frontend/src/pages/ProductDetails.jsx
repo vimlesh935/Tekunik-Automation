@@ -21,24 +21,26 @@ import { productService, cartService, reviewService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 import ProductReviewsModal from "../components/ProductReviewsModal.jsx";
 
-// Theme constants matching ContactUs.jsx and website design
-const VIOLET = "#7C3AED";
-const CYAN = "#06B6D4";
-const VIOLET_LIGHT = "#A78BFA";
-const CYAN_LIGHT = "#67E8F9";
-const BORDER = "#1E2640";
-const TEXT = "#E2E8F0";
-const MUTED = "#64748B";
-const BG = "#080B14";
-
 export default function ProductDetails({ token }) {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
+  const isDark = theme === "dark";
+
+  const VIOLET = "#7C3AED";
+  const CYAN = "#06B6D4";
+  const VIOLET_LIGHT = "#A78BFA";
+  const CYAN_LIGHT = "#67E8F9";
+  const BORDER = isDark ? "#1E2640" : "#e2e8f0";
+  const TEXT = isDark ? "#E2E8F0" : "#0f172a";
+  const MUTED = isDark ? "#64748B" : "#475569";
+  const BG = isDark ? "#080B14" : "#f8fafc";
   const { addToCart } = useCart();
   const { addToast } = useToast();
   const [product, setProduct] = useState(null);

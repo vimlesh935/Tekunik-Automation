@@ -5,11 +5,6 @@ const VIOLET = "#7C3AED";
 const CYAN = "#06B6D4";
 const VIOLET_LIGHT = "#A78BFA";
 const CYAN_LIGHT = "#67E8F9";
-const BG = "#080B14";
-const CARD = "#0D1120";
-const BORDER = "#1E2640";
-const TEXT = "#E2E8F0";
-const MUTED = "#64748B";
 
 const SPRING = { type: "spring", stiffness: 300, damping: 30 };
 
@@ -109,8 +104,8 @@ function ContactCard({ icon, label, value, href, delay }) {
           alignItems: "center",
           gap: 16,
           padding: "20px 24px",
-          background: hovered ? "rgba(124,58,237,0.08)" : CARD,
-          border: `1px solid ${hovered ? VIOLET : BORDER}`,
+          background: hovered ? "rgba(124,58,237,0.08)" : "var(--card-bg)",
+          border: hovered ? "1px solid #7C3AED" : "1px solid var(--card-border)",
           borderRadius: 16,
           textDecoration: "none",
           transition: "all 0.3s ease",
@@ -136,7 +131,7 @@ function ContactCard({ icon, label, value, href, delay }) {
             fontSize: 10,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: MUTED,
+            color: "var(--text-muted)",
             marginBottom: 4,
           }}>
             {label}
@@ -145,7 +140,7 @@ function ContactCard({ icon, label, value, href, delay }) {
             fontFamily: "'Space Grotesk', sans-serif",
             fontWeight: 600,
             fontSize: 14,
-            color: hovered ? VIOLET_LIGHT : TEXT,
+            color: hovered ? "#A78BFA" : "var(--text)",
             transition: "color 0.3s ease",
           }}>
             {value}
@@ -164,9 +159,9 @@ function FloatingInput({ label, name, type = "text", value, onChange, placeholde
     boxSizing: "border-box",
     padding: "20px 16px 8px",
     background: focused ? "rgba(124,58,237,0.05)" : "rgba(255,255,255,0.02)",
-    border: `1px solid ${focused ? VIOLET : isActive ? "rgba(124,58,237,0.4)" : BORDER}`,
+    border: focused ? "1px solid #7C3AED" : isActive ? "1px solid rgba(124,58,237,0.4)" : "1px solid var(--card-border)",
     borderRadius: 12,
-    color: TEXT,
+    color: "var(--text)",
     fontFamily: "'Space Grotesk', sans-serif",
     fontSize: 15,
     outline: "none",
@@ -184,7 +179,7 @@ function FloatingInput({ label, name, type = "text", value, onChange, placeholde
         fontSize: isActive ? 10 : 13,
         letterSpacing: isActive ? "0.15em" : 0,
         textTransform: isActive ? "uppercase" : "none",
-        color: focused ? VIOLET_LIGHT : MUTED,
+        color: focused ? "#A78BFA" : "var(--text-muted)",
         pointerEvents: "none",
         transition: "all 0.25s ease",
         zIndex: 1,
@@ -231,7 +226,7 @@ function SubmitButton({ submitting }) {
         width: "100%",
         padding: "16px",
         background: submitting
-          ? BORDER
+          ? "var(--card-border)"
           : hovered
           ? `linear-gradient(135deg, #6D28D9, #0891B2)`
           : `linear-gradient(135deg, ${VIOLET}, ${CYAN})`,
@@ -290,7 +285,7 @@ function InfoRow({ icon, label, children }) {
           fontSize: 9,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: MUTED,
+          color: "var(--text-muted)",
           marginBottom: 3,
         }}>
           {label}
@@ -299,7 +294,7 @@ function InfoRow({ icon, label, children }) {
           fontFamily: "'Space Grotesk', sans-serif",
           fontWeight: 500,
           fontSize: 14,
-          color: TEXT,
+          color: "var(--text)",
           lineHeight: 1.5,
         }}>
           {children}
@@ -351,7 +346,7 @@ export default function ContactUs() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: ${BG}; }
+        body { background: var(--bg); }
         @keyframes shimmer { 0%,100% { background-position: 0% 50% } 50% { background-position: 100% 50% } }
         @keyframes pulse { 0%,100% { opacity: 0.12; transform: scale(1); } 50% { opacity: 0.18; transform: scale(1.08); } }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -364,7 +359,7 @@ export default function ContactUs() {
           to { stroke-dashoffset: -100; }
         }
         ::selection { background: rgba(124,58,237,0.4); color: #fff; }
-        input::placeholder, textarea::placeholder { color: ${MUTED}; font-family: 'Space Grotesk', sans-serif; }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); font-family: 'Space Grotesk', sans-serif; }
         a { color: inherit; }
 
         @media (max-width: 768px) {
@@ -381,8 +376,8 @@ export default function ContactUs() {
 
       <div style={{
         minHeight: "100vh",
-        background: BG,
-        color: TEXT,
+        background: "var(--bg)",
+        color: "var(--text)",
         fontFamily: "'Space Grotesk', sans-serif",
         overflowX: "hidden",
       }}>
@@ -436,7 +431,7 @@ export default function ContactUs() {
                   lineHeight: 1.05,
                   letterSpacing: "-0.03em",
                   marginBottom: 24,
-                  color: "#fff",
+                  color: "var(--text)",
                 }}
               >
                 Let's Build
@@ -448,7 +443,7 @@ export default function ContactUs() {
             <FadeIn delay={0.3}>
               <p style={{
                 fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
-                color: MUTED,
+                color: "var(--text-muted)",
                 maxWidth: 520,
                 margin: "0 auto",
                 lineHeight: 1.7,
@@ -473,16 +468,16 @@ export default function ContactUs() {
                       padding: "6px 16px",
                       borderRadius: 100,
                       background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                    border: "1px solid var(--card-border)",
                       fontFamily: "'DM Mono', monospace",
                       fontSize: 11,
-                      color: MUTED,
+            color: "var(--text-muted)",
                       letterSpacing: "0.1em",
                     }}>{t}</div>
                     {i < 2 && (
                       <div style={{
                         width: 32, height: 1,
-                        background: `linear-gradient(90deg, ${BORDER}, rgba(124,58,237,0.3), ${BORDER})`,
+                        background: `linear-gradient(90deg, var(--card-border), rgba(124,58,237,0.3), var(--card-border))`,
                       }} />
                     )}
                   </div>
@@ -522,8 +517,8 @@ export default function ContactUs() {
             {/* Form card */}
             <SlideIn x={-40} delay={0.1}>
               <div style={{
-                background: CARD,
-                border: `1px solid ${BORDER}`,
+                background: "var(--card-bg)",
+                border: "1px solid var(--card-border)",
                 borderRadius: 24,
                 padding: "40px",
                 position: "relative",
@@ -563,11 +558,11 @@ export default function ContactUs() {
                     <h3 style={{
                       fontFamily: "'Space Grotesk', sans-serif",
                       fontWeight: 700, fontSize: 24,
-                      color: "#fff", marginBottom: 10,
+                      color: "var(--text)", marginBottom: 10,
                     }}>
                       Message Sent!
                     </h3>
-                    <p style={{ color: MUTED, fontSize: 14, marginBottom: 28 }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 28 }}>
                       We'll get back to you within one business day.
                     </p>
                     <button
@@ -593,11 +588,11 @@ export default function ContactUs() {
                       <h2 style={{
                         fontFamily: "'Space Grotesk', sans-serif",
                         fontWeight: 700, fontSize: 24,
-                        color: "#fff", marginBottom: 6,
+                        color: "var(--text)", marginBottom: 6,
                       }}>
                         Send a Message
                       </h2>
-                      <p style={{ color: MUTED, fontSize: 14 }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
                         Tell us about your automation requirements.
                       </p>
                     </div>
@@ -652,8 +647,8 @@ export default function ContactUs() {
                 <div
                   className="info-card"
                   style={{
-                    background: CARD,
-                    border: `1px solid ${BORDER}`,
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--card-border)",
                     borderRadius: 24,
                     padding: "36px",
                     position: "relative",
@@ -691,17 +686,17 @@ export default function ContactUs() {
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                     <InfoRow icon="📞" label="Phone">
-                      <a href="tel:+919322475209" style={{ color: TEXT, textDecoration: "none" }}>
+                      <a href="tel:+919322475209" style={{ color: "var(--text)", textDecoration: "none" }}>
                         +91 9322475209
                       </a>
                     </InfoRow>
                     <InfoRow icon="✉️" label="Email">
-                      <a href="mailto:vimleshnew29@gmail.com" style={{ color: TEXT, textDecoration: "none" }}>
+                      <a href="mailto:vimleshnew29@gmail.com" style={{ color: "var(--text)", textDecoration: "none" }}>
                         vimleshnew29@gmail.com
                       </a>
                     </InfoRow>
                     <InfoRow icon="💬" label="WhatsApp">
-                      <a href="https://wa.me/919322475209" target="_blank" rel="noopener noreferrer" style={{ color: TEXT, textDecoration: "none" }}>
+                      <a href="https://wa.me/919322475209" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text)", textDecoration: "none" }}>
                         Chat with us instantly
                       </a>
                     </InfoRow>
@@ -742,8 +737,8 @@ export default function ContactUs() {
               {/* Map */}
               <SlideIn x={40} delay={0.35}>
                 <div style={{
-                  background: CARD,
-                  border: `1px solid ${BORDER}`,
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--card-border)",
                   borderRadius: 24,
                   overflow: "hidden",
                   height: 240,
@@ -752,7 +747,7 @@ export default function ContactUs() {
                   <div style={{
                     position: "absolute", top: 12, left: 12, zIndex: 10,
                     padding: "6px 12px",
-                    background: "rgba(8,11,20,0.85)",
+                    background: "var(--card-bg)",
                     backdropFilter: "blur(8px)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     borderRadius: 8,
@@ -782,7 +777,7 @@ export default function ContactUs() {
 
         {/* ── FOOTER STRIP ── */}
         <div style={{
-          borderTop: `1px solid ${BORDER}`,
+          borderTop: "1px solid var(--card-border)",
           padding: "24px 40px",
           display: "flex",
           alignItems: "center",
@@ -792,7 +787,7 @@ export default function ContactUs() {
           maxWidth: 1200,
           margin: "0 auto",
         }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", color: MUTED }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
             © 2025 Tek Node · All rights reserved
           </div>
           <div style={{
@@ -801,7 +796,7 @@ export default function ContactUs() {
             fontSize: 11, letterSpacing: "0.1em",
           }}>
             {["Privacy", "Terms", "Support"].map(l => (
-              <span key={l} style={{ color: MUTED, cursor: "pointer" }}>{l}</span>
+              <span key={l} style={{ color: "var(--text-muted)", cursor: "pointer" }}>{l}</span>
             ))}
           </div>
         </div>

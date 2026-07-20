@@ -342,7 +342,7 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="relative w-14 h-14">
           <div className="absolute inset-0 rounded-full border-4 border-white/5 border-t-cyan-400 animate-spin" />
         </div>
@@ -353,7 +353,7 @@ useEffect(() => {
   const recentOrders = orders.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans antialiased selection:bg-cyan-400 selection:text-white">
+    <div className="min-h-screen bg-background text-slate-100 font-sans antialiased selection:bg-cyan-400 selection:text-white">
       {/* Toast Notification Layer */}
       <AnimatePresence>
         {notification && (

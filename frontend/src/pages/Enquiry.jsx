@@ -143,7 +143,7 @@ export default function Enquiry() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             onSubmit={handleSubmit}
-            className="rounded-3xl border border-white/10 bg-[#0f172a]/90 backdrop-blur-xl p-6 sm:p-8 shadow-2xl space-y-5"
+            className="rounded-3xl border border-white/10 bg-slate-900/90 backdrop-blur-xl p-6 sm:p-8 shadow-2xl space-y-5"
           >
             {serverError && (
               <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3">

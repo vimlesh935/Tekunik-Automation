@@ -80,17 +80,24 @@ img, video, canvas, svg { max-width: 100%; }
 .theme-toggle-btn { transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
 .theme-toggle-btn:hover { transform: translateY(-1px); }
 
+/* ── LIGHT MODE overrides for all Tailwind classes used across the app ── */
 html[data-theme="light"] .text-white,
 html[data-theme="light"] .text-gray-100,
 html[data-theme="light"] .text-gray-200,
-html[data-theme="light"] .text-gray-300 {
+html[data-theme="light"] .text-gray-300,
+html[data-theme="light"] .text-slate-50,
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200,
+html[data-theme="light"] .text-slate-300 {
   color: var(--text) !important;
 }
 
 html[data-theme="light"] .text-gray-400,
 html[data-theme="light"] .text-gray-500,
 html[data-theme="light"] .text-gray-600,
-html[data-theme="light"] .text-gray-700 {
+html[data-theme="light"] .text-gray-700,
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 {
   color: var(--text-muted) !important;
 }
 
@@ -105,7 +112,34 @@ html[data-theme="light"] .bg-gray-950,
 html[data-theme="light"] .bg-gray-900,
 html[data-theme="light"] .bg-gray-800,
 html[data-theme="light"] .bg-gray-700,
-html[data-theme="light"] .bg-gray-600 {
+html[data-theme="light"] .bg-gray-600,
+html[data-theme="light"] .bg-slate-950,
+html[data-theme="light"] .bg-slate-950\/95,
+html[data-theme="light"] .bg-slate-950\/75,
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-slate-900\/90,
+html[data-theme="light"] .bg-slate-900\/80,
+html[data-theme="light"] .bg-slate-900\/70,
+html[data-theme="light"] .bg-slate-900\/60,
+html[data-theme="light"] .bg-slate-900\/50,
+html[data-theme="light"] .bg-slate-900\/40,
+html[data-theme="light"] .bg-slate-900\/30,
+html[data-theme="light"] .bg-slate-900\/20,
+html[data-theme="light"] .bg-slate-900\/10,
+html[data-theme="light"] .bg-slate-950\/70,
+html[data-theme="light"] .bg-slate-950\/50,
+html[data-theme="light"] .bg-slate-950\/40,
+html[data-theme="light"] .bg-slate-800,
+html[data-theme="light"] .bg-slate-800\/70,
+html[data-theme="light"] .bg-slate-800\/60,
+html[data-theme="light"] .bg-slate-800\/50,
+html[data-theme="light"] .bg-slate-800\/40,
+html[data-theme="light"] .bg-slate-800\/30,
+html[data-theme="light"] .bg-slate-800\/20,
+html[data-theme="light"] .bg-slate-700,
+html[data-theme="light"] .bg-slate-700\/50,
+html[data-theme="light"] .bg-slate-600,
+html[data-theme="light"] .bg-slate-500 {
   background-color: var(--surface) !important;
 }
 
@@ -125,14 +159,48 @@ html[data-theme="light"] [class*="hover:text-white"]:hover {
   color: var(--text) !important;
 }
 
-html[data-theme="light"] .from-gray-950 { --tw-gradient-from: var(--surface); --tw-gradient-stops: var(--surface), var(--tw-gradient-to, rgba(255,255,255,0)); }
-html[data-theme="light"] .via-gray-900 { --tw-gradient-via: var(--surface-soft); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to, rgba(255,255,255,0)); }
-html[data-theme="light"] .from-slate-900 { --tw-gradient-from: var(--surface); --tw-gradient-stops: var(--surface), var(--tw-gradient-to, rgba(255,255,255,0)); }
-html[data-theme="light"] .to-black { --tw-gradient-to: var(--surface); }
+html[data-theme="light"] [class*="hover:bg-slate-"]:hover {
+  background-color: var(--surface-strong) !important;
+}
+
+html[data-theme="light"] [class*="hover:border-slate-"]:hover {
+  border-color: rgba(15, 23, 42, 0.20) !important;
+}
+
+html[data-theme="light"] .from-gray-950,
+html[data-theme="light"] .from-slate-900 {
+  --tw-gradient-from: var(--surface);
+  --tw-gradient-stops: var(--surface), var(--tw-gradient-to, rgba(255,255,255,0));
+}
+
+html[data-theme="light"] .via-gray-900 {
+  --tw-gradient-via: var(--surface-soft);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to, rgba(255,255,255,0));
+}
+
+html[data-theme="light"] .to-black,
+html[data-theme="light"] .to-slate-900,
+html[data-theme="light"] .to-slate-950 {
+  --tw-gradient-to: var(--surface);
+}
 
 html[data-theme="light"] .border-gray-800,
 html[data-theme="light"] .border-gray-900,
 html[data-theme="light"] .border-black {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+html[data-theme="light"] .border-slate-900,
+html[data-theme="light"] .border-slate-900\/80,
+html[data-theme="light"] .border-slate-900\/60,
+html[data-theme="light"] .border-slate-800,
+html[data-theme="light"] .border-slate-800\/80,
+html[data-theme="light"] .border-slate-800\/50,
+html[data-theme="light"] .border-slate-700,
+html[data-theme="light"] .border-slate-700\/80,
+html[data-theme="light"] .border-slate-700\/50,
+html[data-theme="light"] .border-slate-600,
+html[data-theme="light"] .border-slate-500 {
   border-color: rgba(15, 23, 42, 0.15) !important;
 }
 
@@ -142,6 +210,120 @@ html[data-theme="light"] .bg-gray-800\/70,
 html[data-theme="light"] .bg-gray-800\/50,
 html[data-theme="light"] .bg-gray-900\/50 {
   background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-theme="light"] .divide-slate-900\/50 {
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+
+html[data-theme="light"] .focus-visible\:ring-offset-slate-900 {
+  --tw-ring-offset-color: var(--surface);
+}
+
+html[data-theme="light"] .focus-visible\:ring-blue-400 {
+  --tw-ring-color: var(--accent);
+}
+
+html[data-theme="light"] .admin-shell table thead tr {
+  background-color: var(--surface-strong) !important;
+}
+
+html[data-theme="light"] .admin-shell .bg-black\/50 {
+  background-color: var(--surface-strong) !important;
+}
+
+html[data-theme="light"] .admin-shell .bg-black\/30,
+html[data-theme="light"] .admin-shell .bg-black\/40 {
+  background-color: var(--surface-strong) !important;
+}
+
+/* ── Gradient stop gaps ── */
+html[data-theme="light"] .from-slate-950 {
+  --tw-gradient-from: var(--surface);
+}
+
+html[data-theme="light"] .from-slate-600 {
+  --tw-gradient-from: var(--text-muted);
+}
+
+html[data-theme="light"] .via-slate-950 {
+  --tw-gradient-via: var(--surface-soft);
+}
+
+html[data-theme="light"] .via-slate-900 {
+  --tw-gradient-via: var(--surface-soft);
+}
+
+/* Light text gradient stops (for footer etc.) */
+html[data-theme="light"] .from-slate-200 {
+  --tw-gradient-from: var(--text);
+}
+
+html[data-theme="light"] .to-slate-400 {
+  --tw-gradient-to: var(--text-muted);
+}
+
+/* ── Pure white bg ── */
+html[data-theme="light"] .bg-white {
+  background-color: var(--surface) !important;
+}
+
+/* ── About-page hero overrides ── */
+html[data-theme="light"] .from-indigo-500\/25 {
+  --tw-gradient-from: var(--surface);
+}
+
+html[data-theme="light"] .bg-indigo-600\/20 {
+  background-color: transparent !important;
+}
+
+html[data-theme="light"] .bg-purple-600\/20 {
+  background-color: transparent !important;
+}
+
+html[data-theme="light"] .bg-indigo-500\/50 {
+  background-color: transparent !important;
+}
+
+/* ── Light gray bgs ── */
+html[data-theme="light"] .bg-slate-50,
+html[data-theme="light"] .bg-slate-100,
+html[data-theme="light"] .bg-gray-50,
+html[data-theme="light"] .bg-gray-100 {
+  background-color: var(--surface) !important;
+}
+
+/* ── Hover states for light gray ── */
+html[data-theme="light"] .hover\:bg-gray-100:hover,
+html[data-theme="light"] .hover\:bg-slate-100:hover {
+  background-color: var(--surface-strong) !important;
+}
+
+/* ── border-black opacity variants ── */
+html[data-theme="light"] [class*="border-black/"] {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+/* ── Text color gaps ── */
+html[data-theme="light"] .text-slate-600,
+html[data-theme="light"] .text-slate-700 {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .text-slate-900 {
+  color: var(--text) !important;
+}
+
+/* ── border-border-color utility ── */
+html[data-theme="light"] .border-border-color {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+/* ── bg-black/XX utility backgrounds ── */
+html[data-theme="light"] .bg-black\/20,
+html[data-theme="light"] .bg-black\/30,
+html[data-theme="light"] .bg-black\/40 {
+  background-color: var(--surface-strong) !important;
 }
 
 /* ── Hide scrollbar but keep scroll functionality (for horizontal carousels) ── */

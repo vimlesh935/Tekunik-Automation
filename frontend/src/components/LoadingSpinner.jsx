@@ -45,7 +45,7 @@ function PageSkeleton() {
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-[#020617] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <SkeletonBlock className="w-16 h-16 rounded-2xl" />
@@ -69,7 +69,7 @@ function DashboardSkeleton() {
 
 function AdminSkeleton() {
   return (
-    <div className="admin-shell min-h-screen flex flex-col lg:flex-row bg-[#0a0a0c]">
+    <div className="admin-shell min-h-screen flex flex-col lg:flex-row bg-background">
       <div className="w-full lg:w-64 bg-black border-r border-gray-800 p-6 space-y-3">
         <SkeletonBlock className="h-16" />
         <SkeletonBlock className="h-10" />

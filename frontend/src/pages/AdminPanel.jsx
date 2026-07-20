@@ -859,7 +859,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="admin-shell min-h-screen flex flex-col lg:flex-row bg-[#0a0a0c] text-slate-200">
+    <div className="admin-shell min-h-screen flex flex-col lg:flex-row bg-background text-slate-200">
       {/* Sidebar - Restored internal stable version */}
       <div className="w-full lg:w-64 bg-black border-b lg:border-b-0 lg:border-r border-gray-800 p-6 flex flex-col z-20">
         <div className="flex items-center justify-center py-5">

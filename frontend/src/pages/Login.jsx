@@ -10,21 +10,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { authService } from "../services/api";
 import AuthInput from "../components/AuthInput.jsx";
-
-/* ── Brand tokens ── */
-const V = "#7C3AED";
-const C = "#06B6D4";
-const VL = "#A78BFA";
-const CL = "#67E8F9";
-const BG = "#080B14";
-const CARD = "#0D1120";
-const BORDER = "#1E2640";
-const TEXT = "#E2E8F0";
-const MUTED = "#64748B";
-const SUCCESS = "#34D399";
-const DANGER = "#F87171";
 
 function useMounted(delay = 0) {
   const [vis, setVis] = useState(false);
@@ -108,7 +96,23 @@ function EyeIcon({ open, onClick }) {
 
 export default function Login() {
   const { login } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
+  const isDark = theme === "dark";
+
+  /* ── Theme-aware brand tokens ── */
+  const V = "#7C3AED";
+  const C = "#06B6D4";
+  const VL = "#A78BFA";
+  const CL = "#67E8F9";
+  const BG = isDark ? "#080B14" : "#f8fafc";
+  const CARD = isDark ? "#0D1120" : "#ffffff";
+  const BORDER = isDark ? "#1E2640" : "#e2e8f0";
+  const TEXT = isDark ? "#E2E8F0" : "#0f172a";
+  const MUTED = isDark ? "#64748B" : "#475569";
+  const SUCCESS = "#34D399";
+  const DANGER = "#F87171";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);

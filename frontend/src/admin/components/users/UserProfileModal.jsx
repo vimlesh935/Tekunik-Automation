@@ -26,8 +26,8 @@ export default function UserProfileModal({ show, user, onClose, onToggleStatus }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
-      <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        <div className="sticky top-0 bg-[#0f172a]/80 backdrop-blur-xl border-b border-slate-800 p-6 sm:p-8 flex items-center justify-between z-10">
+      <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="sticky top-0 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 p-6 sm:p-8 flex items-center justify-between z-10">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-lg">
               <User size={28} />
@@ -131,7 +131,7 @@ export default function UserProfileModal({ show, user, onClose, onToggleStatus }
                 <div className="overflow-x-auto custom-scrollbar max-h-[400px]">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-[#0f172a] border-b border-slate-800 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
+                      <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
                         <th className="p-6">Order ID</th>
                         <th className="p-6">Products</th>
                         <th className="p-6">Timeline</th>
