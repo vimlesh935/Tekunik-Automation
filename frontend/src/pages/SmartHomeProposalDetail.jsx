@@ -569,7 +569,7 @@ export default function SmartHomeProposalDetail() {
                   </div>
                 </div>
               );
-            })()})}
+            })()}
 
             {/* Admin Notes */}
             {proposal.admin_notes && (

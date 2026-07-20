@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth } = require("../middleware/authMiddleware");
+const { requireAuth, optionalAuth } = require("../middleware/authMiddleware");
 const { requireAdmin } = require("../middleware/adminMiddleware");
 const {
   createOrder,
@@ -22,8 +22,8 @@ const router = express.Router();
 /** Create new order (authenticated user only) */
 router.post("/api/orders", requireAuth, createOrder);
 
-/** Guest order endpoints (no auth required) */
-router.post("/api/guest/orders", createOrder);
+/** Guest order endpoints (auth optional — if user has a valid token, it's used to link the order) */
+router.post("/api/guest/orders", optionalAuth, createOrder);
 router.post("/api/guest/orders/track", trackOrder);
 router.get("/api/guest/orders/download-invoice", downloadGuestInvoice);
 

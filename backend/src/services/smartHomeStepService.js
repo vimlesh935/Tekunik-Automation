@@ -70,11 +70,15 @@ const createOrUpdateStep = async (sessionId, step, data) => {
     if (data.notes !== undefined) { fields.push("additional_notes = ?"); values.push(data.notes); }
   }
 
-  // Always update current_step and wizard_status
+  // Always update current_step
   fields.push("current_step = ?");
   values.push(step);
 
-  if (step === 5) {
+  // Use explicit wizard_status override if provided, otherwise default
+  if (data.wizardStatus) {
+    fields.push("wizard_status = ?");
+    values.push(data.wizardStatus);
+  } else if (step === 5) {
     fields.push("wizard_status = ?");
     values.push("Completed");
   } else {
@@ -104,7 +108,7 @@ const getSession = async (sessionId) => {
 const findSessionByEmail = async (email) => {
   if (!email) return null;
   const rows = await query(
-    "SELECT id, full_name, email, phone, city, home_type, total_rooms, current_step, wizard_status, rooms_json, devices_json, additional_notes, created_at, updated_at FROM smart_home_proposals WHERE email = ? AND (wizard_status IN ('Draft', 'In Progress') OR wizard_status IS NULL) ORDER BY updated_at DESC LIMIT 1",
+    "SELECT id, full_name, email, phone, city, home_type, total_rooms, current_step, wizard_status, rooms_json, devices_json, additional_notes, created_at, updated_at FROM smart_home_proposals WHERE email = ? AND wizard_status = 'In Progress' ORDER BY updated_at DESC LIMIT 1",
     [email]
   );
   return rows[0] || null;

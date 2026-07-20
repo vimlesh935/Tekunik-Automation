@@ -506,7 +506,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                     className="w-full bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-800 disabled:pointer-events-none active:scale-95 shadow-lg shadow-indigo-600/10 cursor-pointer"
                   >
                     <ShoppingCart size={14} />
-                    Add to Basket
+                    Add to Cart
                   </button>
                 </div>
               </div>

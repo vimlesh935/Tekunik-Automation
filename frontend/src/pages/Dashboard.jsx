@@ -30,6 +30,7 @@ import {
 import { useAuth } from "../context/AuthContext.jsx";
 import apiCall, { productService, orderService, userService, reviewService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
+import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
 
 // Animation Configurations
@@ -59,6 +60,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -75,6 +78,7 @@ export default function Dashboard() {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [notifType, setNotifType] = useState("success");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [cancelSuccessOrder, setCancelSuccessOrder] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewOrder, setReviewOrder] = useState(null);
   const [reviewProducts, setReviewProducts] = useState([]);
@@ -142,6 +146,8 @@ useEffect(() => {
         },
       );
       setOrders(parsedOrders);
+      setTotalOrders(ordersRes.data?.pagination?.total || parsedOrders.length);
+      setTotalItems(ordersRes.data?.total_items || 0);
 
       setForm({
         first_name: userData?.first_name || "",
@@ -221,8 +227,11 @@ useEffect(() => {
             order.id === orderId ? updatedOrder : order,
           ),
         );
+        setCancelSuccessOrder(updatedOrder);
       } else {
         await loadDashboardData();
+        const existingOrder = orders.find(o => o.id === orderId);
+        setCancelSuccessOrder(existingOrder || { id: orderId, order_number: orderNumber });
       }
       showNotification("Order cancelled successfully", "success");
     } catch (error) {
@@ -710,11 +719,28 @@ useEffect(() => {
                     </Link>
                   </div>
 
+                  {/* Aggregate Portfolio Summary */}
+                  <div className="flex flex-wrap items-center gap-4 mb-6 pb-5 border-b border-slate-800">
+                    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
+                      <Package size={18} className="text-cyan-400" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Total Orders</p>
+                        <p className="text-lg font-black text-white">{totalOrders}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
+                      <Package size={18} className="text-cyan-400" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Items</p>
+                        <p className="text-lg font-black text-white">{totalItems}</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {orders.length > 0 ? (
                     <div className="space-y-3.5">
                       {recentOrders.map((order) => {
-                        const totalProducts = order.total_products || order.items?.length || 0;
-                        const totalQuantity = order.total_quantity || (order.items || []).reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+                        const totalQuantity = parseInt(order.total_quantity) || 0;
                         const formattedDate = order.created_at
                           ? new Date(order.created_at).toLocaleDateString("en-IN", {
                               day: "numeric",
@@ -747,12 +773,8 @@ useEffect(() => {
                               </span>
                             </div>
 
-                            {/* Middle: Stats Row - Products, Items, Date */}
+                            {/* Middle: Stats Row - Items, Date, Refund Status */}
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-medium mb-2">
-                              <span className="text-slate-300 font-semibold">
-                                {totalProducts} Product{totalProducts !== 1 ? "s" : ""}
-                              </span>
-                              <span className="w-1 h-1 rounded-full bg-slate-700" />
                               <span className="text-slate-300 font-semibold">
                                 {totalQuantity} Item{totalQuantity !== 1 ? "s" : ""}
                               </span>
@@ -760,6 +782,7 @@ useEffect(() => {
                               <span className="flex items-center gap-1">
                                 <Calendar size={12} /> {formattedDate}
                               </span>
+
                             </div>
 
                             {/* Bottom Row: Amount + Action Buttons */}
@@ -1069,6 +1092,12 @@ useEffect(() => {
           </div>
         )}
       </AnimatePresence>
+
+      <CancelSuccessMessage
+        show={!!cancelSuccessOrder}
+        order={cancelSuccessOrder}
+        onClose={() => setCancelSuccessOrder(null)}
+      />
     </div>
   );
 }

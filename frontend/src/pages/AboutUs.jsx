@@ -299,9 +299,9 @@ function Hero() {
           transition={{ duration: 0.7 }}
           className="flex justify-center mb-10"
         >
-          <img src="/assest/logo.png" alt="TekNode" className="hero-logo" style={{
-            height: "auto",
-            width: "clamp(220px, 25vw, 280px)",
+          <img src="/assest/logo.png" alt="TekNode" style={{
+            height: "clamp(50px, 10vw, 85px)",
+            width: "auto",
             maxWidth: "100%",
             objectFit: "contain",
           }} />
@@ -610,12 +610,6 @@ export default function AboutUs() {
   return (
     <>
       <style>{`
-        @media (max-width: 768px) {
-          .hero-logo { width: clamp(180px, 22vw, 220px) !important; }
-        }
-        @media (max-width: 480px) {
-          .hero-logo { width: clamp(140px, 18vw, 180px) !important; }
-        }
       `}</style>
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
         <Hero />

@@ -496,13 +496,6 @@ export default function ProductDetails({ token }) {
                     {addingToCart ? "Deploying Node..." : " Add to Cart"}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => navigate("/cart")}
-                    className="inline-flex items-center justify-center rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-900 hover:border-slate-700 px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-300 hover:text-white transition-all active:scale-98"
-                  >
-                    Review Cart Grid
-                  </button>
                 </div>
               </div>
 

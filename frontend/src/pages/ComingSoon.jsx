@@ -158,7 +158,7 @@ export default function ComingSoon() {
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20,
           }}>
-            <img src="/assest/logowhite.png" alt="TekNode" className="h-80 w-auto" style={{ height: 200, width: "auto" }} />
+            <img src="/assest/logowhite.png" alt="TekNode" className="w-auto" style={{ height: "clamp(80px, 15vw, 200px)", width: "auto" }} />
           </div>
         </motion.div>
 

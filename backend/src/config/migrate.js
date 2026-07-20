@@ -431,31 +431,6 @@ const ensureEnquiriesTable = async () => {
   }
 };
 
-const ensureSystemSettingsTable = async () => {
-  try {
-    const tableExists = await query("SHOW TABLES LIKE 'system_settings'");
-    if (!tableExists.length) {
-      await query(`
-        CREATE TABLE system_settings (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          setting_key VARCHAR(191) NOT NULL UNIQUE,
-          setting_value TEXT NULL,
-          setting_type ENUM('string','boolean','number','json','encrypted') NOT NULL DEFAULT 'string',
-          category VARCHAR(100) NOT NULL DEFAULT 'general',
-          is_encrypted TINYINT(1) NOT NULL DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_settings_key (setting_key),
-          INDEX idx_settings_category (category)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("✅ [MIGRATE] system_settings table created");
-    }
-  } catch (error) {
-    console.warn("⚠️ [MIGRATE] Could not ensure system_settings table:", error.message);
-  }
-};
-
 module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
@@ -466,5 +441,4 @@ module.exports = {
   ensureSmartHomeProposalsTable: ensureSmartHomeProposalsTables,
   ensureAdminTables,
   ensureEnquiriesTable,
-  ensureSystemSettingsTable,
 };

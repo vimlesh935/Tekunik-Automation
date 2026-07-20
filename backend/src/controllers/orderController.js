@@ -528,9 +528,18 @@ const getUserOrders = asyncHandler(async (req, res) => {
     [user_id],
   );
 
+  const [itemsRow] = await query(
+    `SELECT COALESCE(SUM(oi.quantity), 0) AS total_items
+     FROM order_items oi
+     INNER JOIN orders o ON oi.order_id = o.id
+     WHERE o.user_id = ?`,
+    [user_id],
+  );
+
   const orders = await query(
     `SELECT o.*,
             (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count,
+            (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = o.id) AS total_quantity,
             (SELECT oi.product_name FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS first_product_name,
             (
               SELECT p.image_url
@@ -554,6 +563,7 @@ const getUserOrders = asyncHandler(async (req, res) => {
 
   return success(res, "Orders fetched", {
     orders: normalizedOrders,
+    total_items: Number(itemsRow.total_items),
     pagination: {
       total: Number(totalRow.count),
       page,

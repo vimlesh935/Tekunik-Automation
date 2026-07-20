@@ -621,19 +621,6 @@ export const adminDemoEnquiryService = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN SETTINGS SERVICES
-// ─────────────────────────────────────────────────────────────
-
-export const adminSettingsService = {
-  getAll: () => apiCall("/api/admin/settings"),
-  save: (settings) =>
-    apiCall("/api/admin/settings", {
-      method: "PUT",
-      body: JSON.stringify({ settings }),
-    }),
-};
-
-// ─────────────────────────────────────────────────────────────
 // SMART HOME STEP SERVICES (step-by-step auto-save)
 // ─────────────────────────────────────────────────────────────
 

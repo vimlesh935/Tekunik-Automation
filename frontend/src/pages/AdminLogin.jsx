@@ -174,18 +174,7 @@ export default function AdminLogin() {
 
           <motion.div {...appear(200)} style={{ position: "relative", zIndex: 2 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: 10,
-                background: `linear-gradient(135deg, ${V}, ${C})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, boxShadow: `0 0 20px rgba(124,58,237,0.4)`,
-              }}>⚡</div>
-              <span style={{ fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em", color: "#fff" }}>
-                Tek<span style={{
-                  background: `linear-gradient(90deg,${VL},${CL})`,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>Node</span>
-              </span>
+              <img src="/assest/logowhite.png" alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
               <span style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: "0.18em",
                 textTransform: "uppercase", color: VL, border: `1px solid rgba(167,139,250,0.3)`,
@@ -270,18 +259,8 @@ export default function AdminLogin() {
               </button>
             </motion.div>
 
-            <motion.div {...appear(150)} style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: `linear-gradient(135deg,${V},${C})`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-              }}>⚡</div>
-              <span style={{ fontWeight: 700, fontSize: 20, letterSpacing: "-0.02em" }}>
-                Tek<span style={{
-                  background: `linear-gradient(90deg,${VL},${CL})`,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>Node</span>
-              </span>
+            <motion.div {...appear(150)} style={{ marginBottom: 24 }}>
+              <img src="/assest/logowhite.png" alt="TekNode" className="h-[45px] md:h-[55px] lg:h-[70px] w-auto object-contain" />
             </motion.div>
 
             <motion.div {...appear(200)}>
@@ -404,7 +383,7 @@ export default function AdminLogin() {
                           display: "flex", alignItems: "center",
                         }}
                       >
-                        {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showKey ? <Eye size={16} /> : <EyeOff size={16} />}
                       </button>
                     </div>
                   </motion.div>

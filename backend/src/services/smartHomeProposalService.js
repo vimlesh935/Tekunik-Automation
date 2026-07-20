@@ -43,7 +43,7 @@ const createProposal = async (data) => {
   const result = await query(
     `INSERT INTO smart_home_proposals
       (proposal_number, user_id, full_name, email, phone, city, state, pincode, address, home_type, total_rooms, rooms_json, devices_json, estimated_products_json, estimated_cost, additional_notes, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
     [
       proposal_number,
       user_id || null,
@@ -69,7 +69,7 @@ const createProposal = async (data) => {
 
   // Record initial status in history
   await query(
-    "INSERT INTO proposal_status_history (proposal_id, from_status, to_status, changed_by) VALUES (?, NULL, 'New', ?)",
+    "INSERT INTO proposal_status_history (proposal_id, from_status, to_status, changed_by) VALUES (?, NULL, 'Pending', ?)",
     [insertedId, user_id || null]
   );
 
@@ -157,6 +157,17 @@ const getStatusHistory = async (proposalId) => {
 const updateProposal = async (id, data, changedBy = null) => {
   const oldProposal = await getProposalById(id);
   if (!oldProposal) return null;
+
+  // Status validation
+  const ALLOWED_STATUSES = ["Pending", "Confirmed", "Completed"];
+  if (data.status !== undefined) {
+    if (!ALLOWED_STATUSES.includes(data.status)) {
+      throw new Error(`Invalid status "${data.status}". Allowed: ${ALLOWED_STATUSES.join(", ")}`);
+    }
+    if (oldProposal.status === "Completed" && data.status !== oldProposal.status) {
+      throw new Error("Cannot change status: this proposal is already Completed.");
+    }
+  }
 
   const fields = [];
   const values = [];
@@ -246,13 +257,13 @@ const convertProposalToOrder = async (id) => {
   const orderId = orderResult.insertId;
 
   await query(
-    "UPDATE smart_home_proposals SET status = 'Converted to Order', converted_order_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    "UPDATE smart_home_proposals SET status = 'Completed', converted_order_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     [orderId, id]
   );
 
   // Record status change
   await query(
-    "INSERT INTO proposal_status_history (proposal_id, from_status, to_status, notes) VALUES (?, ?, 'Converted to Order', ?)",
+    "INSERT INTO proposal_status_history (proposal_id, from_status, to_status, notes) VALUES (?, ?, 'Completed', ?)",
     [id, proposal.status, `Order #${orderId} created`]
   );
 
@@ -266,10 +277,8 @@ const getDashboardStats = async () => {
   const results = await Promise.all([
     query("SELECT COUNT(*) as total FROM smart_home_proposals"),
     query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE DATE(created_at) = ?", [today]),
-    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status IN ('New','Under Review')"),
-    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Quotation Sent'"),
-    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Site Visit Scheduled'"),
-    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Converted to Order'"),
+    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Pending'"),
+    query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Confirmed'"),
     query("SELECT COUNT(*) as total FROM smart_home_proposals WHERE status = 'Completed'"),
     query("SELECT status, COUNT(*) as count FROM smart_home_proposals GROUP BY status ORDER BY count DESC"),
   ]);
@@ -277,12 +286,10 @@ const getDashboardStats = async () => {
   return {
     total: results[0][0]?.total || 0,
     newToday: results[1][0]?.total || 0,
-    pendingReview: results[2][0]?.total || 0,
-    quotationsSent: results[3][0]?.total || 0,
-    siteVisitsScheduled: results[4][0]?.total || 0,
-    convertedToOrders: results[5][0]?.total || 0,
-    completed: results[6][0]?.total || 0,
-    statusBreakdown: results[7],
+    pending: results[2][0]?.total || 0,
+    confirmed: results[3][0]?.total || 0,
+    completed: results[4][0]?.total || 0,
+    statusBreakdown: results[5],
   };
 };
 

@@ -38,20 +38,22 @@ import {
   Eye,
   Loader2,
   Star,
-  Settings,
   ClipboardList,
   Home,
   Wrench,
   Sparkles,
+  DoorOpen,
+  Cpu,
 } from "lucide-react";
 import { categoryService, getApiUrl } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
-import DashboardAnalytics from "../admin/components/dashboard/DashboardAnalytics.jsx";
-import AdminSettings from "../components/AdminSettings.jsx";
+const DashboardAnalytics = React.lazy(() => import("../admin/components/dashboard/DashboardAnalytics.jsx"));
+
 
 import Toast from "../admin/components/common/Toast.jsx";
 import CategoryModal from "../admin/components/categories/CategoryModal.jsx";
 import ProductModal from "../admin/components/products/ProductModal.jsx";
+import BulkImportModal from "../admin/components/products/BulkImportModal.jsx";
 import DiscountModal from "../admin/components/discounts/DiscountModal.jsx";
 import UserProfileModal from "../admin/components/users/UserProfileModal.jsx";
 import RecentProposals from "../admin/components/dashboard/RecentProposals.jsx";
@@ -75,11 +77,13 @@ export default function AdminPanel() {
   const [installTotalPages, setInstallTotalPages] = useState(1);
   const [installStatusFilter, setInstallStatusFilter] = useState("");
   const [installDetail, setInstallDetail] = useState(null);
+  const [completedRefunds, setCompletedRefunds] = useState(new Set());
   const [selectedProposalId, setSelectedProposalId] = useState(null);
   const [proposalStats, setProposalStats] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleteInstallId, setDeleteInstallId] = useState(null);
   const [showDeleteInstallModal, setShowDeleteInstallModal] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
 
   const [inventoryStats, setInventoryStats] = useState(null);
@@ -108,7 +112,7 @@ export default function AdminPanel() {
 
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [stockData, setStockData] = useState({ stock_quantity: 0, action_type: "manual_adjust", notes: "" });
+  const [stockData, setStockData] = useState({ stock_quantity: 0, action_type: "restock" });
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -117,6 +121,7 @@ export default function AdminPanel() {
   const [categoryError, setCategoryError] = useState("");
 
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
     name: "", description: "", price: "", stock: "", category_id: "",
@@ -182,7 +187,7 @@ export default function AdminPanel() {
   useEffect(() => {
     const segments = location.pathname.split("/").filter(Boolean);
     const lastSegment = segments[segments.length - 1];
-    const validTabs = ["dashboard", "products", "categories", "inventory", "orders", "users", "demobooking", "reviews", "installations", "settings"];
+    const validTabs = ["dashboard", "products", "categories", "inventory", "orders", "users", "demobooking", "reviews", "installations"];
     if (validTabs.includes(lastSegment)) {
       setActiveTab(lastSegment);
     }
@@ -670,20 +675,44 @@ export default function AdminPanel() {
   };
 
   const updateStock = async () => {
-    if (!selectedProduct) { alert("Please fill all fields"); return; }
+    if (!selectedProduct) return;
+    const qty = parseInt(stockData.stock_quantity);
+    const action = stockData.action_type;
+    if (isNaN(qty) || qty <= 0) { alert("Quantity must be greater than 0"); return; }
+    if (action === "damaged" && qty > (selectedProduct.stock || 0)) {
+      alert("Quantity exceeds available stock"); return;
+    }
     try {
-      await apiCall(`/api/admin/stock/${selectedProduct.id}`, { method: "PUT", body: JSON.stringify(stockData) });
+      await apiCall(`/api/admin/stock/${selectedProduct.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ stock_quantity: qty, action_type: action }),
+      });
       setShowStockModal(false);
       setSelectedProduct(null);
-      setStockData({ stock_quantity: 0, action_type: "manual_adjust", notes: "" });
+      setStockData({ stock_quantity: 0, action_type: "restock" });
       fetchData();
     } catch (err) { alert(err.message); }
   };
 
   const openStockModal = (p) => {
     setSelectedProduct(p);
-    setStockData({ stock_quantity: p.stock_quantity, action_type: "manual_adjust", notes: "" });
+    setStockData({ stock_quantity: 0, action_type: "restock" });
     setShowStockModal(true);
+  };
+
+  const handleInstallStatusChange = async (id, newStatus) => {
+    setUpdatingStatusId(id);
+    try {
+      const res = await smartHomeProposalService.updateStatus(id, newStatus);
+      setInstallRequests(prev =>
+        prev.map(p => (p.id === id ? { ...p, status: newStatus } : p))
+      );
+      showToast(res?.message || "Status updated successfully.", "success");
+    } catch (err) {
+      showToast(err?.message || "Failed to update status", "error");
+    } finally {
+      setUpdatingStatusId(null);
+    }
   };
 
   const updateDemoStatus = async (id, status) => {
@@ -710,6 +739,10 @@ export default function AdminPanel() {
   const updateOrderStatus = async (id, status) => {
     try { await apiCall(`/api/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }); fetchData(); }
     catch (err) { alert(err.message); }
+  };
+
+  const markRefundComplete = (orderId) => {
+    setCompletedRefunds((prev) => new Set(prev).add(orderId));
   };
 
   const fetchOrders = async (pageNum = 1, statusFilter = "") => {
@@ -829,9 +862,9 @@ export default function AdminPanel() {
     <div className="admin-shell min-h-screen flex flex-col lg:flex-row bg-[#0a0a0c] text-slate-200">
       {/* Sidebar - Restored internal stable version */}
       <div className="w-full lg:w-64 bg-black border-b lg:border-b-0 lg:border-r border-gray-800 p-6 flex flex-col z-20">
-        <div className="mb-8 px-2">
-          <h2 className="text-xl font-bold tracking-wider text-white">TEK<span className="text-cyan-400 ">NODE</span></h2>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Management System</p>
+        <div className="flex items-center justify-center py-5">
+          <img src="/assest/logowhite.png" alt="TekNode"
+            className="h-[70px] w-auto max-w-full object-contain block" />
         </div>
         <nav className="flex-1 space-y-1">
           <NavItem id="dashboard" label="Dashboard" icon={LayoutDashboard} activeTab={activeTab} onClick={setActiveTab} />
@@ -844,7 +877,6 @@ export default function AdminPanel() {
           <NavItem id="demobooking" label="Demo Bookings" icon={Calendar} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="reviews" label="Reviews" icon={Star} activeTab={activeTab} onClick={setActiveTab} />
           <NavItem id="installations" label="Installation Requests" icon={Wrench} activeTab={activeTab} onClick={setActiveTab} />
-          {/* NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} onClick={setActiveTab} — hidden until ready */}
         </nav>
         <button onClick={onLogout}
           className="mt-auto w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition font-semibold text-sm border border-red-500/20">
@@ -872,9 +904,14 @@ export default function AdminPanel() {
         </div>
         <div className="flex items-center gap-3">
           {activeTab === "products" && (
-            <button onClick={openAddProduct} className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition text-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-              <Plus size={16} /> Add Product
-            </button>
+            <>
+              <button onClick={openAddProduct} className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition text-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Plus size={16} /> Add Product
+              </button>
+              <button onClick={() => setShowBulkImportModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-black font-semibold rounded-lg hover:bg-emerald-400 transition text-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Upload size={16} /> Bulk Import
+              </button>
+            </>
           )}
           {activeTab === "categories" && (
             <button onClick={openAddCategory} className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition text-sm shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -904,7 +941,9 @@ export default function AdminPanel() {
           ) : (
             <>
               {activeTab === "dashboard" && (<>
-                <DashboardAnalytics toast={toast} fetchData={fetchData} refreshInterval={30000} />
+                <React.Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-400"></div></div>}>
+                  <DashboardAnalytics toast={toast} fetchData={fetchData} refreshInterval={30000} />
+                </React.Suspense>
                 <div className="mt-6"><RecentProposals /></div>
               </>)}
 
@@ -1053,7 +1092,7 @@ export default function AdminPanel() {
                     <div className="p-6 border-b border-gray-800"><h3 className="text-lg font-bold">Inventory</h3></div>
                     <table className="w-full text-left border-collapse">
                       <thead><tr className="bg-black/50 border-b border-gray-800 text-xs uppercase tracking-wider text-gray-400">
-                        <th className="p-4 font-semibold">Product</th><th className="p-4 font-semibold">SKU</th><th className="p-4 font-semibold text-right">Price</th>
+                        <th className="p-4 font-semibold">Product</th><th className="p-4 font-semibold text-right">Price</th>
                         <th className="p-4 font-semibold text-center">Stock</th><th className="p-4 font-semibold text-center">Status</th><th className="p-4 font-semibold text-center">Action</th>
                       </tr></thead>
                       <tbody className="divide-y divide-gray-800/50">
@@ -1063,9 +1102,8 @@ export default function AdminPanel() {
                               {p.image_url ? <SafeImage src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" /> : <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center"><Package size={16} className="text-gray-500" /></div>}
                               <div><p className="font-semibold text-sm text-white">{p.name}</p><p className="text-xs text-gray-500">{p.category_name || "-"}</p></div>
                             </div></td>
-                            <td className="p-4 text-sm font-mono text-cyan-400">{p.sku || "-"}</td>
                             <td className="p-4 text-sm font-mono text-emerald-400 text-right">{formatCurrency(p.price)}</td>
-                            <td className="p-4 text-center"><span className={`px-2 py-1 rounded-md text-xs font-bold ${p.stock_quantity === 0 ? 'bg-red-500/10 text-red-400' : p.stock_quantity <= p.low_stock_limit ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400'}`}>{p.stock_quantity}</span></td>
+                            <td className="p-4 text-center"><span className={`px-2 py-1 rounded-md text-xs font-bold ${p.stock === 0 ? 'bg-red-500/10 text-red-400' : p.stock <= p.low_stock_limit ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400'}`}>{p.stock}</span></td>
                             <td className="p-4 text-center"><span className="text-xs font-bold">{p.stock_status === 'in_stock' ? 'IN STOCK' : p.stock_status === 'limited_stock' ? 'LIMITED' : 'OUT'}</span></td>
                             <td className="p-4 text-center"><button onClick={() => openStockModal(p)} className="px-3 py-1 text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/20 transition">Edit</button></td>
                           </tr>
@@ -1073,28 +1111,29 @@ export default function AdminPanel() {
                       </tbody>
                     </table>
                   </div>
-                  {showStockModal && selectedProduct && (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md">
-                        <h2 className="text-2xl font-bold mb-6">Update Stock</h2>
-                        <div className="space-y-4">
-                          <div><p className="text-sm font-semibold text-gray-300 mb-2">{selectedProduct.name}</p><p className="text-xs text-gray-500">Current Stock: {selectedProduct.stock_quantity}</p></div>
-                          <div><label className="text-sm font-semibold text-gray-300 mb-2 block">New Quantity</label>
-                            <input type="number" value={stockData.stock_quantity} onChange={(e) => setStockData({ ...stockData, stock_quantity: parseInt(e.target.value) || 0 })}
-                              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
-                          <div><label className="text-sm font-semibold text-gray-300 mb-2 block">Action</label>
-                            <select value={stockData.action_type} onChange={(e) => setStockData({ ...stockData, action_type: e.target.value })}
-                              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
-                              <option value="manual_adjust">Manual Adjust</option><option value="restock">Restock</option><option value="damage">Damage</option><option value="lost">Lost</option>
-                            </select></div>
-                          <div className="flex gap-3 mt-6">
-                            <button onClick={() => setShowStockModal(false)} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">Cancel</button>
-                            <button onClick={updateStock} className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition">Update Stock</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                   {showStockModal && selectedProduct && (
+                     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md">
+                         <h2 className="text-2xl font-bold mb-6">Update Stock</h2>
+                         <div className="space-y-4">
+                           <div><p className="text-sm font-semibold text-gray-300 mb-2">{selectedProduct.name}</p><p className="text-xs text-gray-500">Current Stock: {selectedProduct.stock}</p></div>
+                           <div><label className="text-sm font-semibold text-gray-300 mb-2 block">Stock Quantity</label>
+                             <input type="number" min="1" value={stockData.stock_quantity} onChange={(e) => setStockData({ ...stockData, stock_quantity: parseInt(e.target.value) || 0 })}
+                               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+                           <div><label className="text-sm font-semibold text-gray-300 mb-2 block">Action</label>
+                             <select value={stockData.action_type} onChange={(e) => setStockData({ ...stockData, action_type: e.target.value })}
+                               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
+                               <option value="restock">Restock</option>
+                               <option value="damaged">Damaged</option>
+                             </select></div>
+                           <div className="flex gap-3 mt-6">
+                             <button onClick={() => setShowStockModal(false)} className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">Cancel</button>
+                             <button onClick={updateStock} className="flex-1 px-4 py-2 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition">Update Stock</button>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   )}
                 </div>
               )}
 
@@ -1504,15 +1543,11 @@ export default function AdminPanel() {
                 </>
               )}
 
-              {activeTab === "settings" && (
-                <AdminSettings token={token} />
-              )}
-
               {activeTab === "installations" && (
                 <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
                   <div className="flex flex-wrap items-center gap-3 p-4 border-b border-gray-800">
                     <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Filter:</span>
-                    {["", "Draft", "New", "Contacted", "Under Review", "Quotation Sent", "Completed", "Cancelled"].map(s => (
+                    {["", "Pending", "Confirmed", "Completed"].map(s => (
                       <button key={s} onClick={() => { setInstallPage(1); setInstallStatusFilter(s); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${installStatusFilter === s ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "text-gray-400 hover:text-white bg-gray-800/50 border border-gray-700/50"}`}>
                         {s || "All"}
@@ -1528,6 +1563,7 @@ export default function AdminPanel() {
                         <th className="p-4 font-semibold text-center">Rooms</th>
                         <th className="p-4 font-semibold text-center">Devices</th>
                         <th className="p-4 font-semibold text-center">Date</th>
+                        <th className="p-4 font-semibold text-center">Status</th>
                         <th className="p-4 font-semibold text-center">Actions</th>
                       </tr>
                     </thead>
@@ -1554,6 +1590,25 @@ export default function AdminPanel() {
                             <td className="p-4 text-center text-sm font-bold text-cyan-400">{totalDevices}</td>
                             <td className="p-4 text-xs text-slate-500 font-mono">{p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</td>
                             <td className="p-4 text-center">
+                              {p.status === "Completed" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                  Completed
+                                </span>
+                              ) : (
+                                <select
+                                  value={p.status || "Pending"}
+                                  onChange={(e) => handleInstallStatusChange(p.id, e.target.value)}
+                                  disabled={updatingStatusId === p.id}
+                                  className="bg-black border border-gray-700 text-xs rounded px-2 py-1.5 outline-none text-white focus:border-indigo-500/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <option value="Pending">Pending</option>
+                                  <option value="Confirmed">Confirmed</option>
+                                  <option value="Completed">Completed</option>
+                                </select>
+                              )}
+                            </td>
+                            <td className="p-4 text-center">
                               <div className="flex justify-center gap-1.5">
                                 <button onClick={() => setInstallDetail(p)}
                                   className="p-1.5 text-gray-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-md transition" title="View Details">
@@ -1568,8 +1623,8 @@ export default function AdminPanel() {
                           </tr>
                         );
                       })}
-                      {installRequests.length === 0 && (
-                        <tr><td colSpan={7} className="p-8 text-center text-gray-500">No installation requests found.</td></tr>
+                        {installRequests.length === 0 && (
+                        <tr><td colSpan={8} className="p-8 text-center text-gray-500">No installation requests found.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1590,7 +1645,7 @@ export default function AdminPanel() {
                   {/* Order status filter */}
                   <div className="flex flex-wrap items-center gap-3 p-4 border-b border-gray-800">
                     <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Filter:</span>
-                    {["all", "pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered"].map(s => (
+                    {["all", "pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"].map(s => (
                       <button key={s} onClick={() => { setPage(1); setOrderFilter(s === "all" ? "" : s); fetchOrders(1, s === "all" ? "" : s); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${orderFilter === s || (s === "all" && !orderFilter) ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30" : "text-gray-400 hover:text-white bg-gray-800/50 border border-gray-700/50"}`}>
                         {s === "all" ? "All" : s.replace(/_/g, " ").charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ")}
@@ -1603,8 +1658,10 @@ export default function AdminPanel() {
                       <th className="p-4 font-semibold">Customer</th>
                       <th className="p-4 font-semibold text-right">Amount</th>
                       <th className="p-4 font-semibold text-center">Payment</th>
+                      <th className="p-4 font-semibold text-center">Payment Status</th>
                       <th className="p-4 font-semibold text-center">Status</th>
                       <th className="p-4 font-semibold text-center">Date</th>
+                      <th className="p-4 font-semibold text-center">Refund</th>
                       <th className="p-4 font-semibold text-center">Actions</th>
                     </tr></thead>
                     <tbody className="divide-y divide-gray-800/50">
@@ -1620,15 +1677,34 @@ export default function AdminPanel() {
                           </td>
                           <td className="p-4 text-sm font-mono text-emerald-400 text-right font-bold">₹{parseFloat(o.total_amount).toFixed(2)}</td>
                           <td className="p-4 text-center">
-                            <span className={`text-xs font-semibold ${o.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"}`}>
-                              {o.payment_status?.charAt(0).toUpperCase() + o.payment_status?.slice(1) || "Pending"}
+                            <span className="text-xs font-semibold text-white">
+                              {o.payment_method === "cod" ? "COD" : o.payment_method === "online" ? "Online Payment" : o.payment_method === "upi" ? "UPI" : o.payment_method === "card" ? "Card" : o.payment_method ? o.payment_method.charAt(0).toUpperCase() + o.payment_method.slice(1) : "—"}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                              o.payment_status === "paid" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                              o.payment_status === "pending" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                              o.payment_status === "failed" ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                              o.payment_status === "refunded" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
+                              "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                            }`}>
+                              {o.payment_status === "paid" ? <CheckCircle size={13} /> :
+                               o.payment_status === "failed" ? <XCircle size={13} /> :
+                               <span className="w-3.5 h-0.5 rounded-full bg-current opacity-50" />}
+                              {o.payment_status ? o.payment_status.charAt(0).toUpperCase() + o.payment_status.slice(1) : "Pending"}
                             </span>
                           </td>
                           <td className="p-4 text-center">
                             {o.status === "delivered" ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                Delivered (Final Status)
+                                Delivered
+                              </span>
+                            ) : o.status === "cancelled" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                                <XCircle size={13} />
+                                Cancelled
                               </span>
                             ) : (
                               <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)}
@@ -1646,7 +1722,25 @@ export default function AdminPanel() {
                             {o.created_at ? new Date(o.created_at).toLocaleDateString() : "-"}
                           </td>
                           <td className="p-4 text-center">
-                            <div className="flex justify-center gap-1.5">
+                            {o.status === "cancelled" && (o.payment_method === "online" || o.payment_method === "razorpay" || o.payment_method === "upi" || o.payment_method === "card") && o.payment_status === "paid" ? (
+                              completedRefunds.has(o.id) ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  <CheckCircle size={13} /> Completed
+                                </span>
+                              ) : (
+                                <button onClick={() => markRefundComplete(o.id)}
+                                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                                  Complete Refund
+                                </button>
+                              )
+                            ) : o.payment_method === "cod" && o.status === "cancelled" ? (
+                              <span className="text-xs text-gray-500">Not Applicable</span>
+                            ) : (
+                              <span className="text-xs text-gray-500">—</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button onClick={() => openOrderDetail(o)}
                                 className="p-1.5 text-gray-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-md transition" 
                                 title="View Details" disabled={orderDetailLoading === o.id}>
@@ -1662,7 +1756,7 @@ export default function AdminPanel() {
                         </tr>
                       ))}
                       {orders.length === 0 && (
-                        <tr><td colSpan={7} className="p-8 text-center text-gray-500">No orders found.</td></tr>
+                        <tr><td colSpan={9} className="p-8 text-center text-gray-500">No orders found.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -1704,25 +1798,33 @@ export default function AdminPanel() {
         />
       )}
       {showProductModal && (
-        <ProductModal
-          show={showProductModal}
-          editingProduct={editingProduct}
-          productForm={productForm}
-          productError={productError}
-          productSaving={productSaving}
-          categories={categories}
-          onFieldChange={handleProductFieldChange}
-          onClose={() => setShowProductModal(false)}
-          onSave={saveProduct}
-          onSelectImage={handleImageSelection}
-          onUploadImage={handleImageUpload}
-          onClearImage={clearProductImageSelection}
-          productImageFile={productImageFile}
-          productImagePreview={productImagePreview}
-          uploadingImage={uploadingImage}
-          uploadTarget={uploadTarget}
-        />
+      <ProductModal
+        show={showProductModal}
+        editingProduct={editingProduct}
+        productForm={productForm}
+        productError={productError}
+        productSaving={productSaving}
+        categories={categories}
+        onFieldChange={handleProductFieldChange}
+        onClose={() => setShowProductModal(false)}
+        onSave={saveProduct}
+        onSelectImage={handleImageSelection}
+        onUploadImage={handleImageUpload}
+        onClearImage={clearProductImageSelection}
+        productImageFile={productImageFile}
+        productImagePreview={productImagePreview}
+        uploadingImage={uploadingImage}
+        uploadTarget={uploadTarget}
+      />
       )}
+      <BulkImportModal
+        show={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onImportComplete={() => { setTimeout(() => fetchData(), 1000); }}
+        apiCall={apiCall}
+        getApiUrl={getApiUrl}
+        token={token}
+      />
       {showDiscountModal && (
         <DiscountModal
           show={showDiscountModal}
@@ -1778,6 +1880,231 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      {/* Installation Request Detail Modal — read-only, dynamic sections */}
+      {installDetail && (() => {
+        const p = installDetail;
+        const rooms = (() => {
+          try { return typeof p.rooms_json === "string" ? JSON.parse(p.rooms_json) : p.rooms_json || []; } catch { return []; }
+        })();
+        const deviceRooms = (() => {
+          try { return typeof p.devices_json === "string" ? JSON.parse(p.devices_json) : p.devices_json || []; } catch { return []; }
+        })();
+        const estimatedProducts = (() => {
+          try { return typeof p.estimated_products_json === "string" ? JSON.parse(p.estimated_products_json) : p.estimated_products_json || []; } catch { return []; }
+        })();
+
+        const hasCustomerInfo = p.full_name || p.email || p.phone || p.city || p.state || p.pincode || p.address;
+        const hasHomeDetails = p.home_type;
+        const hasRooms = rooms.length > 0;
+        const hasDevices = deviceRooms.some(r => Object.values(r.devices || {}).some(d => d.enabled));
+        const hasBudget = p.estimated_cost > 0 || estimatedProducts.length > 0;
+        const hasNotes = p.additional_notes;
+
+        const DEVICE_LABELS = {
+          lights: "Lights", fans: "Fans", curtains: "Curtains", ac: "AC",
+          tv: "TV", "smart-plug": "Smart Plug", "door-lock": "Door Lock",
+          "door-bell": "Door Bell", "motion-sensor": "Motion Sensor",
+          "smoke-sensor": "Smoke Sensor", camera: "Camera", "wifi-ap": "Wi-Fi AP",
+        };
+
+        const HOME_TYPE_LABELS = {
+          "1-rk": "1 RK", "1-bhk": "1 BHK", "2-bhk": "2 BHK", "3-bhk": "3 BHK",
+          "4-bhk": "4 BHK", villa: "Villa", office: "Office", custom: "Custom",
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-5 flex items-center justify-between z-10">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-gray-500">Installation Enquiry Detail</p>
+                  <h2 className="text-xl font-bold text-white font-mono">{p.proposal_number || `#${p.id}`}</h2>
+                </div>
+                <button onClick={() => setInstallDetail(null)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-5">
+
+                {/* ── Customer Information ── */}
+                {hasCustomerInfo && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <User size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Customer Information</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {p.full_name && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Name</p>
+                          <p className="text-sm font-semibold text-white">{p.full_name}</p>
+                        </div>
+                      )}
+                      {p.email && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Email</p>
+                          <p className="text-sm text-gray-200">{p.email}</p>
+                        </div>
+                      )}
+                      {p.phone && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Phone</p>
+                          <p className="text-sm text-gray-200">{p.phone}</p>
+                        </div>
+                      )}
+                      {p.city && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">City</p>
+                          <p className="text-sm text-gray-200">{p.city}</p>
+                        </div>
+                      )}
+                      {p.state && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">State</p>
+                          <p className="text-sm text-gray-200">{p.state}</p>
+                        </div>
+                      )}
+                      {p.pincode && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Pincode</p>
+                          <p className="text-sm text-gray-200">{p.pincode}</p>
+                        </div>
+                      )}
+                      {p.address && (
+                        <div className="sm:col-span-2">
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Address</p>
+                          <p className="text-sm text-gray-200">{p.address}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Home Details ── */}
+                {hasHomeDetails && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <Home size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Home Details</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Home Type</p>
+                        <p className="text-sm font-semibold text-white">{HOME_TYPE_LABELS[p.home_type] || p.home_type}</p>
+                      </div>
+                      {p.total_rooms > 0 && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Total Rooms</p>
+                          <p className="text-sm text-gray-200">{p.total_rooms}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Room Details ── */}
+                {hasRooms && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <DoorOpen size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Room Details</h3>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {rooms.map((room, i) => (
+                          <span key={room.id || i} className="text-xs px-3 py-1.5 rounded-lg bg-slate-800/80 text-slate-200 border border-slate-700">
+                            {room.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Device Selection ── */}
+                {hasDevices && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <Cpu size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Device Selection</h3>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {deviceRooms.map((room, i) => {
+                        const enabledDevices = Object.entries(room.devices || {}).filter(([, cfg]) => cfg.enabled);
+                        if (enabledDevices.length === 0) return null;
+                        return (
+                          <div key={room.id || i} className="rounded-xl bg-black/30 border border-slate-800 p-3">
+                            <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">{room.name}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {enabledDevices.map(([deviceId, cfg]) => (
+                                <span key={deviceId} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                  {DEVICE_LABELS[deviceId] || deviceId}
+                                  {cfg.quantity > 1 && <span className="text-indigo-500">×{cfg.quantity}</span>}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Budget ── */}
+                {hasBudget && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <ClipboardList size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Budget</h3>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {p.estimated_cost > 0 && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Estimated Budget</p>
+                          <p className="text-lg font-bold text-emerald-400">₹{Number(p.estimated_cost).toLocaleString("en-IN")}</p>
+                        </div>
+                      )}
+                      {estimatedProducts.length > 0 && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Selected Products</p>
+                          <div className="space-y-1">
+                            {estimatedProducts.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between text-sm bg-black/30 rounded-lg px-3 py-2 border border-slate-800">
+                                <span className="text-gray-200">{item.deviceLabel || item.name || "Item"}</span>
+                                <div className="flex items-center gap-3">
+                                  {item.roomName && <span className="text-[11px] text-gray-500">{item.roomName}</span>}
+                                  {item.quantity > 0 && <span className="text-xs font-semibold text-cyan-400">×{item.quantity}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Proposal Summary (Notes) ── */}
+                {hasNotes && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                      <ClipboardList size={16} className="text-indigo-400" />
+                      <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Proposal Summary</h3>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Additional Notes</p>
+                      <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{p.additional_notes}</p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {selectedOrderDetail && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">

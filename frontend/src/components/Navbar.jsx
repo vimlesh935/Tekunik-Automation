@@ -95,8 +95,8 @@ export default function Navbar() {
     <header
       className={`sticky top-0 z-50 transition-all duration-500 border-b ${
         scrolled
-          ? "bg-slate-950/75 border-indigo-500/20 backdrop-blur-xl shadow-[0_4px_40px_rgba(0,0,0,0.7)] h-16"
-          : "bg-slate-950 border-slate-900/60 h-20"
+          ? "bg-slate-950/75 border-indigo-500/20 backdrop-blur-xl shadow-[0_4px_40px_rgba(0,0,0,0.7)] h-24"
+          : "bg-slate-950 border-slate-900/60 h-24"
       } flex items-center`}
     >
       <div className="w-full sm:px-2 lg:px-8">
@@ -108,7 +108,7 @@ export default function Navbar() {
               to="/home"
               className="flex items-center gap-2.5 group flex-shrink-0"
             >
-              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-20 w-auto" />
+              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
             </Link>
 
             {/* Premium Desktop Navigation Links */}
@@ -162,12 +162,26 @@ export default function Navbar() {
 
           {/* RIGHT SECTION: Auth Actions + Cart + Mobile Menu */}
           <div className="nav-right flex items-center gap-3.5">
+            {/* Dashboard Button — authenticated only */}
+            {token && (
+              <Link
+                to="/dashboard"
+                className={`hidden lg:inline-flex items-center gap-2 py-2 px-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                  isActive("/dashboard")
+                    ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20"
+                    : "text-slate-300 hover:text-white border border-transparent hover:border-slate-800"
+                }`}
+              >
+                Dashboard
+              </Link>
+            )}
+
             {/* Authenticated User Floating Dropdown Menu */}
             {token && (
               <div className="relative">
                 <motion.button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 py-2 px-3.5 rounded-xl border border-slate-900 bg-slate-900/30 text-sm font-bold text-slate-300 hover:text-white hover:border-slate-800 transition-all duration-300"
+                  className="flex items-center gap-2 py-2 px-2.5 rounded-xl border border-slate-900 bg-slate-900/30 text-sm font-bold text-slate-300 hover:text-white hover:border-slate-800 transition-all duration-300"
                 >
                   <UserCircle size={17} className="text-indigo-400" />
                   <span className="hidden sm:inline text-xs tracking-wide">
@@ -313,6 +327,19 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+
+              {token && (
+                <Link
+                  to="/dashboard"
+                  className={`flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    isActive("/dashboard")
+                      ? "bg-indigo-600 text-white shadow-[0_4px_15px_rgba(99,102,241,0.25)]"
+                      : "text-slate-400 hover:text-white hover:bg-slate-900"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+              )}
 
               <Link
                 to="/cart"

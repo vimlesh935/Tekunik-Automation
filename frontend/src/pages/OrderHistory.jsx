@@ -4,6 +4,7 @@ import { userService, orderService, reviewService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import OrderReviewSection from "../components/OrderReviewSection.jsx";
+import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import {
   Package,
   Clock,
@@ -31,6 +32,7 @@ export default function OrderHistory() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelTarget, setCancelTarget] = useState({ id: null, number: null });
   const [cancelledOrders, setCancelledOrders] = useState(new Set());
+  const [cancelSuccessOrder, setCancelSuccessOrder] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewOrder, setReviewOrder] = useState(null);
   const [reviewProducts, setReviewProducts] = useState([]);
@@ -121,13 +123,15 @@ export default function OrderHistory() {
     setShowCancelModal(false);
     setCancellingOrderId(cancelTarget.id);
     try {
-      await orderService.cancelOrder(cancelTarget.id);
+      const response = await orderService.cancelOrder(cancelTarget.id);
+      const updatedOrder = response?.data?.order;
       setOrders((prev) =>
         prev.map((order) =>
-          order.id === cancelTarget.id ? { ...order, status: "cancelled" } : order,
+          order.id === cancelTarget.id ? (updatedOrder || { ...order, status: "cancelled" }) : order,
         ),
       );
       setCancelledOrders((prev) => new Set(prev).add(cancelTarget.id));
+      setCancelSuccessOrder(updatedOrder || { id: cancelTarget.id, order_number: cancelTarget.number, payment_method: orders.find(o => o.id === cancelTarget.id)?.payment_method });
       addToast("Order cancelled successfully", "success");
     } catch (error) {
       addToast(error?.message || "Failed to cancel order", "error");
@@ -401,6 +405,12 @@ export default function OrderHistory() {
           </motion.div>
         </div>
       )}
+
+      <CancelSuccessMessage
+        show={!!cancelSuccessOrder}
+        order={cancelSuccessOrder}
+        onClose={() => setCancelSuccessOrder(null)}
+      />
 
       {showReviewModal && reviewOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

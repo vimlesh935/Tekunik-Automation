@@ -3,11 +3,11 @@ const AppError = require("../utils/appError");
 const { verifyToken } = require("../utils/jwt");
 
 const getTokenFromRequest = (req) => {
-  // 🛡️ User auth MUST come from the httpOnly cookie only.
-  // The Authorization header is NOT accepted for regular user auth
-  // because it persists across tabs after logout (via localStorage).
-  // Admin auth uses its own separate middleware with Authorization header.
+  // Primary: httpOnly cookie (set on login/register)
   if (req.cookies && req.cookies[env.cookieName]) return req.cookies[env.cookieName];
+  // Fallback: Authorization Bearer header (from localStorage via api.js)
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ")) return authHeader.slice(7);
   return null;
 };
 
@@ -55,7 +55,23 @@ const requireAdmin = (req, res, next) => {
   }
 };
 
+const optionalAuth = (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) return next();
+
+    const decoded = verifyToken(token);
+    if (decoded && decoded.id) {
+      req.user = decoded;
+    }
+  } catch {
+    // Token invalid or expired — continue without setting req.user
+  }
+  next();
+};
+
 module.exports = {
   requireAuth,
   requireAdmin,
+  optionalAuth,
 };

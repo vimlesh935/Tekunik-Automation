@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -8,116 +8,37 @@ import {
   ArrowLeft,
   ArrowRight,
   Package,
-  Loader2,
   ShieldCheck,
   Layers,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cartService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 
-export default function Cart({ token }) {
+export default function Cart() {
   const navigate = useNavigate();
   const guestCart = useCart();
+
   const { addToast } = useToast();
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  const isGuest = !token;
-  const currentCart = isGuest
-    ? {
-        items: guestCart.items,
-        itemCount: guestCart.itemCount,
-        totalAmount: guestCart.totalAmount,
-        totalQuantity: guestCart.totalQuantity,
-      }
-    : cart;
+  const currentCart = useMemo(() => ({
+    items: guestCart.items,
+    itemCount: guestCart.itemCount,
+    totalAmount: guestCart.totalAmount,
+    totalQuantity: guestCart.totalQuantity,
+  }), [guestCart.items, guestCart.itemCount, guestCart.totalAmount, guestCart.totalQuantity]);
 
-  const loadCart = async () => {
-    if (isGuest) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await cartService.getCart();
-      const cartData = response.data;
-      if (cartData?.cart) {
-        setCart(cartData.cart);
-      } else if (cartData?.items) {
-        setCart(cartData);
-      } else if (Array.isArray(cartData)) {
-        setCart({
-          items: cartData,
-          itemCount: cartData.length,
-          totalAmount: 0,
-          totalQuantity: 0,
-        });
-      } else {
-        setCart(
-          cartData || {
-            items: [],
-            itemCount: 0,
-            totalAmount: 0,
-            totalQuantity: 0,
-          },
-        );
-      }
-    } catch (error) {
-      console.warn("loadCart error:", error);
-      addToast(error?.message || "Unable to load cart.", "error");
-    } finally {
-      setLoading(false);
-    }
+  const updateItem = (itemId, quantity) => {
+    if (quantity < 1 || !currentCart) return;
+    guestCart.updateCartItem(itemId, quantity);
   };
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  const updateItem = async (itemId, quantity) => {
-    if (quantity < 1) return;
-    if (!currentCart) return;
-
-    if (isGuest) {
-      guestCart.updateCartItem(itemId, quantity);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const response = await cartService.updateCartItem(itemId, quantity);
-      setCart(response.data?.cart || cart);
-    } catch (error) {
-      addToast(error.message || "Unable to update item quantity.", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const removeItem = async (itemId) => {
-    if (isGuest) {
-      guestCart.removeItem(itemId);
-      addToast("Item removed from cart", "success");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const response = await cartService.removeFromCart(itemId);
-      setCart(response.data?.cart || cart);
-      addToast("Item removed from cart", "success");
-    } catch (error) {
-      addToast(error.message || "Unable to remove item.", "error");
-    } finally {
-      setSaving(false);
-    }
+  const removeItem = (itemId) => {
+    guestCart.removeItem(itemId);
+    addToast("Item removed from cart", "success");
   };
 
   const handleCheckout = () => {
@@ -125,7 +46,6 @@ export default function Cart({ token }) {
       addToast("Your cart is empty. Add items before checking out.", "warning");
       return;
     }
-
     navigate("/checkout");
   };
 
@@ -139,15 +59,7 @@ export default function Cart({ token }) {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {loading ? (
-          /* Loading Telemetry Buffer State */
-          <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-24 text-center backdrop-blur-sm shadow-2xl flex flex-col items-center justify-center gap-4">
-            <div className="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.2)]" />
-            <span className="text-xs font-black text-slate-500 uppercase tracking-widest font-mono">
-              Syncing Pipeline Data...
-            </span>
-          </div>
-        ) : currentCart && currentCart.items && currentCart.items.length > 0 ? (
+        {currentCart && currentCart.items && currentCart.items.length > 0 ? (
           /* ════ SPLIT GEOMETRIC LAYOUT BLOCK ════ */
           <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr] items-start">
             {/* COLUMN LEFT: SELECTED MODULES / PRODUCT LIST */}
@@ -242,8 +154,7 @@ export default function Cart({ token }) {
                                   Math.max(1, item.quantity - 1),
                                 )
                               }
-                              disabled={saving}
-                              className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
+                              className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition shadow-sm"
                             >
                               <Minus size={11} />
                             </button>
@@ -261,8 +172,7 @@ export default function Cart({ token }) {
                                   ),
                                 )
                               }
-                              disabled={saving}
-                              className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
+                              className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition shadow-sm"
                             >
                               <Plus size={11} />
                             </button>
@@ -275,8 +185,7 @@ export default function Cart({ token }) {
                         <button
                           type="button"
                           onClick={() => removeItem(itemId)}
-                          disabled={saving}
-                          className="inline-flex items-center gap-1.5 border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-rose-400 transition-all duration-200 disabled:opacity-40 active:scale-95"
+                          className="inline-flex items-center gap-1.5 border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-rose-400 transition-all duration-200 active:scale-95"
                         >
                           <Trash2 size={12} /> Remove
                         </button>
@@ -361,26 +270,16 @@ export default function Cart({ token }) {
                 <button
                   type="button"
                   onClick={handleCheckout}
-                  disabled={saving}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-950 disabled:text-slate-700 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_25px_rgba(99,102,241,0.15)] active:scale-[0.97] disabled:pointer-events-none"
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider rounded-xl py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_25px_rgba(99,102,241,0.15)] active:scale-[0.97]"
                 >
-                  {saving ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" /> Processing...
-                    </>
-                  ) : (
-                    <>
-                      Proceed to Checkout{" "}
-                      <ArrowRight size={14} />
-                    </>
-                  )}
+                  Proceed to Checkout{" "}
+                  <ArrowRight size={14} />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => navigate("/shop")}
-                  disabled={saving}
-                  className="w-full bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition shadow-md flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                  className="w-full bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition shadow-md flex items-center justify-center gap-2 active:scale-95"
                 >
                   Continue Shopping
                 </button>

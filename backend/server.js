@@ -3,10 +3,10 @@ const path = require("node:path");
 const express = require("express");
 const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
-const { ensureUsersOtpColumns, ensureAdminsTable, ensureSystemSettingsTable } = require("./src/config/migrate");
+const { ensureUsersOtpColumns, ensureAdminsTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
 const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable } = require("./src/config/migrate");
-const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns } = require("./src/config/orderMigration");
+const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -31,7 +31,6 @@ const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
-const settingsRoutes = require("./src/routes/settingsRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -108,7 +107,6 @@ app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
 app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
-app.use(settingsRoutes);
 
 // Ensure uploads dir exists and serve static files
 const uploadDir = ensureUploadsDir();
@@ -210,17 +208,17 @@ const startServer = async () => {
   }
 
   try {
-    console.log("[STARTUP] Ensuring payment columns...");
-    await ensurePaymentColumns();
-    console.log("✅ [STARTUP] Payment columns ready\n");
+    console.log("[STARTUP] Ensuring refund columns...");
+    await ensureRefundColumns();
+    console.log("✅ [STARTUP] Refund columns ready\n");
   } catch (error) {
-    console.error("❌ [STARTUP] Payment columns setup failed:", error.message, "\n");
+    console.error("❌ [STARTUP] Refund columns setup failed:", error.message, "\n");
   }
 
   try {
-    console.log("[STARTUP] Ensuring system settings table...");
-    await ensureSystemSettingsTable();
-    console.log("✅ [STARTUP] System settings table ready\n");
+    console.log("[STARTUP] Ensuring payment columns...");
+    await ensurePaymentColumns();
+    console.log("✅ [STARTUP] Payment columns ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Payment columns setup failed:", error.message, "\n");
   }

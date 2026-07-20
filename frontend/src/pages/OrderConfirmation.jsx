@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 import { orderService } from "../services/api";
 import {
   CheckCircle,
@@ -23,9 +24,10 @@ import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
 import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 
-export default function OrderConfirmation({ token }) {
+export default function OrderConfirmation() {
   const location = useLocation();
   const order = location.state?.order;
+  const { token } = useAuth();
   const [copied, setCopied] = React.useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = React.useState(false);
 

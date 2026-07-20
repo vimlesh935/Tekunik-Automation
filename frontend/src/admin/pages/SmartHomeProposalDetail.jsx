@@ -3,17 +3,9 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { smartHomeProposalService } from "../../services/api";
 
 const STATUSES = [
-  "New",
-  "Contacted",
-  "Under Review",
-  "Quotation Prepared",
-  "Quotation Sent",
-  "Site Visit Scheduled",
-  "Awaiting Customer Approval",
-  "Approved",
-  "Converted to Order",
+  "Pending",
+  "Confirmed",
   "Completed",
-  "Cancelled",
 ];
 
 const HOME_TYPES_LABELS = {
@@ -22,17 +14,9 @@ const HOME_TYPES_LABELS = {
 };
 
 const STATUS_COLORS = {
-  "New": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", dot: "bg-blue-500" },
-  "Contacted": { bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/20", dot: "bg-cyan-500" },
-  "Under Review": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20", dot: "bg-amber-500" },
-  "Quotation Prepared": { bg: "bg-indigo-500/10", text: "text-indigo-400", border: "border-indigo-500/20", dot: "bg-indigo-500" },
-  "Quotation Sent": { bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20", dot: "bg-purple-500" },
-  "Site Visit Scheduled": { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", dot: "bg-orange-500" },
-  "Awaiting Customer Approval": { bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-500/20", dot: "bg-yellow-500" },
-  "Approved": { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
-  "Converted to Order": { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20", dot: "bg-teal-500" },
+  "Pending": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20", dot: "bg-amber-500" },
+  "Confirmed": { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
   "Completed": { bg: "bg-green-500/10", text: "text-green-400", border: "border-green-500/20", dot: "bg-green-500" },
-  "Cancelled": { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20", dot: "bg-red-500" },
 };
 
 export default function SmartHomeProposalDetail() {
@@ -177,7 +161,7 @@ export default function SmartHomeProposalDetail() {
     });
   };
 
-  const statusColors = STATUS_COLORS[proposal?.status] || STATUS_COLORS["New"];
+  const statusColors = STATUS_COLORS[proposal?.status] || STATUS_COLORS["Pending"];
 
   if (loading) {
     return (
@@ -424,7 +408,7 @@ export default function SmartHomeProposalDetail() {
                 <div className="relative pl-6 space-y-4">
                   <div className="absolute left-2.5 top-1 bottom-1 w-px bg-slate-700"></div>
                   {statusHistory.map((entry) => {
-                    const colors = STATUS_COLORS[entry.to_status] || STATUS_COLORS["New"];
+                    const colors = STATUS_COLORS[entry.to_status] || STATUS_COLORS["Pending"];
                     return (
                       <div key={entry.id} className="relative">
                         <div className={`absolute -left-[18px] top-1.5 w-3 h-3 rounded-full border-2 border-slate-800 ${colors.dot}`}></div>

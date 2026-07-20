@@ -13,3 +13,6 @@ tmp-*.log
 
 Thumbs.db
 .DS_Store
+nul
+frontend/nul
+backend/invoices/

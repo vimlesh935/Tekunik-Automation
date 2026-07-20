@@ -91,7 +91,7 @@ export default function Footer() {
             className="sm:col-span-2 lg:col-span-2 space-y-3"
           >
             <Link to="/home" className="flex items-center gap-2.5 group w-fit">
-              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-25 w-auto" />
+              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
             </Link>
 
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">

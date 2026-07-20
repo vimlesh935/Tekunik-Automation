@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { smartHomeStepService } from "../services/api";
 import {
   ArrowLeft,
@@ -143,6 +143,7 @@ function createDefaultDeviceConfig() {
 /*  Main Component                                                     */
 /* ================================================================== */
 export default function SmartHomePlanner() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [sessionId, setSessionId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -181,14 +182,14 @@ export default function SmartHomePlanner() {
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 
-  // Load session from localStorage on mount
+  // Load session from localStorage on mount — only resume actively-editing sessions
   useEffect(() => {
     const stored = localStorage.getItem("shp_sessionId");
     if (stored) {
-      setSessionId(Number(stored));
       smartHomeStepService.getSession(Number(stored)).then((res) => {
         const data = res?.data || res;
-        if (data && data.id) {
+        if (data && data.id && data.wizard_status === "In Progress") {
+          setSessionId(data.id);
           if (data.full_name) setPersonal({ fullName: data.full_name || "", email: data.email || "", phone: data.phone || "", city: data.city || "" });
           if (data.home_type) setHomeType(data.home_type);
           if (data.rooms_json) {
@@ -198,12 +199,17 @@ export default function SmartHomePlanner() {
             } catch {}
           }
           if (data.additional_notes) setNotes(data.additional_notes);
-          if (data.wizard_status === "In Progress" && data.current_step) {
+          if (data.current_step) {
             const savedStep = Math.max(0, Math.min(totalSteps - 1, data.current_step - 1));
             setCurrentStep(savedStep);
           }
+        } else {
+          // Stale session — clear it so the next save creates a fresh proposal
+          localStorage.removeItem("shp_sessionId");
         }
-      }).catch(() => {}).finally(() => setInitialLoading(false));
+      }).catch(() => {
+        localStorage.removeItem("shp_sessionId");
+      }).finally(() => setInitialLoading(false));
     } else {
       setInitialLoading(false);
     }
@@ -222,7 +228,7 @@ export default function SmartHomePlanner() {
   }, [currentStep, personal, homeType, rooms]);
 
   // Save current step to database
-  const saveCurrentStep = useCallback(async (stepOverride) => {
+  const saveCurrentStep = useCallback(async (stepOverride, wizardStatus) => {
     const step = stepOverride !== undefined ? stepOverride : currentStep + 1;
     setSaving(true);
     setSaveSuccess(false);
@@ -245,16 +251,20 @@ export default function SmartHomePlanner() {
           data = { devices_json: rooms };
           break;
         case 5:
-          data = { notes, status: "New" };
+          data = { notes, status: "Pending" };
           break;
         default:
           break;
       }
 
+      if (wizardStatus) {
+        data.wizardStatus = wizardStatus;
+      }
+
       const res = await smartHomeStepService.saveStep(sessionId, step, data);
       const result = res?.data || res;
 
-      if (result?.id) {
+      if (result?.id && !wizardStatus) {
         setSessionId(result.id);
         localStorage.setItem("shp_sessionId", String(result.id));
       }
@@ -279,9 +289,14 @@ export default function SmartHomePlanner() {
     }
   }, [saveCurrentStep, totalSteps]);
 
-  const handlePrev = useCallback(() => {
-    setCurrentStep((prev) => Math.max(0, prev - 1));
-  }, []);
+  const handlePrev = useCallback(async () => {
+    try {
+      await saveCurrentStep();
+      setCurrentStep((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      // Save failed — stay on current step
+    }
+  }, [saveCurrentStep]);
 
   // Home type selection
   const selectHomeType = useCallback((typeId) => {
@@ -344,6 +359,7 @@ export default function SmartHomePlanner() {
     try {
       // Save step 5 and mark as submitted
       await saveCurrentStep(5);
+      localStorage.removeItem("shp_sessionId");
       setSubmitted(true);
     } catch (err) {
       console.error("Submission failed:", err);
@@ -352,6 +368,19 @@ export default function SmartHomePlanner() {
       setSubmitting(false);
     }
   }, [saveCurrentStep]);
+
+  // Back to Home — save current data, end session, navigate home
+  const handleBackToHome = useCallback(async () => {
+    // Save all completed data with wizard_status = 'Draft' to close the session
+    try {
+      await saveCurrentStep(undefined, "Draft");
+    } catch (err) {
+      // Save best-effort — still clear session and navigate
+    }
+    localStorage.removeItem("shp_sessionId");
+    setSessionId(null);
+    navigate("/home");
+  }, [saveCurrentStep, navigate]);
 
   // Device summary for review step
   const deviceSummaryItems = useMemo(() => {
@@ -390,9 +419,9 @@ export default function SmartHomePlanner() {
           <p className="text-slate-400 mb-8">
             Thank you! Our team will review your requirements and get back to you within 24 hours with a personalised quote.
           </p>
-          <Link to="/home" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all">
+          <button onClick={() => { localStorage.removeItem("shp_sessionId"); navigate("/home"); }} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all cursor-pointer">
             <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -404,10 +433,10 @@ export default function SmartHomePlanner() {
       <div className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link to="/home" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <button onClick={handleBackToHome} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
               <span className="text-sm font-medium">Back to Home</span>
-            </Link>
+            </button>
             <div className="flex items-center gap-3">
               {/* Step indicator dots */}
               <div className="hidden sm:flex items-center gap-1.5">

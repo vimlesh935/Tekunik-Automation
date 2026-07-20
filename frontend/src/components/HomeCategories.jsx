@@ -29,6 +29,7 @@ function CategoryCard({ cat }) {
           <img
             src={cat.image_url}
             alt={cat.name}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             onError={(e) => {
               e.target.src = getCategoryImg(cat.name);
@@ -39,6 +40,7 @@ function CategoryCard({ cat }) {
           <img
             src={getCategoryImg(cat.name)}
             alt={cat.name}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         )}
@@ -85,30 +87,7 @@ export default function HomeCategories({ categories }) {
               ))}
             </div>
 
-            {/* See More / Show Less Toggle */}
-            {hasMore && (
-              <AnimatePresence>
-                <div className="flex justify-center mt-10">
-                  <motion.button
-                    onClick={() => setShowAll((prev) => !prev)}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-indigo-500/60 text-slate-300 hover:text-white font-bold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10 active:scale-95 shadow-xl cursor-pointer"
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {showAll ? (
-                      <>
-                        Show Less <ChevronUp size={18} />
-                      </>
-                    ) : (
-                      <>
-                        See More <ChevronDown size={18} />
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </AnimatePresence>
-            )}
-
-            {/* Smooth expand/collapse spacer for remaining items */}
+            {/* Smooth expand/collapse for remaining items */}
             <AnimatePresence>
               {showAll && categories.length > INITIAL_DISPLAY_COUNT && (
                 <motion.div
@@ -126,6 +105,27 @@ export default function HomeCategories({ categories }) {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* See More / Show Less Toggle - always after all categories */}
+            {hasMore && (
+              <div className="flex justify-center mt-10">
+                <motion.button
+                  onClick={() => setShowAll((prev) => !prev)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-indigo-500/60 text-slate-300 hover:text-white font-bold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10 active:scale-95 shadow-xl cursor-pointer"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {showAll ? (
+                    <>
+                      Show Less <ChevronUp size={18} />
+                    </>
+                  ) : (
+                    <>
+                      See More <ChevronDown size={18} />
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            )}
           </>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

@@ -8,7 +8,6 @@ const {
   ensureUsersOtpColumns,
   ensureReviewsTable,
   ensureAdminTables,
-  ensureSystemSettingsTable,
 } = require("./src/config/migrate");
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
@@ -41,9 +40,9 @@ const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const demoEnquiryRoutes = require("./src/routes/demoEnquiryRoutes");
 const validationRoutes = require("./src/routes/validationRoutes");
-const settingsRoutes = require("./src/routes/settingsRoutes");
 const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
+const bulkImportRoutes = require("./src/routes/bulkImportRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -177,10 +176,10 @@ app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
 app.use(demoEnquiryRoutes);
 app.use(validationRoutes);
-app.use(settingsRoutes);
 app.use("/api/admin/upload", uploadRoutes);
 app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
+app.use(bulkImportRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -262,7 +261,6 @@ const startServer = async () => {
     await ensureDemoEnquiriesTable();
     await ensureProductUpgradeTables();
     await ensurePaymentColumns();
-    await ensureSystemSettingsTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);

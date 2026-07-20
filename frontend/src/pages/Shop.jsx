@@ -355,7 +355,7 @@ export default function Shop({ token }) {
                       />
                       {product.stock_quantity === 0
                         ? "Unavailable"
-                        : "Order Now"}
+                        : "Add to Cart"}
                     </button>
                   </div>
                 </div>

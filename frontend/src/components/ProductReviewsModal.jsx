@@ -384,20 +384,13 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    style={{
-                      padding: "4px",
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "transform 0.2s ease",
-                    }}
                     onMouseEnter={(e) => {
+                      setHoverRating(star);
                       if (!submitting)
                         e.currentTarget.style.transform = "scale(1.1)";
                     }}
                     onMouseLeave={(e) => {
+                      setHoverRating(0);
                       e.currentTarget.style.transform = "none";
                     }}
                     disabled={submitting}

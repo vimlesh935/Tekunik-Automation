@@ -16,6 +16,7 @@ import {
   Phone,
   Mail,
   Calendar,
+  CheckCircle,
 } from "lucide-react";
 
 export default function OrderDetails() {
@@ -335,6 +336,7 @@ export default function OrderDetails() {
                     </span>
                   </div>
                 )}
+
               </div>
 
               {/* Order information */}

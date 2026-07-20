@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { cartService, guestOrderService, userService, orderService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
@@ -49,10 +50,11 @@ const REQUIRED_CHECKOUT_FIELDS = [
   "pincode",
 ];
 
-export default function Checkout({ token }) {
+export default function Checkout() {
   const navigate = useNavigate();
   const guestCart = useCart();
   const { addToast } = useToast();
+  const { token, isAuthenticated: authIsAuthenticated } = useAuth();
 
   const [form, setForm] = useState({
     full_name: "",
@@ -72,7 +74,7 @@ export default function Checkout({ token }) {
   const [cityLocked, setCityLocked] = useState(false);
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
-  const isAuthenticated = Boolean(token);
+  const isAuthenticated = authIsAuthenticated;
 
   const handleChange = (key, value) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -88,18 +90,12 @@ export default function Checkout({ token }) {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      syncGuestCart();
-      return;
-    }
+    syncGuestCart();
+    if (!isAuthenticated) return;
     let isMounted = true;
     const load = async () => {
-      setLoading(true);
       try {
-        const [profileRes, cartRes] = await Promise.all([
-          userService.getCurrentUser(),
-          cartService.getCart(),
-        ]);
+        const profileRes = await userService.getCurrentUser();
         if (!isMounted) return;
         const user = profileRes?.data?.user || null;
         if (user) {
@@ -116,28 +112,8 @@ export default function Checkout({ token }) {
             city: user.city || prev.city,
           }));
         }
-        const cartData = cartRes?.data?.cart || cartRes?.data || {};
-        const items = Array.isArray(cartData.items) ? cartData.items : [];
-        setCheckoutItems(items);
-        setCheckoutTotals({
-          items,
-          itemCount: cartData.itemCount ?? items.length,
-          totalQuantity:
-            cartData.totalQuantity ??
-            items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-          totalAmount: Number(
-            cartData.totalAmount ??
-              items.reduce(
-                (s, i) => s + Number(i.price || 0) * Number(i.quantity || 0),
-                0,
-              ),
-          ).toFixed(2),
-        });
       } catch (err) {
-        addToast(err?.message || "Unable to load your saved cart.", "error");
-        syncGuestCart();
-      } finally {
-        if (isMounted) setLoading(false);
+        // Profile load failed, form stays as-is
       }
     };
     load();

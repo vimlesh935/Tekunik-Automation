@@ -372,23 +372,7 @@ export default function ForgotPassword() {
           }} />
           <CircuitPanel />
           <Appear delay={200} style={{ position: "relative", zIndex: 2 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: 10,
-                background: `linear-gradient(135deg, ${V}, ${C})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, boxShadow: `0 0 20px rgba(124,58,237,0.4)`,
-              }}>⚡</div>
-              <span style={{
-                fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22,
-                letterSpacing: "-0.02em", color: "#fff",
-              }}>
-                Tek<span style={{
-                  background: `linear-gradient(90deg,${VL},${CL})`,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>Node</span>
-              </span>
-            </div>
+            <img src="/assest/logowhite.png" alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
           </Appear>
           <div style={{ position: "relative", zIndex: 2 }}>
             <Appear delay={400}>
@@ -468,18 +452,8 @@ export default function ForgotPassword() {
                 Back
               </button>
             </Appear>
-            <Appear delay={150} style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: `linear-gradient(135deg,${V},${C})`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-              }}>⚡</div>
-              <span style={{ fontWeight: 700, fontSize: 20, letterSpacing: "-0.02em" }}>
-                Tek<span style={{
-                  background: `linear-gradient(90deg,${VL},${CL})`,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>Node</span>
-              </span>
+            <Appear delay={150} style={{ marginBottom: 24 }}>
+              <img src="/assest/logowhite.png" alt="TekNode" className="h-[45px] md:h-[55px] lg:h-[70px] w-auto object-contain" />
             </Appear>
             {!success && (
               <Appear delay={180}><StepDots step={step} /></Appear>

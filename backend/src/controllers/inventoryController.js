@@ -121,7 +121,7 @@ const listInventory = asyncHandler(async (req, res) => {
   );
 
   const products = await query(
-    `SELECT p.id, p.name, p.sku, p.price, p.stock_quantity, p.low_stock_limit, 
+    `SELECT p.id, p.name, p.sku, p.price, p.stock, p.stock_quantity, p.low_stock_limit, 
             p.stock_status, p.image_url, pc.name AS category_name, p.updated_at
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
@@ -171,59 +171,59 @@ const getInventoryItem = asyncHandler(async (req, res) => {
 
 /**
  * ✅ PUT /api/admin/stock/:id
- * Update stock quantity for a product
- * Body: { stock_quantity, low_stock_limit?, action_type, notes? }
+ * Update stock quantity for a product (sets stock directly)
+ * Body: { stock_quantity }
  */
 const updateStock = asyncHandler(async (req, res) => {
-  const { stock_quantity, low_stock_limit, action_type, notes } = req.body;
+  const { stock_quantity, action_type } = req.body;
   const productId = req.params.id;
+  const action = (action_type || "restock").toLowerCase();
 
-  // Validation
-  if (stock_quantity === undefined || stock_quantity === null) {
+  if (stock_quantity === undefined || stock_quantity === null || stock_quantity === "") {
     throw new AppError("stock_quantity is required", 400, "VALIDATION_ERROR");
   }
 
-  if (stock_quantity < 0) {
-    throw new AppError("Stock quantity cannot be negative", 400, "VALIDATION_ERROR");
+  const qty = parseInt(stock_quantity);
+  if (isNaN(qty) || qty <= 0) {
+    throw new AppError("stock_quantity must be a positive integer", 400, "VALIDATION_ERROR");
   }
 
-  if (!action_type) {
-    throw new AppError("action_type is required", 400, "VALIDATION_ERROR");
+  if (!["restock", "damaged"].includes(action)) {
+    throw new AppError("action_type must be 'restock' or 'damaged'", 400, "VALIDATION_ERROR");
   }
 
-  // Get current product
   const [product] = await query("SELECT * FROM products WHERE id = ?", [productId]);
   if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
 
   const oldStock = product.stock_quantity;
-  const newStock = parseInt(stock_quantity);
 
-  // Determine stock status
+  let newStock;
+  if (action === "restock") {
+    newStock = oldStock + qty;
+  } else {
+    if (qty > oldStock) {
+      throw new AppError("Quantity exceeds available stock", 400, "VALIDATION_ERROR");
+    }
+    newStock = oldStock - qty;
+  }
+
+  console.log(`[STOCK UPDATE] Product ID: ${productId} | Name: ${product.name} | Action: ${action} | Current Stock: ${oldStock} | Entered Qty: ${qty} | Calculated: ${newStock}`);
+
   let stockStatus = "in_stock";
   if (newStock === 0) stockStatus = "out_of_stock";
-  else if (newStock <= (low_stock_limit || product.low_stock_limit))
+  else if (newStock <= product.low_stock_limit)
     stockStatus = "limited_stock";
 
-  // Update product
   await query(
     `UPDATE products 
      SET stock_quantity = ?, 
          stock_status = ?, 
          stock = ?,
-         low_stock_limit = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [newStock, stockStatus, newStock, low_stock_limit || product.low_stock_limit, productId]
+    [newStock, stockStatus, newStock, productId]
   );
 
-  // Log the update
-  await query(
-    `INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [productId, oldStock, newStock, action_type, req.user?.id || null, notes || null]
-  );
-
-  // Create alert if low stock
   if (newStock === 0) {
     await query(
       `INSERT INTO inventory_alerts (product_id, alert_type, message)
@@ -238,7 +238,14 @@ const updateStock = asyncHandler(async (req, res) => {
     );
   }
 
+  await query(
+    `INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [productId, oldStock, newStock, action, req.admin?.id || req.user?.id || null, `Manual ${action} update`]
+  );
+
   const [updated] = await query("SELECT * FROM products WHERE id = ?", [productId]);
+  console.log(`[STOCK UPDATE] Success: ${product.name} | ${oldStock} → ${newStock} (${action})`);
   return success(res, "Stock updated successfully", { 
     product: updated,
     oldStock,
@@ -282,7 +289,20 @@ const bulkUpdateStock = asyncHandler(async (req, res) => {
       }
 
       const oldStock = product.stock_quantity;
-      const newStock = parseInt(stock_quantity);
+      const qty = parseInt(stock_quantity);
+      let newStock;
+
+      switch (action_type) {
+        case "restock":
+          newStock = oldStock + qty;
+          break;
+        case "damage":
+        case "lost":
+          newStock = Math.max(0, oldStock - qty);
+          break;
+        default:
+          newStock = oldStock + qty;
+      }
 
       let stockStatus = "in_stock";
       if (newStock === 0) stockStatus = "out_of_stock";
@@ -298,7 +318,7 @@ const bulkUpdateStock = asyncHandler(async (req, res) => {
       await query(
         `INSERT INTO inventory_logs (product_id, old_stock, new_stock, action_type, updated_by, notes)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [product_id, oldStock, newStock, action_type, req.user?.id || null, notes || null]
+        [product_id, oldStock, newStock, action_type, req.admin?.id || req.user?.id || null, notes || null]
       );
 
       results.push({ product_id, oldStock, newStock, status: "updated" });

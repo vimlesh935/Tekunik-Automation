@@ -161,11 +161,24 @@ const ensureOrderItemDiscountColumns = async () => {
   }
 };
 
+const ensureRefundColumns = async () => {
+  try {
+    console.log("[MIGRATE] Checking refund columns...");
+    await ensureColumn("orders", "refund_status", "refund_status VARCHAR(50) NULL DEFAULT NULL AFTER paid_at");
+    await ensureColumn("orders", "refunded_at", "refunded_at DATETIME NULL AFTER refund_status");
+    await ensureColumn("orders", "refunded_by", "refunded_by VARCHAR(100) NULL AFTER refunded_at");
+    console.log("✅ [MIGRATE] Refund columns ready");
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure refund columns:", error.message);
+  }
+};
+
 module.exports = {
   ensureOrderTrackingTable,
   ensureOrderCancellationColumns,
   ensurePaymentColumns,
   ensureOrderItemDiscountColumns,
+  ensureRefundColumns,
   getTrackingSteps,
   getEstimatedDelivery,
   generateTrackingNumber,

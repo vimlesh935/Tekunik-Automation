@@ -344,6 +344,7 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
                             <img
                               src={product.image_url}
                               alt={product.name}
+                              loading="lazy"
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.style.display = "none";

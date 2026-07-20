@@ -372,14 +372,10 @@ export default function ContactUs() {
           .main-grid { grid-template-columns: 1fr !important; }
           .contact-cards { grid-template-columns: 1fr !important; }
           .info-card { padding: 24px !important; }
-          .contact-logo { width: clamp(140px, 18vw, 170px) !important; }
-          .hero-logo { width: clamp(180px, 22vw, 220px) !important; }
         }
         @media (max-width: 480px) {
           .hero-section { padding: 80px 20px 60px !important; }
           .section-pad { padding: 60px 20px !important; }
-          .contact-logo { width: clamp(100px, 15vw, 130px) !important; }
-          .hero-logo { width: clamp(140px, 18vw, 180px) !important; }
         }
       `}</style>
 
@@ -421,9 +417,9 @@ export default function ContactUs() {
                 justifyContent: "center",
                 marginBottom: 32,
               }}>
-                <img src="/assest/logo.png" alt="TekNode" className="hero-logo" style={{
-                  height: "auto",
-                  width: "clamp(220px, 25vw, 280px)",
+                <img src="/assest/logo.png" alt="TekNode" style={{
+                  height: "clamp(50px, 10vw, 85px)",
+                  width: "auto",
                   maxWidth: "100%",
                   objectFit: "contain",
                 }} />
@@ -677,9 +673,9 @@ export default function ContactUs() {
                     alignItems: "center",
                     marginBottom: 28,
                   }}>
-                    <img src="/assest/logo.png" alt="TekNode" className="contact-logo" style={{
-                      height: "auto",
-                      width: "clamp(180px, 20vw, 220px)",
+                    <img src="/assest/logo.png" alt="TekNode" style={{
+                  height: "clamp(50px, 10vw, 85px)",
+                      width: "auto",
                       maxWidth: "100%",
                       objectFit: "contain",
                     }} />

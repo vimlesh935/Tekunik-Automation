@@ -190,7 +190,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                 />
                 {imagePreview && (
                   <div className="mt-2 relative inline-block">
-                    <img src={imagePreview} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-gray-700" />
+                    <img src={imagePreview} alt="Preview" loading="lazy" className="w-24 h-24 object-cover rounded-lg border border-gray-700" />
                     <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
                   </div>
                 )}
