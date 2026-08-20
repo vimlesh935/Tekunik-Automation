@@ -7,6 +7,10 @@ const {
   normalizeImageUrl,
   withNormalizedImageUrl,
 } = require("../utils/uploadPaths");
+const {
+  getActiveOffers,
+  enrichProductWithOffers,
+} = require("../services/offerPricingService");
 
 const hasOwn = (object, key) =>
   Object.prototype.hasOwnProperty.call(object || {}, key);
@@ -316,6 +320,8 @@ const listProducts = asyncHandler(async (req, res) => {
       });
     }
 
+    const activeOffers = await getActiveOffers();
+
     // Fetch extras (images, colors, sizes) for all products in batch
     const extrasMap = await fetchProductsExtras(productIds);
     const result = products.map((product) => {
@@ -323,7 +329,7 @@ const listProducts = asyncHandler(async (req, res) => {
       const reviews = reviewStatsMap[product.id] || { averageRating: 0, totalReviews: 0 };
       const productWithImage = withNormalizedImageUrl(product);
       return {
-        ...enrichProductWithDiscount(productWithImage),
+        ...enrichProductWithOffers(productWithImage, activeOffers),
         ...extras,
         reviews,
       };
@@ -378,8 +384,10 @@ if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
 
     const extras = await fetchProductExtras(product.id);
 
+    const activeOffers = await getActiveOffers();
+
     return success(res, "Product fetched", {
-      product: { ...enrichProductWithDiscount(withNormalizedImageUrl(product)), ...extras },
+      product: { ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers), ...extras },
     });
   } catch (error) {
     console.error("[GET PRODUCT ERROR]", error);
@@ -1024,12 +1032,13 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
       });
     }
 
+    const activeOffers = await getActiveOffers();
     const extrasMap = await fetchProductsExtras(productIds);
     const result = products.map((product) => {
       const extras = extrasMap[product.id] || { images: [], colors: [], sizes: [] };
       const reviews = reviewStatsMap[product.id] || { averageRating: 0, totalReviews: 0 };
       return {
-        ...enrichProductWithDiscount(withNormalizedImageUrl(product)),
+        ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers),
         ...extras,
         reviews,
       };
@@ -1094,8 +1103,9 @@ const searchProducts = asyncHandler(async (req, res) => {
       params,
     );
 
+    const activeOffers = await getActiveOffers();
     const normalized = products.map((product) => ({
-      ...enrichProductWithDiscount(withNormalizedImageUrl(product)),
+      ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers),
     }));
 
     return success(res, "Search results fetched", {

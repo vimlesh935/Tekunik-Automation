@@ -64,7 +64,7 @@ module.exports = {
     tlsRejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false",
     allowSelfSignedFallback: process.env.SMTP_ALLOW_SELF_SIGNED
       ? process.env.SMTP_ALLOW_SELF_SIGNED === "true"
-      : process.env.NODE_ENV !== "production",
+      : false,
     caCertPath: process.env.SMTP_CA_CERT_PATH
       ? path.isAbsolute(process.env.SMTP_CA_CERT_PATH)
         ? process.env.SMTP_CA_CERT_PATH

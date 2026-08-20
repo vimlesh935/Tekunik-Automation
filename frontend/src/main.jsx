@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import { BrowserRouter as Router } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import "./index.css";
 
 const rootElement = document.getElementById("root");
@@ -15,10 +16,12 @@ if (!rootElement) {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <Router>
-          <ScrollToTop />
-          <App />
-        </Router>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <App />
+          </Router>
+        </AuthProvider>
       </ErrorBoundary>
     </React.StrictMode>,
   );

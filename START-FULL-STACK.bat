@@ -137,7 +137,7 @@ echo ║  API Health: http://localhost:8787/health                   ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
 
-start "Backend Server - Port 8787" cmd /k "cd /d "%CD%\backend" && npm run dev"
+start "Backend Server - Port 8787" cmd /k "cd /d "%CD%\backend" && node --use-system-ca index.js"
 timeout /t 5 /nobreak >nul
 
 REM ═══════════════════════════════════════════════════════════════

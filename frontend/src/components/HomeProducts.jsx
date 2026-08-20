@@ -326,13 +326,14 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Cpu, Layers, Star } from "lucide-react";
 import SafeImage from "./SafeImage.jsx";
+import { formatPrice, hasDiscount } from "../utils/discount.js";
 
 export default function HomeProducts({ featuredProducts, loading, handleAddToCart }) {
   const scrollRef = useRef(null);
 
   return (
     <section className="py-24 bg-slate-900/40 border-y border-slate-900 overflow-hidden">
-      {/* Header Container */}
+      {/* Header Container from Carousel Design */}
       <div className="max-w-7xl mx-auto px-6 mb-12">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
@@ -350,10 +351,10 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
           </div>
           <div className="flex gap-4 items-center">
             <Link
-              to="/shop"
-              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs  tracking-wider transition-colors duration-300 mr-2"
+              to="/offers"
+              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors duration-300 mr-2"
             >
-              See All Product
+              See All Offers
             </Link>
             <button 
               onClick={() => scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
@@ -397,7 +398,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              className="min-w-[320px] md:min-w-[400px] h-[540px] relative rounded-3xl overflow-hidden group snap-center border border-slate-800 hover:border-slate-700/80 transition-all duration-300"
+              className="min-w-[280px] md:min-w-[340px] h-[460px] relative rounded-3xl overflow-hidden group snap-center border border-slate-800 hover:border-slate-700/80 transition-all duration-300"
             >
               {/* Entire Card becomes clickable via this absolute Link */}
               <Link to={`/product/${product.id}`} className="absolute inset-0 z-10 cursor-pointer">
@@ -420,7 +421,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                   )}
                 </div>
 
-                {/* Out of Stock Overlay */}
+                {/* Out of Stock Overlay matching design structure */}
                 {product.stock_quantity <= 0 && (
                   <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center backdrop-blur-sm z-20">
                     <span className="bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-xs px-4 py-1.5 rounded-full uppercase tracking-widest">
@@ -430,87 +431,82 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                 )}
 
                 {/* Gradient Dark Mesh Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-90 group-hover:opacity-95 transition-opacity z-10" />
                 
                 {/* Card Foreground Content */}
-                <div className="absolute inset-0 p-8 flex flex-col justify-end transform translate-y-4  transition-transform duration-300 text-left">
+                <div className="absolute inset-0 p-6 flex flex-col justify-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 z-10 text-left">
                   <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">
                     {product.category_name || "IoT Component"}
                   </span>
                   
-                   <h3 className="text-2xl font-bold text-slate-100 group-hover:text-indigo-400 transition-colors duration-150 line-clamp-1 mb-2">
-                     {product.name}
-                   </h3>
+                  <Link to={`/product/${product.id}`} className="block mb-2">
+                    <h3 className="text-xl font-bold text-slate-100 hover:text-indigo-400 transition-colors duration-150 line-clamp-1">
+                      {product.name}
+                    </h3>
+                  </Link>
 
-                   {/* Customer Reviews Rating */}
-                   <div className="flex items-center gap-2 mb-1">
-                     {product.reviews?.totalReviews > 0 ? (
-                       <>
-                         <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 font-black text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
-                           {product.reviews.averageRating.toFixed(1)}{" "}
-                           <Star
-                             size={9}
-                             className="fill-amber-400 text-transparent"
-                           />
-                         </div>
-                         <span className="text-[11px] text-slate-500 font-medium">
-                           ({product.reviews.totalReviews} Review{product.reviews.totalReviews > 1 ? "s" : ""})
-                         </span>
-                       </>
-                     ) : (
-                       <div className="flex items-center gap-1.5">
-                         <Star size={12} className="text-slate-600" />
-                         <span className="text-[11px] text-slate-500 font-medium">
-                           No Reviews Yet
-                         </span>
-                       </div>
-                     )}
-                   </div>
+                  {/* Customer Reviews Rating */}
+                  <div className="flex items-center gap-2 mb-1">
+                    {product.reviews?.totalReviews > 0 ? (
+                      <>
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 font-black text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          {product.reviews.averageRating.toFixed(1)}{" "}
+                          <Star
+                            size={9}
+                            className="fill-amber-400 text-transparent"
+                          />
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          ({product.reviews.totalReviews} Review{product.reviews.totalReviews > 1 ? "s" : ""})
+                        </span>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Star size={12} className="text-slate-600" />
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          No Reviews Yet
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                   {/* Pricing Block with Conditional Discount Pill */}
+                  {/* Pricing Block with Conditional Discount Pill */}
                   <div className="flex items-baseline justify-between mb-4">
                     <div className="flex flex-col">
-                      <span className="text-xl font-black text-white">
-                        ₹{parseFloat(product.price || 0).toFixed(2)}
+                      {/* Discounted (offer) price shown first */}
+                      <span className="text-lg font-black text-white">
+                        {formatPrice(product.final_price || product.price)}
                       </span>
-                      {product.sale_price &&
-                        parseFloat(product.sale_price || 0) <
-                          parseFloat(product.price || 0) && (
-                          <span className="text-xs text-slate-400 line-through mt-0.5">
-                            ₹{parseFloat(product.sale_price || 0).toFixed(2)}
-                          </span>
-                        )}
+                      {hasDiscount(product) && (
+                        <span className="text-xs text-slate-400 line-through mt-0.5">
+                          {formatPrice(product.original_price || product.price)}
+                        </span>
+                      )}
                     </div>
-                    {(product.discount_percent || 0) > 0 && (
+                    {hasDiscount(product) && (
                       <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-md">
                         {Math.round(product.discount_percent)}% OFF
                       </span>
                     )}
                   </div>
 
-                  {/* Empty spacer area matching the layout height requirements */}
-                  <div className="pt-4 border-t border-transparent h-[53px]"></div>
+                  {/* Basket Button Separator */}
+                  <div className="pt-3 border-t border-slate-800/80">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleAddToCart(product, e);
+                      }}
+                      disabled={product.stock_quantity <= 0}
+                      className="w-full bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-800 disabled:pointer-events-none active:scale-95 shadow-lg shadow-indigo-600/10 cursor-pointer"
+                    >
+                      <ShoppingCart size={14} />
+                      Add to Basket
+                    </button>
+                  </div>
                 </div>
               </Link>
-
-              {/* Basket Button Container - Placed outside the Link anchor using z-index layers */}
-              <div className="absolute bottom-8 left-8 right-8 z-20">
-                <div className="pt-7">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault(); // Prevents link triggering
-                      e.stopPropagation(); // Prevents layout bubbling 
-                      handleAddToCart(product, e);
-                    }}
-                    disabled={product.stock_quantity <= 0}
-                    className="w-full bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-800 disabled:pointer-events-none active:scale-95 shadow-lg shadow-indigo-600/10 cursor-pointer"
-                  >
-                    <ShoppingCart size={14} />
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-
             </motion.div>
           ))}
           <div className="min-w-[calc((100vw-1280px)/2)] flex-shrink-0 hidden xl:block"></div>

@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 import {
   Zap, Shield, Headphones, Award, Users, Package,
   Truck, Clock, ChevronLeft, ChevronRight, Star,
   Building2, Home, Hotel, GraduationCap, Factory, Wifi,
-  Lock, Cpu, SlidersHorizontal, Thermometer, ArrowRight, Quote
+  Lock, Cpu, SlidersHorizontal, Thermometer, ArrowRight, Quote,
+  Plus, Minus
 } from "lucide-react";
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
@@ -275,6 +278,11 @@ function Hero() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const { settings } = useWebsiteSettings();
+
+  const companyName = settings.company_name || "Tekunik Automation";
+  const companyLogo = settings.company_logo ? getImageUrl(settings.company_logo) : "/assest/logo.png";
+  const tagline = settings.company_tagline || "Empowering Homes and Businesses with Smart Automation Solutions across India and beyond.";
 
   return (
     <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -299,7 +307,7 @@ function Hero() {
           transition={{ duration: 0.7 }}
           className="flex justify-center mb-10"
         >
-          <img src="/assest/logo.png" alt="TekNode" style={{
+          <img src={companyLogo} alt={companyName} style={{
             height: "clamp(50px, 10vw, 85px)",
             width: "auto",
             maxWidth: "100%",
@@ -315,7 +323,7 @@ function Hero() {
         >
           About{" "}
           <span className="relative inline-block">
-            <span className="text-indigo-400">Tek Node</span>
+            <span className="text-indigo-400">{companyName}</span>
             <motion.span
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
@@ -331,7 +339,7 @@ function Hero() {
           transition={{ duration: 0.8, delay: 0.35 }}
           className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12"
         >
-          Empowering Homes and Businesses with Smart Automation Solutions across India and beyond.
+          {tagline}
         </motion.p>
 
         {/* Mini stats strip */}
@@ -413,6 +421,10 @@ function Timeline() {
 // ─── WHO WE ARE ───────────────────────────────────────────────────────────────
 
 function WhoWeAre() {
+  const { settings } = useWebsiteSettings();
+  const companyName = settings.company_name || "Tekunik Automation";
+  const description = settings.company_description || `${companyName} specializes in smart automation products — smart switches, digital locks, gateways, sensors, smart knobs, and intelligent control systems — designed for homes, offices, hotels, hospitals, educational institutions, and industrial environments.`;
+
   return (
     <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -428,7 +440,7 @@ function WhoWeAre() {
               Innovating the Future<br />of Smart Living
             </h2>
             <p className="text-slate-400 leading-relaxed mb-5">
-              Tek Node specializes in smart automation products — smart switches, digital locks, gateways, sensors, smart knobs, and intelligent control systems — designed for homes, offices, hotels, hospitals, educational institutions, and industrial environments.
+              {description}
             </p>
             <p className="text-slate-400 leading-relaxed mb-8">
               Our commitment to quality and innovation has made us a trusted name in the automation industry, delivering solutions that genuinely transform how people live and work.
@@ -500,7 +512,7 @@ function Mission() {
             Making Smart Living<br />Accessible to All
           </h2>
           <p className="text-lg md:text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            To provide innovative, secure, energy-efficient, and user-friendly automation solutions that improve everyday life for homes and businesses across India and beyond.
+            To provide innovative, secure, energy-efficient, and user-friendly automation solutions that improve everyday life for homes and businesses everywhere.
           </p>
         </motion.div>
       </div>
@@ -511,12 +523,14 @@ function Mission() {
 // ─── WHY CHOOSE US ────────────────────────────────────────────────────────────
 
 function WhyChooseUs() {
+  const { settings } = useWebsiteSettings();
+  const companyName = settings.company_name || "Tekunik Automation";
   return (
     <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">Why Choose Us</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">The Tek Node Advantage</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">The {companyName} Advantage</h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {WHY_US.map((item, i) => (
@@ -569,9 +583,105 @@ function StatsBand() {
   );
 }
 
+// ─── FAQ ───────────────────────────────────────────────────────────────────────
+
+const FAQ_DATA = [
+  {
+    q: "What does Tekunik provide?",
+    a: "Tekunik provides smart home automation solutions including smart locks, sensors, cameras, switches, video door phones, and complete home automation systems for homes and businesses.",
+  },
+  {
+    q: "Do you provide installation services?",
+    a: "Yes. Our expert technicians provide professional installation, setup, and configuration for all supported smart devices.",
+  },
+  {
+    q: "Can I request a custom smart home solution?",
+    a: "Yes. You can submit an Installation Request through our website, and our team will prepare a customized automation proposal based on your requirements.",
+  },
+  {
+    q: "Do your products come with a warranty?",
+    a: "Yes. All eligible products include manufacturer warranty. Warranty duration depends on the product category.",
+  },
+  {
+    q: "How can I track my order?",
+    a: "After placing an order, you can track its status from your User Dashboard under My Orders.",
+  },
+  {
+    q: "Which payment methods do you accept?",
+    a: "We support secure online payments as well as Cash on Delivery (where available).",
+  },
+  {
+    q: "Can I cancel my order?",
+    a: "Yes. Orders can be cancelled before shipment. Refunds for eligible prepaid orders are processed according to our refund policy.",
+  },
+  {
+    q: "How can I contact you?",
+    a: "You can contact us through the Contact page, WhatsApp, email, or phone support.",
+  },
+];
+
+function FAQ() {
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const toggle = (i) => setOpenIndex(openIndex === i ? null : i);
+
+  return (
+    <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">FAQ</span>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">Frequently Asked Questions</h2>
+          <p className="text-slate-400 mt-4 max-w-xl mx-auto leading-relaxed">
+            Everything you need to know about our products, installation process, warranty, and smart automation services.
+          </p>
+        </div>
+        <div className="space-y-4">
+          {FAQ_DATA.map((item, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <div
+                key={i}
+                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-shadow duration-300"
+              >
+                <button
+                  onClick={() => toggle(i)}
+                  className="w-full flex items-center justify-between gap-4 p-6 text-left cursor-pointer"
+                >
+                  <span className="text-white font-bold text-sm sm:text-base leading-snug flex-1">{item.q}</span>
+                  <span className="shrink-0 text-indigo-400 transition-transform duration-300">
+                    {isOpen ? <Minus size={20} /> : <Plus size={20} />}
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      key="answer"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-6 pt-0">
+                        <p className="text-slate-400 text-sm leading-relaxed">{item.a}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 
 function CTA() {
+  const { settings } = useWebsiteSettings();
+  const companyName = settings.company_name || "Tekunik Automation";
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-indigo-600/15 via-transparent to-transparent pointer-events-none" />
@@ -587,7 +697,7 @@ function CTA() {
             Ready to Automate Your Space?
           </h2>
           <p className="text-slate-400 mb-10 text-lg">
-            Join 10,000+ customers who've made the switch to smarter living. Our team is ready to help you design the perfect solution.
+            Join thousands of customers who've made the switch to smarter living. Our team is ready to help you design the perfect solution.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="px-8 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 group text-sm">
@@ -620,6 +730,7 @@ export default function AboutUs() {
       <Timeline />
       <StatsBand />
       <TestimonialCarousel />
+      <FAQ />
       <CTA />
       </div>
     </>

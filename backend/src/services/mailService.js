@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const tls = require("node:tls");
+const { X509Certificate } = require("node:crypto");
 const nodemailer = require("nodemailer");
 const env = require("../config/env");
 
@@ -70,6 +71,59 @@ const getSmtpCandidates = () => {
   ];
 };
 
+const parsePemCertificates = (pemContent) => {
+  const certs = [];
+  const blockRegex = /-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/g;
+  let match;
+
+  while ((match = blockRegex.exec(pemContent)) !== null) {
+    const base64 = match[1].replace(/\s+/g, "");
+    if (!base64) continue;
+
+    try {
+      const raw = Buffer.from(base64, "base64");
+      const x509 = new X509Certificate(raw);
+      certs.push({ raw, x509 });
+    } catch (error) {
+      console.warn(
+        `[mailService] Skipping unparseable certificate in CA bundle: ${error.message}`,
+      );
+    }
+  }
+
+  return certs;
+};
+
+const filterValidCaCertificates = (certificates) => {
+  const now = new Date();
+  const validCerts = [];
+
+  for (const { raw, x509 } of certificates) {
+    const subject = x509.subject || "unknown";
+    const validFrom = new Date(x509.validFrom);
+    const validTo = new Date(x509.validTo);
+    const isCa = Boolean(x509.ca);
+
+    if (!isCa) {
+      console.warn(
+        `[mailService] Skipping non-CA certificate in CA bundle (${subject})`,
+      );
+      continue;
+    }
+
+    if (now < validFrom || now > validTo) {
+      console.warn(
+        `[mailService] Skipping ${now > validTo ? "expired" : "not-yet-valid"} CA certificate in bundle (${subject}, valid ${x509.validFrom} → ${x509.validTo})`,
+      );
+      continue;
+    }
+
+    validCerts.push(raw);
+  }
+
+  return validCerts;
+};
+
 const readConfiguredCaCert = () => {
   if (cachedCaCert !== undefined) return cachedCaCert;
 
@@ -80,7 +134,22 @@ const readConfiguredCaCert = () => {
   }
 
   try {
-    cachedCaCert = fs.readFileSync(certPath, "utf8");
+    // Read the PEM bundle as text so we can validate each cert individually
+    const pemContent = fs.readFileSync(certPath, "utf8");
+    const parsedCerts = parsePemCertificates(pemContent);
+    const validCaCerts = filterValidCaCertificates(parsedCerts);
+
+    if (parsedCerts.length > 0 && validCaCerts.length === 0) {
+      cachedCaCert = null;
+      console.error(
+        `[mailService] SMTP_CA_CERT_PATH (${certPath}) contains ${parsedCerts.length} certificate(s), but NONE are valid CA certificates currently in their validity window. ` +
+          "The system CA store will be used instead. Export the current root CA as PEM to keep the custom bundle working.",
+      );
+      return cachedCaCert;
+    }
+
+    // Prefer passing as an array of Buffers so Node tls connects accepts each cert
+    cachedCaCert = validCaCerts.length > 0 ? validCaCerts : null;
     return cachedCaCert;
   } catch (error) {
     cachedCaCert = null;
@@ -91,10 +160,30 @@ const readConfiguredCaCert = () => {
   }
 };
 
+const buildTlsOptions = (config, tlsOverrides = {}) => {
+  const caCert = readConfiguredCaCert();
+
+  const tlsOptions = {
+    rejectUnauthorized: env.smtp.tlsRejectUnauthorized,
+    // Ensure SNI matches the configured host and require modern TLS
+    servername: config.host,
+    minVersion: "TLSv1.2",
+    ...(caCert ? { ca: caCert } : {}),
+    ...tlsOverrides,
+  };
+
+  // If the relaxed fallback explicitly passes `ca`, respect it; otherwise
+  // ensure `rejectUnauthorized: false` never carries a stale CA list.
+  if (tlsOptions.rejectUnauthorized === false && !tlsOverrides.ca && caCert) {
+    delete tlsOptions.ca;
+  }
+
+  return tlsOptions;
+};
+
 const createTransportFromConfig = (config, tlsOverrides = {}) => {
   const smtpUser = normalizeSmtpUser(env.smtp.user);
   const smtpPass = normalizeSmtpPass(env.smtp.pass);
-  const caCert = readConfiguredCaCert();
 
   return nodemailer.createTransport({
     host: config.host,
@@ -108,11 +197,7 @@ const createTransportFromConfig = (config, tlsOverrides = {}) => {
     connectionTimeout: Number(env.smtp.connectionTimeout || 10000),
     greetingTimeout: Number(env.smtp.greetingTimeout || 10000),
     socketTimeout: Number(env.smtp.socketTimeout || 15000),
-    tls: {
-      rejectUnauthorized: env.smtp.tlsRejectUnauthorized,
-      ...(caCert ? { ca: caCert } : {}),
-      ...tlsOverrides,
-    },
+    tls: buildTlsOptions(config, tlsOverrides),
   });
 };
 
@@ -176,16 +261,34 @@ const inspectServerCertificate = (config) =>
         rejectUnauthorized: false,
       },
       () => {
-        const cert = socket.getPeerCertificate(true) || {};
-        const issuer = cert.issuer || {};
-        const subject = cert.subject || {};
+        const full = socket.getPeerCertificate(true) || {};
+        const issuer = full.issuer || {};
+        const subject = full.subject || {};
+
+        // Walk the chain from leaf to root, collecting raw certs.
+        const chain = [];
+        const seen = new Set();
+        let c = full;
+        while (c && !seen.has(c.fingerprint256)) {
+          seen.add(c.fingerprint256);
+          chain.push({
+            subject: c.subject,
+            issuer: c.issuer,
+            fingerprint256: c.fingerprint256,
+            raw: c.raw ? Buffer.from(c.raw) : null,
+          });
+          const next = c.issuerCertificate;
+          c =
+            next && next.fingerprint256 !== c.fingerprint256 ? next : undefined;
+        }
 
         socket.end();
         resolve({
           issuer,
           subject,
           authorizationError: socket.authorizationError || null,
-          fingerprint256: cert.fingerprint256 || null,
+          fingerprint256: full.fingerprint256 || null,
+          chain,
         });
       },
     );
@@ -194,6 +297,63 @@ const inspectServerCertificate = (config) =>
       resolve(null);
     });
   });
+
+const rawToPem = (raw) => {
+  const b64 = raw.toString("base64");
+  const body = b64.match(/.{1,64}/g) || [];
+  return `-----BEGIN CERTIFICATE-----\n${body.join("\n")}\n-----END CERTIFICATE-----`;
+};
+
+const isUntrustedAvastRoot = (x509) => {
+  const subject = String(x509.subject || "").toLowerCase();
+  return subject.includes("untrusted");
+};
+
+// Extract the root CA directly from the TLS handshake chain. The last
+// self-signed cert in the chain is the root that signed the presented
+// leaf. This avoids any dependency on external processes (PowerShell).
+const extractRootFromChain = (chain) => {
+  if (!Array.isArray(chain) || chain.length === 0) return null;
+
+  // The root is the last cert in the chain whose subject == issuer
+  // (self-signed). Fall back to the last cert if none is self-signed.
+  const selfSigned = chain.find(
+    (c) =>
+      c.raw &&
+      c.subject &&
+      c.issuer &&
+      JSON.stringify(c.subject) === JSON.stringify(c.issuer),
+  );
+  const root = selfSigned || chain[chain.length - 1];
+  if (!root || !root.raw) return null;
+
+  try {
+    const x509 = new X509Certificate(root.raw);
+    if (isUntrustedAvastRoot(x509)) return null; // never trust "Untrusted Root"
+    return rawToPem(root.raw);
+  } catch {
+    return null;
+  }
+};
+
+const mergePemBundles = (existing, newPem) => {
+  const existingCerts = parsePemCertificates(existing);
+  const newCerts = parsePemCertificates(newPem);
+  const existingFingerprints = new Set(
+    existingCerts.map(({ x509 }) => x509.fingerprint256),
+  );
+  const uniqueNew = newCerts.filter(
+    ({ x509 }) =>
+      !existingFingerprints.has(x509.fingerprint256) &&
+      !isUntrustedAvastRoot(x509),
+  );
+  if (uniqueNew.length === 0) return existing;
+
+  const newBlocks = uniqueNew.map(({ raw }) => rawToPem(raw));
+  return existing.trim()
+    ? `${existing.trim()}\n${newBlocks.join("\n")}\n`
+    : `${newBlocks.join("\n")}\n`;
+};
 
 const describeCertificateInterception = (certificateInfo) => {
   if (!certificateInfo?.issuer) return null;
@@ -247,17 +407,6 @@ const verifyTransporter = async () => {
       errors.push({ config: config.label, error });
 
       const isSelfSignedError = isSelfSignedCertificateError(error);
-      const shouldTryFallback =
-        env.smtp.allowSelfSignedFallback &&
-        env.smtp.tlsRejectUnauthorized &&
-        isSelfSignedError;
-
-      if (!shouldTryFallback) {
-        console.error(
-          `❌ [mailService] Verification failed via ${config.label}: ${error.message}`,
-        );
-        continue;
-      }
 
       const certificateInfo = await inspectServerCertificate(config);
       const interceptionSource =
@@ -267,43 +416,122 @@ const verifyTransporter = async () => {
         console.warn(
           `[mailService] Detected TLS interception source: ${interceptionSource}. Issuer: ${JSON.stringify(certificateInfo.issuer)}`,
         );
+
+        // Self-healing: extract the CURRENT root CA directly from the TLS
+        // handshake chain, merge it into the bundle, and retry strict TLS.
+        // The "Untrusted Root" is explicitly excluded — it must never be
+        // trusted. This handles Avast rotating its root CA without needing
+        // any external process (PowerShell may be unavailable).
+        if (interceptionSource.includes("Avast") && env.smtp.caCertPath) {
+          const rootPem = extractRootFromChain(certificateInfo.chain);
+          if (rootPem) {
+            try {
+              const certPath = env.smtp.caCertPath;
+              const existing = fs.existsSync(certPath)
+                ? fs.readFileSync(certPath, "utf8")
+                : "";
+              const merged = mergePemBundles(existing, rootPem);
+              fs.writeFileSync(certPath, merged);
+              cachedCaCert = undefined; // invalidate cached CA list
+
+              console.warn(
+                `[mailService] Updated ${certPath} with current Avast root CA from TLS chain. Retrying strict TLS...`,
+              );
+
+              const retryTransporter = createTransportFromConfig(config);
+              await retryTransporter.verify();
+
+              transporter = retryTransporter;
+              activeTransportLabel = config.label;
+              console.warn(
+                `✅ [mailService] SMTP verified via ${config.label} after updating CA bundle`,
+              );
+              return;
+            } catch (retryError) {
+              console.warn(
+                `[mailService] Strict TLS retry after CA extraction failed: ${retryError.message}`,
+              );
+            }
+          }
+        }
       }
 
-      if (env.smtp.caCertPath) {
-        console.warn(
-          `[mailService] Strict TLS verification failed via ${config.label}. A CA certificate is configured, but verification still failed: ${error.message}`,
-        );
-      } else {
-        console.warn(
-          `[mailService] Strict TLS verification failed via ${config.label} (${error.message}). Retrying with relaxed TLS...`,
-        );
-        console.warn(
-          "[mailService] Tip: export the interceptor/root CA as PEM and set SMTP_CA_CERT_PATH to keep strict TLS enabled.",
-        );
-      }
-
+      // Attempt 2: strict TLS using the system CA store (no custom bundle).
+      // With --use-system-ca, Node trusts the Windows root store, which
+      // contains Google's genuine Gmail roots. This succeeds when the
+      // interception is disabled or when the custom bundle is stale.
       try {
-        const relaxedTlsTransporter = createTransportFromConfig(config, {
-          rejectUnauthorized: false,
+        const systemCaTransporter = createTransportFromConfig(config, {
           ca: undefined,
         });
-        await relaxedTlsTransporter.verify();
+        await systemCaTransporter.verify();
 
-        transporter = relaxedTlsTransporter;
-        activeTransportLabel = `${config.label} [TLS relaxed]`;
+        transporter = systemCaTransporter;
+        activeTransportLabel = `${config.label} [system CA]`;
 
-        console.warn(
-          `⚠️ [mailService] SMTP verified via ${activeTransportLabel}. This is less secure and should only be used in trusted networks.`,
+        console.log(
+          `✅ [mailService] SMTP verified via ${activeTransportLabel}`,
         );
         return;
-      } catch (relaxedTlsError) {
+      } catch (systemCaError) {
         errors.push({
-          config: `${config.label} [TLS relaxed]`,
-          error: relaxedTlsError,
+          config: `${config.label} [system CA]`,
+          error: systemCaError,
         });
         console.error(
-          `❌ [mailService] Verification failed via ${config.label} [TLS relaxed]: ${relaxedTlsError.message}`,
+          `❌ [mailService] Strict TLS via system CA failed via ${config.label}: ${systemCaError.message}`,
         );
+      }
+
+      // Only relax TLS if the operator explicitly opted in via
+      // SMTP_ALLOW_SELF_SIGNED=true. Never relax silently.
+      if (
+        env.smtp.allowSelfSignedFallback &&
+        env.smtp.tlsRejectUnauthorized &&
+        isSelfSignedError
+      ) {
+        try {
+          const relaxedTlsTransporter = createTransportFromConfig(config, {
+            rejectUnauthorized: false,
+            ca: undefined,
+          });
+          await relaxedTlsTransporter.verify();
+
+          transporter = relaxedTlsTransporter;
+          activeTransportLabel = `${config.label} [TLS relaxed]`;
+
+          console.warn(
+            `⚠️ [mailService] SMTP verified via ${activeTransportLabel}. This is less secure and should only be used in trusted networks.`,
+          );
+          return;
+        } catch (relaxedTlsError) {
+          errors.push({
+            config: `${config.label} [TLS relaxed]`,
+            error: relaxedTlsError,
+          });
+          console.error(
+            `❌ [mailService] Verification failed via ${config.label} [TLS relaxed]: ${relaxedTlsError.message}`,
+          );
+        }
+      } else {
+        console.error(
+          `❌ [mailService] Strict TLS verification failed via ${config.label}: ${error.message}`,
+        );
+        if (interceptionSource) {
+          console.error(
+            `   Cause: ${interceptionSource} is intercepting the SMTP connection and presenting a certificate that cannot be verified.`,
+          );
+          console.error(
+            "   Fix: Disable SSL/TLS scanning for smtp.gmail.com in your antivirus settings, or",
+          );
+          console.error(
+            "   explicitly set SMTP_ALLOW_SELF_SIGNED=true only if you accept the risk on a trusted network.",
+          );
+        } else {
+          console.error(
+            "   Fix: Ensure SMTP_CA_CERT_PATH points to a valid CA bundle, or disable SSL/TLS interception.",
+          );
+        }
       }
     }
   }

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 
 const VIOLET = "#7C3AED";
@@ -305,6 +307,16 @@ function InfoRow({ icon, label, children }) {
 }
 
 export default function ContactUs() {
+  const { settings } = useWebsiteSettings();
+  const companyName = settings.company_name || "Tekunik Automation";
+  const companyLogo = settings.company_logo ? getImageUrl(settings.company_logo) : "/assest/logo.png";
+  const contactPhone = settings.company_phone || "+91 9322475209";
+  const contactEmail = settings.company_email || "vimleshnew29@gmail.com";
+  const contactWhatsapp = settings.company_whatsapp || "919322475209";
+  const contactAddress = settings.company_address || "";
+  const businessHours = settings.business_hours || "Mon \u2013 Sat \u00B7 9:00 AM \u2013 7:00 PM IST";
+  const googleMapsLink = settings.google_maps_link || "https://www.google.com/maps?q=23,72.5";
+
   const [formData, setFormData] = useState({ full_name: "", email: "", phone: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -412,7 +424,7 @@ export default function ContactUs() {
                 justifyContent: "center",
                 marginBottom: 32,
               }}>
-                <img src="/assest/logo.png" alt="TekNode" style={{
+                <img src={companyLogo} alt={companyName} style={{
                   height: "clamp(50px, 10vw, 85px)",
                   width: "auto",
                   maxWidth: "100%",
@@ -497,9 +509,9 @@ export default function ContactUs() {
               gap: 16,
             }}
           >
-            <ContactCard icon="📞" label="Phone" value="+91 9322475209" href="tel:+919322475209" delay={0.1} />
-            <ContactCard icon="✉️" label="Email" value="vimleshnew29@gmail.com" href="mailto:vimleshnew29@gmail.com" delay={0.2} />
-            <ContactCard icon="💬" label="WhatsApp" value="Chat with us" href="https://wa.me/919322475209" delay={0.3} />
+            <ContactCard icon="📞" label="Phone" value={contactPhone} href={`tel:${contactPhone}`} delay={0.1} />
+            <ContactCard icon="✉️" label="Email" value={contactEmail} href={`mailto:${contactEmail}`} delay={0.2} />
+            <ContactCard icon="💬" label="WhatsApp" value="Chat with us" href={`https://wa.me/${contactWhatsapp.replace(/[^0-9]/g, "")}`} delay={0.3} />
           </div>
         </section>
 
@@ -613,7 +625,7 @@ export default function ContactUs() {
                       />
                       <FloatingInput
                         label="Phone" name="phone" type="tel" value={formData.phone}
-                        onChange={handleChange} placeholder="+91 9322475209"
+                        onChange={handleChange} placeholder={contactPhone}
                       />
                       <FloatingInput
                         label="Message" name="message" value={formData.message}
@@ -668,7 +680,7 @@ export default function ContactUs() {
                     alignItems: "center",
                     marginBottom: 28,
                   }}>
-                    <img src="/assest/logo.png" alt="TekNode" style={{
+                    <img src={companyLogo} alt={companyName} style={{
                   height: "clamp(50px, 10vw, 85px)",
                       width: "auto",
                       maxWidth: "100%",
@@ -680,28 +692,28 @@ export default function ContactUs() {
                       textTransform: "uppercase", color: VIOLET_LIGHT,
                       marginTop: 20,
                     }}>
-                      Smart Living
+                      {companyName}
                     </div>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                     <InfoRow icon="📞" label="Phone">
-                      <a href="tel:+919322475209" style={{ color: "var(--text)", textDecoration: "none" }}>
-                        +91 9322475209
+                      <a href={`tel:${contactPhone}`} style={{ color: "var(--text)", textDecoration: "none" }}>
+                        {contactPhone}
                       </a>
                     </InfoRow>
                     <InfoRow icon="✉️" label="Email">
-                      <a href="mailto:vimleshnew29@gmail.com" style={{ color: "var(--text)", textDecoration: "none" }}>
-                        vimleshnew29@gmail.com
+                      <a href={`mailto:${contactEmail}`} style={{ color: "var(--text)", textDecoration: "none" }}>
+                        {contactEmail}
                       </a>
                     </InfoRow>
                     <InfoRow icon="💬" label="WhatsApp">
-                      <a href="https://wa.me/919322475209" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text)", textDecoration: "none" }}>
+                      <a href={`https://wa.me/${contactWhatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text)", textDecoration: "none" }}>
                         Chat with us instantly
                       </a>
                     </InfoRow>
                     <InfoRow icon="🕐" label="Business Hours">
-                      Mon – Sat · 9:00 AM – 7:00 PM IST
+                      {businessHours}
                     </InfoRow>
                   </div>
 
@@ -761,7 +773,7 @@ export default function ContactUs() {
                   </div>
                   <iframe
                     title="Tek Node Location"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3671.8!2d72.5!3d23.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDAwJzAwLjAiTiA3MsKwMzQnMjAuMCJF!5e0!3m2!1sen!2sin!4v1"
+                    src={googleMapsLink || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3671.8!2d72.5!3d23.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDAwJzAwLjAiTiA3MsKwMzQnMjAuMCJF!5e0!3m2!1sen!2sin!4v1"}
                     width="100%"
                     height="100%"
                     style={{ border: 0, filter: "invert(90%) hue-rotate(180deg) brightness(0.85)" }}
@@ -788,15 +800,24 @@ export default function ContactUs() {
           margin: "0 auto",
         }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
-            © 2025 Tek Node · All rights reserved
+            {settings.copyright_text
+              ? settings.copyright_text.replace("{year}", new Date().getFullYear())
+              : `\u00A9 ${new Date().getFullYear()} ${companyName} \u00B7 All rights reserved`
+            }
           </div>
           <div style={{
             display: "flex", gap: 24,
             fontFamily: "'DM Mono', monospace",
             fontSize: 11, letterSpacing: "0.1em",
           }}>
-            {["Privacy", "Terms", "Support"].map(l => (
-              <span key={l} style={{ color: "var(--text-muted)", cursor: "pointer" }}>{l}</span>
+            {[
+              { label: "Privacy", url: settings.privacy_policy_url },
+              { label: "Terms", url: settings.terms_url },
+              { label: "Support", url: `mailto:${settings.support_email || settings.company_email || ""}` },
+            ].filter(l => l.url).map(l => (
+              <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", cursor: "pointer", textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={(e) => e.target.style.color = "#A78BFA"}
+                onMouseLeave={(e) => e.target.style.color = "var(--text-muted)"}>{l.label}</a>
             ))}
           </div>
         </div>

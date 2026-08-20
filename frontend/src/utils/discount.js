@@ -3,7 +3,7 @@
  * Temporarily disabled via DISCOUNT_ENABLED flag — toggle to true to re-enable.
  */
 
-const DISCOUNT_ENABLED = false;
+const DISCOUNT_ENABLED = true;
 
 /**
  * Calculate discount price fields for a product

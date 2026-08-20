@@ -431,6 +431,215 @@ const ensureEnquiriesTable = async () => {
   }
 };
 
+const ensureWebsiteFrontendInformationTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'website_frontend_information'");
+    if (!tables.length) {
+      console.log("[MIGRATE] Creating website_frontend_information table...");
+      await query(`
+        CREATE TABLE website_frontend_information (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          company_name VARCHAR(200) DEFAULT 'Tekunik Automation',
+          company_tagline VARCHAR(500) DEFAULT '',
+          company_description TEXT DEFAULT '',
+          company_logo VARCHAR(500) DEFAULT '',
+          company_favicon VARCHAR(500) DEFAULT '',
+          company_email VARCHAR(200) DEFAULT '',
+          company_phone VARCHAR(50) DEFAULT '',
+          company_whatsapp VARCHAR(50) DEFAULT '',
+          company_address TEXT DEFAULT '',
+          city VARCHAR(100) DEFAULT '',
+          state VARCHAR(100) DEFAULT '',
+          country VARCHAR(100) DEFAULT '',
+          postal_code VARCHAR(20) DEFAULT '',
+          google_maps_url TEXT DEFAULT '',
+          support_email VARCHAR(200) DEFAULT '',
+          sales_email VARCHAR(200) DEFAULT '',
+          website_url VARCHAR(500) DEFAULT '',
+          facebook_url VARCHAR(500) DEFAULT '',
+          instagram_url VARCHAR(500) DEFAULT '',
+          linkedin_url VARCHAR(500) DEFAULT '',
+          youtube_url VARCHAR(500) DEFAULT '',
+          twitter_url VARCHAR(500) DEFAULT '',
+          copyright_text VARCHAR(500) DEFAULT '',
+          footer_about TEXT DEFAULT '',
+          business_hours VARCHAR(500) DEFAULT '',
+          privacy_policy_url VARCHAR(500) DEFAULT '',
+          terms_conditions_url VARCHAR(500) DEFAULT '',
+          refund_policy_url VARCHAR(500) DEFAULT '',
+          shipping_policy_url VARCHAR(500) DEFAULT '',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      // Insert default record
+      await query(`
+        INSERT INTO website_frontend_information (id, company_name)
+        VALUES (1, 'Tekunik Automation')
+      `);
+      console.log("✅ [MIGRATE] Created website_frontend_information table with default record");
+    } else {
+      console.log("✅ [MIGRATE] website_frontend_information table exists");
+
+      // Ensure default record exists
+      const [existing] = await query("SELECT id FROM website_frontend_information WHERE id = 1");
+      if (!existing) {
+        await query(`
+          INSERT INTO website_frontend_information (id, company_name)
+          VALUES (1, 'Tekunik Automation')
+        `);
+        console.log("✅ [MIGRATE] Inserted default website_frontend_information record");
+      }
+
+      // Add any missing columns
+      const missingCols = [];
+      const checks = [
+        { name: "company_tagline", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_tagline VARCHAR(500) DEFAULT '' AFTER company_name" },
+        { name: "company_description", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_description TEXT DEFAULT '' AFTER company_tagline" },
+        { name: "company_logo", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_logo VARCHAR(500) DEFAULT '' AFTER company_description" },
+        { name: "company_favicon", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_favicon VARCHAR(500) DEFAULT '' AFTER company_logo" },
+        { name: "company_email", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_email VARCHAR(200) DEFAULT '' AFTER company_favicon" },
+        { name: "company_phone", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_phone VARCHAR(50) DEFAULT '' AFTER company_email" },
+        { name: "company_whatsapp", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_whatsapp VARCHAR(50) DEFAULT '' AFTER company_phone" },
+        { name: "company_address", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_address TEXT DEFAULT '' AFTER company_whatsapp" },
+        { name: "city", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT '' AFTER company_address" },
+        { name: "state", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS state VARCHAR(100) DEFAULT '' AFTER city" },
+        { name: "country", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT '' AFTER state" },
+        { name: "postal_code", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20) DEFAULT '' AFTER country" },
+        { name: "google_maps_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS google_maps_url TEXT DEFAULT '' AFTER postal_code" },
+        { name: "support_email", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS support_email VARCHAR(200) DEFAULT '' AFTER google_maps_link" },
+        { name: "sales_email", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS sales_email VARCHAR(200) DEFAULT '' AFTER support_email" },
+        { name: "website_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS website_url VARCHAR(500) DEFAULT '' AFTER sales_email" },
+        { name: "facebook_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500) DEFAULT '' AFTER website_url" },
+        { name: "instagram_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500) DEFAULT '' AFTER facebook_url" },
+        { name: "linkedin_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(500) DEFAULT '' AFTER instagram_url" },
+        { name: "youtube_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS youtube_url VARCHAR(500) DEFAULT '' AFTER linkedin_url" },
+        { name: "twitter_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500) DEFAULT '' AFTER youtube_url" },
+        { name: "copyright_text", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS copyright_text VARCHAR(500) DEFAULT '' AFTER twitter_url" },
+        { name: "footer_about", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS footer_about TEXT DEFAULT '' AFTER copyright_text" },
+        { name: "business_hours", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS business_hours VARCHAR(500) DEFAULT '' AFTER footer_about" },
+        { name: "privacy_policy_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS privacy_policy_url VARCHAR(500) DEFAULT '' AFTER business_hours" },
+        { name: "terms_conditions_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS terms_conditions_url VARCHAR(500) DEFAULT '' AFTER privacy_policy_url" },
+        { name: "refund_policy_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS refund_policy_url VARCHAR(500) DEFAULT '' AFTER terms_url" },
+        { name: "shipping_policy_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS shipping_policy_url VARCHAR(500) DEFAULT '' AFTER refund_policy_url" },
+      ];
+      for (const col of checks) {
+        try {
+          const [exists] = await query(`SHOW COLUMNS FROM website_frontend_information LIKE '${col.name}'`);
+          if (!exists) {
+            await query(col.sql);
+            missingCols.push(col.name);
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+      if (missingCols.length) {
+        console.log(`✅ [MIGRATE] Added missing website_frontend_information columns: ${missingCols.join(", ")}`);
+      }
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure website_frontend_information table:", error.message);
+  }
+};
+
+const ensureOffersTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'discounts'");
+    if (!tables.length) {
+      console.log("[MIGRATE] Creating discounts table for offers...");
+      await query(`
+        CREATE TABLE discounts (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(200) NOT NULL,
+          type ENUM('percentage','fixed','bogo') NOT NULL DEFAULT 'percentage',
+          value DECIMAL(10,2) NOT NULL,
+          product_id INT NULL,
+          min_order_value DECIMAL(10,2) NULL,
+          is_active TINYINT(1) NOT NULL DEFAULT 1,
+          starts_at DATETIME NULL,
+          expires_at DATETIME NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+          INDEX idx_discounts_active_dates (is_active, starts_at, expires_at),
+          INDEX idx_discounts_product (product_id)
+        )
+      `);
+      console.log("✅ [MIGRATE] discounts offer table ready");
+      return;
+    }
+
+    const checks = [
+      { name: "name", sql: "ALTER TABLE discounts ADD COLUMN name VARCHAR(200) NOT NULL AFTER id" },
+      { name: "title", sql: "ALTER TABLE discounts ADD COLUMN title VARCHAR(200) NULL AFTER name" },
+      { name: "description", sql: "ALTER TABLE discounts ADD COLUMN description TEXT NULL AFTER title" },
+      { name: "type", sql: "ALTER TABLE discounts ADD COLUMN type ENUM('percentage','fixed','bogo') NOT NULL DEFAULT 'percentage' AFTER description" },
+      { name: "value", sql: "ALTER TABLE discounts ADD COLUMN value DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER type" },
+      { name: "apply_to", sql: "ALTER TABLE discounts ADD COLUMN apply_to ENUM('all','selected_products','selected_category') NOT NULL DEFAULT 'all' AFTER value" },
+      { name: "product_id", sql: "ALTER TABLE discounts ADD COLUMN product_id INT NULL AFTER apply_to" },
+      { name: "min_order_value", sql: "ALTER TABLE discounts ADD COLUMN min_order_value DECIMAL(10,2) NULL AFTER product_id" },
+      { name: "maximum_discount", sql: "ALTER TABLE discounts ADD COLUMN maximum_discount DECIMAL(10,2) NULL AFTER min_order_value" },
+      { name: "banner_image", sql: "ALTER TABLE discounts ADD COLUMN banner_image VARCHAR(500) NULL AFTER maximum_discount" },
+      { name: "is_active", sql: "ALTER TABLE discounts ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER banner_image" },
+      { name: "starts_at", sql: "ALTER TABLE discounts ADD COLUMN starts_at DATETIME NULL AFTER is_active" },
+      { name: "expires_at", sql: "ALTER TABLE discounts ADD COLUMN expires_at DATETIME NULL AFTER starts_at" },
+      { name: "created_at", sql: "ALTER TABLE discounts ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER expires_at" },
+      { name: "updated_at", sql: "ALTER TABLE discounts ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at" },
+    ];
+
+    const added = [];
+    for (const column of checks) {
+      const [exists] = await query(`SHOW COLUMNS FROM discounts LIKE '${column.name}'`);
+      if (!exists) {
+        await query(column.sql);
+        added.push(column.name);
+      }
+    }
+
+    if (added.length) {
+      console.log(`✅ [MIGRATE] Added missing discounts columns: ${added.join(", ")}`);
+    } else {
+      console.log("✅ [MIGRATE] discounts offer table exists");
+    }
+
+    const offerProductsTable = await query("SHOW TABLES LIKE 'offer_products'");
+    if (!offerProductsTable.length) {
+      await query(`
+        CREATE TABLE offer_products (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          offer_id INT NOT NULL,
+          product_id INT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (offer_id) REFERENCES discounts(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_offer_product (offer_id, product_id)
+        )
+      `);
+      console.log("✅ [MIGRATE] Created offer_products table");
+    }
+
+    const offerCategoriesTable = await query("SHOW TABLES LIKE 'offer_categories'");
+    if (!offerCategoriesTable.length) {
+      await query(`
+        CREATE TABLE offer_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          offer_id INT NOT NULL,
+          category_id INT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (offer_id) REFERENCES discounts(id) ON DELETE CASCADE,
+          FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_offer_category (offer_id, category_id)
+        )
+      `);
+      console.log("✅ [MIGRATE] Created offer_categories table");
+    }
+
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure discounts offer table:", error.message);
+  }
+};
+
 module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
@@ -441,4 +650,6 @@ module.exports = {
   ensureSmartHomeProposalsTable: ensureSmartHomeProposalsTables,
   ensureAdminTables,
   ensureEnquiriesTable,
+  ensureWebsiteFrontendInformationTable,
+  ensureOffersTable,
 };

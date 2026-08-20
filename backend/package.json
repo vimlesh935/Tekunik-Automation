@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "node index.js",
-    "start": "node index.js",
-    "prod": "NODE_ENV=production node index.js"
+    "dev": "node --use-system-ca index.js",
+    "start": "node --use-system-ca index.js",
+    "prod": "NODE_ENV=production node --use-system-ca index.js"
   },
   "dependencies": {
     "adm-zip": "^0.6.0",

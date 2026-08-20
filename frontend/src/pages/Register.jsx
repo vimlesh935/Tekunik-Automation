@@ -19,6 +19,12 @@ import AuthInput from "../components/AuthInput.jsx";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 import { usePincodeLookup } from "../hooks/usePincodeLookup.js";
 
+/* ── Brand tokens ── */
+const V = "#7C3AED";
+const C = "#06B6D4";
+const VL = "#A78BFA";
+const CL = "#67E8F9";
+
 function useMounted(delay = 0) {
   const [vis, setVis] = useState(false);
   useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t); }, [delay]);
@@ -39,6 +45,9 @@ function Appear({ children, delay = 0, y = 24, style = {} }) {
 }
 
 function CircuitPanel() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const CARD = isDark ? "#0D1120" : "#ffffff";
   const nodes = [
     { cx: 80, cy: 100 }, { cx: 200, cy: 60 },
     { cx: 300, cy: 160 }, { cx: 160, cy: 240 },
@@ -109,10 +118,6 @@ export default function Register() {
   const isDark = theme === "dark";
 
   /* ── Theme-aware brand tokens ── */
-  const V = "#7C3AED";
-  const C = "#06B6D4";
-  const VL = "#A78BFA";
-  const CL = "#67E8F9";
   const BG = isDark ? "#080B14" : "#f8fafc";
   const CARD = isDark ? "#0D1120" : "#ffffff";
   const BORDER = isDark ? "#1E2640" : "#e2e8f0";

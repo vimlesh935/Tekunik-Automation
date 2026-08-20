@@ -638,4 +638,35 @@ export const smartHomeStepService = {
     }),
 };
 
+// ─────────────────────────────────────────────────────────────
+// FRONTEND SETTINGS SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const frontendSettingsService = {
+  get: () => apiCall("/api/frontend-information"),
+  adminGet: () => apiCall("/api/admin/frontend-information"),
+  update: (data) =>
+    apiCall("/api/admin/frontend-information", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// OFFER SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const offerService = {
+  getActiveOffers: () => apiCall("/api/offers"),
+  getOffer: (id) => apiCall(`/api/offers/${id}`),
+  getOfferProducts: (limit = 24) => apiCall(`/api/offers/products?limit=${limit}`),
+  // Admin
+  adminList: (page = 1) => apiCall(`/api/admin/offers?page=${page}`),
+  adminGet: (id) => apiCall(`/api/admin/offers/${id}`),
+  adminCreate: (data) => apiCall("/api/admin/offers", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdate: (id, data) => apiCall(`/api/admin/offers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDelete: (id) => apiCall(`/api/admin/offers/${id}`, { method: "DELETE" }),
+  adminToggle: (id) => apiCall(`/api/admin/offers/${id}/toggle`, { method: "PATCH" }),
+};
+
 export default apiCall;

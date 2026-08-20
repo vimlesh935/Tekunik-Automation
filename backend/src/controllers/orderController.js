@@ -6,6 +6,10 @@ const { normalizeImageUrl } = require("../utils/uploadPaths");
 const { generateInvoicePDF } = require("../services/pdfService");
 const { sendInvoiceEmail } = require("../services/invoiceEmailService");
 const {
+  getActiveOffers,
+  calculateOfferPrice,
+} = require("../services/offerPricingService");
+const {
   ensureOrderTrackingTable,
   getTrackingSteps,
   getEstimatedDelivery,
@@ -233,11 +237,27 @@ const createOrder = asyncHandler(async (req, res) => {
         product_id,
         quantity: parseInt(quantity, 10),
         product_name: product.name,
-        price: itemPrice,
+        original_price: itemPrice,
+        product,
       });
 
       totalAmount += itemPrice * parseInt(quantity, 10);
     }
+
+    const orderSubtotal = totalAmount;
+    const activeOffers = await getActiveOffers();
+    totalAmount = 0;
+    validatedItems.forEach((item) => {
+      const offerPrice = calculateOfferPrice(item.product, activeOffers, orderSubtotal);
+      item.price = offerPrice.final_price;
+      item.discount_percent = offerPrice.discount_percent;
+      item.discount_amount = offerPrice.discount_amount;
+      item.final_price = offerPrice.final_price;
+      item.offer_id = offerPrice.offer_id;
+      item.offer_name = offerPrice.offer_name;
+      totalAmount += offerPrice.final_price * item.quantity;
+      delete item.product;
+    });
 
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -294,9 +314,22 @@ const createOrder = asyncHandler(async (req, res) => {
 
     for (const item of validatedItems) {
       await query(
-        `INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
-         VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.product_name, item.price, item.quantity],
+        `INSERT INTO order_items (
+          order_id, product_id, product_name, price, original_price,
+          discount_percent, discount_amount, final_price, quantity
+        )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          orderId,
+          item.product_id,
+          item.product_name,
+          item.price,
+          item.original_price,
+          item.discount_percent,
+          item.discount_amount,
+          item.final_price,
+          item.quantity,
+        ],
       );
 
       const [product] = await query("SELECT * FROM products WHERE id = ?", [

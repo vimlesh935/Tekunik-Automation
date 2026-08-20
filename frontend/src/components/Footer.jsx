@@ -1,8 +1,9 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 import {
-  Zap,
   Mail,
   Phone,
   MapPin,
@@ -10,24 +11,14 @@ import {
   Settings,
   ArrowRight,
   ArrowUpRight,
+  Globe,
+  Camera,
+  Video,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const footerLinks = {
-  Product: [
-    { label: "Home", to: "/" },
-    { label: "Shop", to: "/shop" },
-    { label: "Cart", to: "/cart" },
-  ],
-  Account: [
-    { label: "Login", to: "/login" },
-    { label: "Register", to: "/register" },
-    { label: "Dashboard", to: "/dashboard" },
-    { label: "Forgot Password", to: "/forgot-password" },
-  ],
-};
-
-// Orchestration variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -48,24 +39,32 @@ const itemVariants = {
 export default function Footer() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { settings } = useWebsiteSettings();
+
+  const logo = settings.company_logo
+    ? getImageUrl(settings.company_logo)
+    : theme === "dark"
+    ? "/assest/logowhite.png"
+    : "/assest/logo.png";
+
+  const socialLinks = [
+    { url: settings.facebook_url, icon: Globe, label: "Facebook" },
+    { url: settings.instagram_url, icon: Camera, label: "Instagram" },
+    { url: settings.linkedin_url, icon: ExternalLink, label: "LinkedIn" },
+    { url: settings.youtube_url, icon: Video, label: "YouTube" },
+    { url: settings.twitter_url, icon: MessageCircle, label: "Twitter" },
+  ].filter(s => s.url);
 
   return (
     <footer className="relative mt-auto border-t border-slate-900 bg-slate-950 text-slate-400 overflow-hidden">
-      {/* Signature element: a slow-traveling signal line along the top edge,
-          echoing a circuit trace / data pulse — the brand's "always-on" motif */}
       <div className="absolute top-0 inset-x-0 h-px bg-slate-900 overflow-hidden">
         <motion.div
           className="h-full w-1/3 bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
           animate={{ x: ["-100%", "400%"] }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "linear",
-          }}
+          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
         />
       </div>
 
-      {/* Ambient glow field */}
       <motion.div
         className="absolute -bottom-32 -left-24 w-72 h-72 sm:w-96 sm:h-96 bg-indigo-600/10 rounded-full blur-[110px] pointer-events-none"
         animate={{ opacity: [0.5, 0.9, 0.5] }}
@@ -77,126 +76,193 @@ export default function Footer() {
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-8 sm:pb-10">
+      <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 pb-10 sm:pb-12">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 sm:gap-10 lg:gap-8 mb-14 sm:mb-16"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10 mb-16 sm:mb-20"
         >
-          {/* Brand panel */}
-          <motion.div
-            variants={itemVariants}
-            className="sm:col-span-2 lg:col-span-2 space-y-3"
-          >
+          {/* Column 1: Brand */}
+          <motion.div variants={itemVariants} className="space-y-5">
             <Link to="/home" className="flex items-center gap-2.5 group w-fit">
-              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
+              <img src={logo} alt={settings.company_name || "Logo"} className="h-[55px] md:h-[70px] w-auto object-contain" />
             </Link>
-
-            <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-              Premium consumer electronics and hardware modules tailored for
-              ultra high-performance ecosystems. Secure, scalable, and
-              expertly engineered.
+            <p className="text-sm text-slate-400 leading-relaxed">
+              {settings.footer_about || settings.company_description || `${settings.company_name || "Tekunik Automation"} — Premium automation solutions for modern living and working spaces.`}
             </p>
-
-            <div className="flex items-center gap-2.5 pt-1">
-              {[
-                { Icon: Zap, label: "Core" },
-                { Icon: Shield, label: "Vault" },
-                { Icon: Settings, label: "Config" },
-              ].map(({ Icon, label }, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{
-                    y: -3,
-                    borderColor: "rgba(99,102,241,0.4)",
-                    color: "rgb(129 140 248)",
-                  }}
-                  className="w-9 h-9 rounded-xl border border-slate-900 bg-slate-900/40 flex items-center justify-center text-slate-400 transition-colors duration-300 cursor-help"
-                  title={label}
-                >
-                  <Icon size={14} />
-                </motion.div>
-              ))}
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="flex items-center gap-3 pt-1">
+                {socialLinks.map(({ url, icon: Icon, label }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-xl border border-slate-800 bg-slate-900/60 flex items-center justify-center text-slate-500 hover:text-indigo-400 hover:border-indigo-500/40 transition-all duration-300"
+                    title={label}
+                  >
+                    <Icon size={15} />
+                  </a>
+                ))}
+              </div>
+            )}
           </motion.div>
 
-          {/* Nav columns */}
-          {Object.entries(footerLinks).map(([title, links]) => (
-            <motion.div
-              variants={itemVariants}
-              key={title}
-              className="lg:col-span-2 space-y-5"
-            >
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-200 bg-slate-900/60 w-fit px-2.5 py-1 rounded-md border border-slate-800/40">
-                {title}
-              </h4>
-              <ul className="space-y-3.5">
-                {links.map((link) => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      className="text-sm font-medium text-slate-400 hover:text-indigo-400 transition-colors duration-200 flex items-center gap-1.5 group w-fit"
-                    >
-                      <ArrowRight
-                        size={12}
-                        className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0"
-                      />
-                      <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                        {link.label}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-
-          {/* Contact + newsletter */}
-          <motion.div
-            variants={itemVariants}
-            className="sm:col-span-2 lg:col-span-4 space-y-5"
-          >
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-200 bg-slate-900/60 w-fit px-2.5 py-1 rounded-md border border-slate-800/40">
-              Ecosystem Support
+          {/* Column 2: Quick Links */}
+          <motion.div variants={itemVariants} className="space-y-5">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
+              Quick Links
             </h4>
-
-            <ul className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            <ul className="space-y-3.5">
               {[
-                { Icon: Mail, text: "support@teknode.com" },
-                { Icon: Phone, text: "+91 (555) 123-4567" },
-                { Icon: MapPin, text: "Mumbai, Maharashtra" },
-              ].map(({ Icon, text }, i) => (
-                <li
-                  key={i}
-                  className="flex items-center gap-3 text-sm text-slate-400 hover:text-slate-300 transition-colors group"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 group-hover:border-indigo-500/30 transition-colors">
-                    <Icon size={12} className="text-indigo-400" />
-                  </div>
-                  <span className="truncate">{text}</span>
+                { label: "Home", to: "/home" },
+                { label: "Shop", to: "/shop" },
+                { label: "About Us", to: "/about" },
+                { label: "Contact Us", to: "/contact" },
+                { label: "Track Order", to: "/track-order" },
+              ].map((link) => (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    className="text-sm text-slate-400 hover:text-indigo-400 transition-colors duration-200 flex items-center gap-1.5 group w-fit"
+                  >
+                    <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
+                    <span className="group-hover:translate-x-0.5 transition-transform duration-300">
+                      {link.label}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
+          </motion.div>
 
-            <div className="pt-3 space-y-2.5">
-              <p className="text-xs font-bold text-slate-500 tracking-wide">
-                Subscribe to technical deployments
+          {/* Column 3: Contact Info */}
+          <motion.div variants={itemVariants} className="space-y-5">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
+              Contact
+            </h4>
+            <ul className="space-y-4">
+              {(settings.company_email || settings.support_email) && (
+                <li className="flex items-start gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 mt-0.5">
+                    <Mail size={13} className="text-indigo-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Email</p>
+                    <a href={`mailto:${settings.support_email || settings.company_email}`} className="text-slate-300 hover:text-indigo-400 transition-colors break-all">
+                      {settings.support_email || settings.company_email}
+                    </a>
+                  </div>
+                </li>
+              )}
+              {(settings.company_phone || settings.company_whatsapp) && (
+                <li className="flex items-start gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 mt-0.5">
+                    <Phone size={13} className="text-indigo-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Phone</p>
+                    <a href={`tel:${settings.company_phone}`} className="text-slate-300 hover:text-indigo-400 transition-colors">
+                      {settings.company_phone}
+                    </a>
+                    {settings.company_whatsapp && (
+                      <a href={`https://wa.me/${settings.company_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="block text-emerald-400 hover:text-emerald-300 transition-colors text-xs mt-0.5 flex items-center gap-1">
+                        <MessageCircle size={11} />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </li>
+              )}
+              {settings.company_address && (
+                <li className="flex items-start gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 mt-0.5">
+                    <MapPin size={13} className="text-indigo-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Address</p>
+                    <p className="text-slate-300 leading-relaxed">
+                      {settings.company_address}
+                      {settings.city && `, ${settings.city}`}
+                      {settings.state && `, ${settings.state}`}
+                      {settings.postal_code && ` - ${settings.postal_code}`}
+                    </p>
+                  </div>
+                </li>
+              )}
+              {settings.business_hours && (
+                <li className="flex items-start gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 mt-0.5">
+                    <Clock size={13} className="text-indigo-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Hours</p>
+                    <p className="text-slate-300">{settings.business_hours}</p>
+                  </div>
+                </li>
+              )}
+            </ul>
+          </motion.div>
+
+          {/* Column 4: Policies & Subscribe */}
+          <motion.div variants={itemVariants} className="space-y-5">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
+              Policies
+            </h4>
+            <ul className="space-y-3.5">
+              {settings.privacy_policy_url && (
+                <li>
+                  <a href={settings.privacy_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
+                    <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
+                    Privacy Policy
+                  </a>
+                </li>
+              )}
+              {settings.terms_url && (
+                <li>
+                  <a href={settings.terms_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
+                    <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
+                    Terms & Conditions
+                  </a>
+                </li>
+              )}
+              {settings.refund_policy_url && (
+                <li>
+                  <a href={settings.refund_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
+                    <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
+                    Refund Policy
+                  </a>
+                </li>
+              )}
+              {settings.shipping_policy_url && (
+                <li>
+                  <a href={settings.shipping_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
+                    <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
+                    Shipping Policy
+                  </a>
+                </li>
+              )}
+            </ul>
+
+            <div className="pt-2 space-y-3">
+              <p className="text-xs font-bold text-slate-500 tracking-wide uppercase">
+                Subscribe
               </p>
               <form
                 onSubmit={(e) => e.preventDefault()}
-                className="flex flex-col xs:flex-row sm:flex-col md:flex-row gap-2 w-full max-w-sm"
+                className="flex flex-col sm:flex-row gap-2.5"
               >
                 <input
                   type="email"
-                  placeholder="Enter administrator email..."
-                  className="flex-1 min-w-0 rounded-xl border border-slate-900 bg-slate-900/30 px-3.5 py-2.5 xs:py-2 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500/40 focus:bg-slate-900/80 focus:outline-none transition-all duration-300"
+                  placeholder="Your email..."
+                  className="flex-1 min-w-0 rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500/40 focus:bg-slate-900/80 focus:outline-none transition-all duration-300"
                 />
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   type="submit"
-                  className="flex-shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 xs:py-2 text-xs font-bold text-white transition-colors duration-300 shadow-md shadow-indigo-600/20"
+                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-xs font-bold text-white transition-colors duration-300 shadow-md shadow-indigo-600/20 whitespace-nowrap"
                 >
                   Subscribe
                 </motion.button>
@@ -222,19 +288,14 @@ export default function Footer() {
             </div>
             <span className="hidden sm:inline text-slate-800">|</span>
             <span>
-              &copy; {new Date().getFullYear()} Tek Node. All operational
-              rights reserved.
+              {settings.copyright_text
+                ? settings.copyright_text.replace("{year}", new Date().getFullYear())
+                : `\u00A9 ${new Date().getFullYear()} ${settings.company_name || "Tekunik Automation"}. All rights reserved.`
+              }
             </span>
           </div>
 
           <div className="flex items-center gap-4 sm:gap-5 flex-shrink-0">
-            <span className="hidden xs:flex text-xs text-slate-600 items-center gap-1 font-medium">
-              Designed by{" "}
-              <span className="font-extrabold text-slate-400 bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
-                Tek Node
-              </span>
-            </span>
-
             <motion.button
               whileHover={{ borderColor: "rgba(245,158,11,0.3)" }}
               onClick={() => navigate("/admin-login")}

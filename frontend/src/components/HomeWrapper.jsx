@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, Sparkles, Home as HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { productService, cartService, categoryService } from "../services/api";
 import HomeHero from "./HomeHero";
 import HomeCategories from "./HomeCategories";
@@ -19,6 +20,8 @@ import ReadyHome from "./ReadyHome.jsx";
 
 export default function HomeWrapper({ token }) {
   const { addToCart } = useCart();
+  const { settings } = useWebsiteSettings();
+  const whatsappNumber = settings?.company_whatsapp?.replace(/[^0-9]/g, "") || "919322475209";
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +137,7 @@ export default function HomeWrapper({ token }) {
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       {/* WhatsApp Support Button */}
       <a
-        href="https://wa.me/919322475209?text=Hello%2C%20I%20need%20help%20with%20your%20automation%20products."
+        href={`https://wa.me/${whatsappNumber}?text=Hello%2C%20I%20need%20help%20with%20your%20automation%20products.`}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open WhatsApp support chat"

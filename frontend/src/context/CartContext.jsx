@@ -27,7 +27,7 @@ const saveCartItems = (items) => {
   }
 };
 
-const DISCOUNT_ENABLED = false;
+const DISCOUNT_ENABLED = true;
 
 /**
  * Calculate discount price fields for a product.

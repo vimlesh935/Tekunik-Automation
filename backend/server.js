@@ -5,8 +5,8 @@ const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
 const { ensureUsersOtpColumns, ensureAdminsTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
-const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable } = require("./src/config/migrate");
-const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns } = require("./src/config/orderMigration");
+const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable } = require("./src/config/migrate");
+const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -140,7 +140,6 @@ const startServer = async () => {
   console.log("║     SERVER STARTUP SEQUENCE          ║");
   console.log("╚════════════════════════════════════════╝\n");
 
-  // Test MySQL connection
   try {
     console.log("[STARTUP] Testing MySQL connection...");
     await testConnection();
@@ -150,7 +149,6 @@ const startServer = async () => {
     console.error("   Ensure XAMPP MySQL is running and database 'Technique' exists\n");
   }
 
-  // Run database migrations
   try {
     console.log("[STARTUP] Ensuring users table is ready...");
     await ensureUsersOtpColumns();
@@ -223,6 +221,22 @@ const startServer = async () => {
     console.error("❌ [STARTUP] Payment columns setup failed:", error.message, "\n");
   }
 
+  try {
+    console.log("[STARTUP] Ensuring offers tables...");
+    await ensureOffersTable();
+    console.log("✅ [STARTUP] Offers tables ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Offers tables setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring order item discount columns...");
+    await ensureOrderItemDiscountColumns();
+    console.log("✅ [STARTUP] Order item discount columns ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Order item discount columns setup failed:", error.message, "\n");
+  }
+
   // Start HTTP server immediately
   const server = app.listen(env.port, () => {
     console.log("╔════════════════════════════════════════╗");
@@ -240,7 +254,6 @@ const startServer = async () => {
       console.error("   Error details:", error.message, "\n");
     });
 
-  // Handle server errors gracefully
   server.on("error", (error) => {
     if (error.code === "EADDRINUSE") {
       console.error(`❌ Port ${env.port} is already in use. Please stop the other process or change PORT in .env`);
@@ -251,7 +264,6 @@ const startServer = async () => {
   });
 };
 
-// Handle uncaught errors gracefully
 process.on("unhandledRejection", (reason) => {
   console.error("❌ Unhandled Promise Rejection:", reason);
 });
@@ -259,7 +271,6 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (error) => {
   console.error("❌ Uncaught Exception:", error.message);
   console.error(error.stack);
-  // Don't exit - allow the server to continue running
 });
 
 startServer();

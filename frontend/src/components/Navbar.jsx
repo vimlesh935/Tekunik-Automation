@@ -13,11 +13,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 import SmartSearch from "../components/SmartSearch.jsx";
 
 export default function Navbar() {
   const { isAuthenticated: token, logout } = useAuth();
   const { theme } = useTheme();
+  const { settings } = useWebsiteSettings();
 
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -108,7 +111,11 @@ export default function Navbar() {
               to="/home"
               className="flex items-center gap-2.5 group flex-shrink-0"
             >
-              <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="TekNode" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
+              {settings.company_logo ? (
+                <img src={getImageUrl(settings.company_logo)} alt={settings.company_name || "Logo"} className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
+              ) : (
+                <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="Logo" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
+              )}
             </Link>
 
             {/* Premium Desktop Navigation Links */}

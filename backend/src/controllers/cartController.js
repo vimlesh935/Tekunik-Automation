@@ -3,6 +3,10 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { withNormalizedImageUrl } = require("../utils/uploadPaths");
+const {
+  getActiveOffers,
+  enrichProductWithOffers,
+} = require("../services/offerPricingService");
 
 /**
  * Calculate discount price fields for a product.
@@ -46,14 +50,22 @@ const getCartDetails = async (cartId) => {
     [cartId]
   );
 
+  const activeOffers = await getActiveOffers();
+  const baseSubtotal = items.reduce(
+    (sum, item) => sum + (parseFloat(item.price) || 0) * Number(item.quantity || 0),
+    0,
+  );
+
   const validItems = items.map((item) => {
-    const itemPrice = parseFloat(item.price) || 0;
+    const pricedItem = enrichProductWithOffers(
+      withNormalizedImageUrl(item),
+      activeOffers,
+      baseSubtotal,
+    );
+    const itemPrice = parseFloat(pricedItem.final_price) || 0;
     return {
-      ...withNormalizedImageUrl(item),
-      original_price: itemPrice,
-      discount_percent: 0,
-      discount_amount: 0,
-      final_price: itemPrice,
+      ...pricedItem,
+      price: itemPrice,
       max_quantity: item.stock_quantity,
       is_available: item.product_status === "active" && item.stock_quantity > 0,
       total_price: itemPrice * Number(item.quantity),

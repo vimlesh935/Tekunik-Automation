@@ -11,7 +11,8 @@ const {
 } = require("./src/config/migrate");
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
-const { ensurePaymentColumns } = require("./src/config/orderMigration");
+const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
+const { ensureWebsiteFrontendInformationTable, ensureOffersTable } = require("./src/config/migrate");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -43,6 +44,7 @@ const validationRoutes = require("./src/routes/validationRoutes");
 const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 const bulkImportRoutes = require("./src/routes/bulkImportRoutes");
+const frontendSettingsRoutes = require("./src/routes/frontendSettingsRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -180,6 +182,7 @@ app.use("/api/admin/upload", uploadRoutes);
 app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
 app.use(bulkImportRoutes);
+app.use(frontendSettingsRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -261,6 +264,9 @@ const startServer = async () => {
     await ensureDemoEnquiriesTable();
     await ensureProductUpgradeTables();
     await ensurePaymentColumns();
+    await ensureOrderItemDiscountColumns();
+    await ensureOffersTable();
+    await ensureWebsiteFrontendInformationTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
