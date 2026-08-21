@@ -5,7 +5,7 @@ const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
 const { ensureUsersOtpColumns, ensureAdminsTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
-const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable } = require("./src/config/migrate");
+const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable, ensureWishlistTable } = require("./src/config/migrate");
 const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -31,6 +31,7 @@ const reviewRoutes = require("./src/routes/reviewRoutes");
 const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
+const wishlistRoutes = require("./src/routes/wishlistRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -90,6 +91,7 @@ app.use(publicRoutes);
 
 // ── User API Routes (JWT-protected) ─────────────────────────────────────────
 app.use(userRoutes);
+app.use(wishlistRoutes);
 
 // ── Admin API Routes (JWT-protected) ────────────────────────────────────────
 app.use(dashboardRoutes);
@@ -235,6 +237,14 @@ const startServer = async () => {
     console.log("✅ [STARTUP] Order item discount columns ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Order item discount columns setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring wishlist table...");
+    await ensureWishlistTable();
+    console.log("✅ [STARTUP] Wishlist table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Wishlist table setup failed:", error.message, "\n");
   }
 
   // Start HTTP server immediately

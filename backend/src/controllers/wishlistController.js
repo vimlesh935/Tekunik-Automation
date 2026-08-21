@@ -1,5 +1,4 @@
-const db = require("../config/db");
-const { v4: uuidv4 } = require("uuid");
+const { query } = require("../config/db");
 
 /**
  * GET /api/wishlist
@@ -9,8 +8,10 @@ const getWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [rows] = await db.query(
-      `SELECT w.id, w.product_id, w.created_at, p.name, p.price, p.sale_price, p.discount_percent, p.original_price, p.final_price, p.image_url, p.stock_quantity, p.low_stock_limit, p.stock_status
+    const rows = await query(
+      `SELECT w.id, w.product_id, w.created_at,
+              p.name, p.price, p.sale_price, p.discount_percent,
+              p.image_url, p.stock_quantity, p.low_stock_limit, p.stock_status
        FROM wishlist w
        LEFT JOIN products p ON w.product_id = p.id
        WHERE w.user_id = ?
@@ -18,24 +19,30 @@ const getWishlist = async (req, res) => {
       [userId]
     );
 
-    // Transform products - filter out any that no longer exist
     const wishlistItems = rows
       .filter((row) => row.product_id && row.name)
-      .map((row) => ({
-        id: row.id,
-        product_id: row.product_id,
-        name: row.name,
-        price: row.price || 0,
-        original_price: row.original_price || row.price || 0,
-        sale_price: row.sale_price,
-        discount_percent: row.discount_percent || 0,
-        final_price: row.final_price || row.price || 0,
-        image_url: row.image_url || "",
-        stock_quantity: row.stock_quantity || 0,
-        low_stock_limit: row.low_stock_limit,
-        stock_status: row.stock_status || "in_stock",
-        created_at: row.created_at,
-      }));
+      .map((row) => {
+        const hasSale =
+          row.sale_price !== null &&
+          parseFloat(row.sale_price) < parseFloat(row.price);
+        return {
+          id: row.id,
+          product_id: row.product_id,
+          name: row.name,
+          price: parseFloat(row.price) || 0,
+          original_price: parseFloat(row.price) || 0,
+          sale_price: row.sale_price ? parseFloat(row.sale_price) : null,
+          discount_percent: parseFloat(row.discount_percent) || 0,
+          final_price: hasSale
+            ? parseFloat(row.sale_price)
+            : parseFloat(row.price) || 0,
+          image_url: row.image_url || "",
+          stock_quantity: row.stock_quantity || 0,
+          low_stock_limit: row.low_stock_limit,
+          stock_status: row.stock_status || "in_stock",
+          created_at: row.created_at,
+        };
+      });
 
     res.json({ success: true, wishlist: wishlistItems });
   } catch (error) {
@@ -50,25 +57,29 @@ const getWishlist = async (req, res) => {
  */
 const addToWishlist = async (req, res) => {
   try {
-    const productId = req.params.productId;
+    const productId = parseInt(req.params.productId, 10);
     const userId = req.user.id;
 
-    if (!productId) {
-      return res.status(400).json({ success: false, message: "Product ID required" });
+    if (!productId || isNaN(productId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid Product ID required" });
     }
 
     // Check if product exists
-    const [products] = await db.query(
-      "SELECT id, stock_quantity FROM products WHERE id = ?",
+    const products = await query(
+      "SELECT id FROM products WHERE id = ?",
       [productId]
     );
 
     if (products.length === 0) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
-    // Check if already in wishlist
-    const [existing] = await db.query(
+    // Check if already in wishlist (prevent duplicates)
+    const existing = await query(
       "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?",
       [userId, productId]
     );
@@ -78,7 +89,7 @@ const addToWishlist = async (req, res) => {
     }
 
     // Add to wishlist
-    await db.query(
+    await query(
       "INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)",
       [userId, productId]
     );
@@ -96,10 +107,16 @@ const addToWishlist = async (req, res) => {
  */
 const removeFromWishlist = async (req, res) => {
   try {
-    const productId = req.params.productId;
+    const productId = parseInt(req.params.productId, 10);
     const userId = req.user.id;
 
-    await db.query(
+    if (!productId || isNaN(productId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid Product ID required" });
+    }
+
+    await query(
       "DELETE FROM wishlist WHERE user_id = ? AND product_id = ?",
       [userId, productId]
     );

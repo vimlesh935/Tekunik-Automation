@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, Sparkles, Home as HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer } from "lucide-react";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
-import { productService, cartService, categoryService } from "../services/api";
+import { productService, cartService, categoryService, wishlistService } from "../services/api";
 import HomeHero from "./HomeHero";
 import HomeCategories from "./HomeCategories";
 import HomeProducts from "./HomeProducts";
@@ -20,6 +21,7 @@ import ReadyHome from "./ReadyHome.jsx";
 
 export default function HomeWrapper({ token }) {
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const { settings } = useWebsiteSettings();
   const whatsappNumber = settings?.company_whatsapp?.replace(/[^0-9]/g, "") || "919322475209";
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -27,6 +29,8 @@ export default function HomeWrapper({ token }) {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [error, setError] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -38,8 +42,7 @@ export default function HomeWrapper({ token }) {
           categoryService.getAllCategories(),
         ]);
 
-        // Handle products response with detailed logging
-        if (prodRes.status === 'fulfilled') {
+        if (prodRes.status === "fulfilled") {
           const response = prodRes.value;
           const products = response?.data?.products || response?.products || [];
           if (products.length > 0) {
@@ -49,29 +52,24 @@ export default function HomeWrapper({ token }) {
               const fallbackRes = await productService.getAllProducts(1, 50);
               const fallbackProducts = fallbackRes?.data?.products || fallbackRes?.products || [];
               setFeaturedProducts(fallbackProducts);
-            } catch (fbErr) {
+            } catch {
               setFeaturedProducts([]);
             }
           }
         } else {
           const reason = prodRes.reason;
           console.error("[HomeWrapper] Failed to load products:", reason?.status, reason?.message);
-          // Show error page only for non-404 errors (404 just means no products)
           if (reason?.status && reason?.status !== 404) {
             setError(reason?.message || "Failed to load products");
           }
           setFeaturedProducts([]);
         }
 
-        // Handle categories response
-        if (catRes.status === 'fulfilled') {
+        if (catRes.status === "fulfilled") {
           const catData = catRes.value;
           const dynamicCategories = (catData?.data?.categories || catData?.categories || []).map((cat, i) => ({
             ...cat,
-            icon: [
-              HomeIcon, Lock, Cpu, Lightbulb,
-              CircuitBoard, Camera, Wifi, Thermometer,
-            ][i % 8],
+            icon: [HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer][i % 8],
             desc: cat.description || `Explore our ${cat.name} range`,
           }));
           setCategories(dynamicCategories);
@@ -89,6 +87,61 @@ export default function HomeWrapper({ token }) {
 
     loadData();
   }, [token]);
+
+  // ── Wishlist ──────────────────────────────────────────────
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated]);
+
+  const fetchWishlist = async () => {
+    if (isAuthenticated) {
+      try {
+        const response = await wishlistService.getWishlist();
+        const items = response?.wishlist || response?.data?.wishlist || [];
+        setWishlist(Array.isArray(items) ? items.map((item) => Number(item.product_id || item)) : []);
+      } catch {
+        setWishlist([]);
+      }
+    } else {
+      const guest = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+      setWishlist(guest.map((id) => Number(id)));
+    }
+  };
+
+  const toggleWishlist = async (productId) => {
+    const alreadyIn = wishlist.includes(Number(productId));
+    // Optimistic update
+    setWishlist((prev) =>
+      alreadyIn
+        ? prev.filter((id) => id !== Number(productId))
+        : [...prev, Number(productId)]
+    );
+    try {
+      if (isAuthenticated) {
+        if (alreadyIn) {
+          await wishlistService.removeFromWishlist(productId);
+        } else {
+          await wishlistService.addToWishlist(productId);
+        }
+      } else {
+        const guest = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+        if (alreadyIn) {
+          localStorage.setItem("wishlist_guest", JSON.stringify(guest.filter((id) => Number(id) !== Number(productId))));
+        } else {
+          guest.push(productId);
+          localStorage.setItem("wishlist_guest", JSON.stringify(guest));
+        }
+      }
+    } catch {
+      // Rollback on failure
+      setWishlist((prev) =>
+        alreadyIn
+          ? [...prev, Number(productId)]
+          : prev.filter((id) => id !== Number(productId))
+      );
+    }
+  };
+  // ─────────────────────────────────────────────────────────
 
   const handleAddToCart = async (product, e) => {
     e.preventDefault();
@@ -112,27 +165,6 @@ export default function HomeWrapper({ token }) {
     }
   };
 
-  // Error modal disabled - allow page to render with available data
-  // if (error) {
-  //   return (
-  //     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
-  //       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
-  //         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-  //         <h2 className="text-xl font-bold text-slate-100 mb-2">
-  //           Connection Issues
-  //         </h2>
-  //         <p className="text-slate-400 text-sm mb-6 leading-relaxed">{error}</p>
-  //         <button
-  //           onClick={() => window.location.reload()}
-  //           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-600/20"
-  //         >
-  //           Try Again
-  //         </button>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       {/* WhatsApp Support Button */}
@@ -147,7 +179,6 @@ export default function HomeWrapper({ token }) {
           size={18}
           className="shrink-0 transition-transform duration-300 group-hover:rotate-6"
         />
-        {/* <span className="whitespace-nowrap">Can I Help You?</span> */}
       </a>
 
       {/* Notification Toast */}
@@ -169,27 +200,28 @@ export default function HomeWrapper({ token }) {
 
       {/* Hero Section */}
       <HomeHero />
-      {/* <TrustHome/> */}
 
       {/* Featured Products Grid */}
       <HomeProducts
         featuredProducts={featuredProducts}
         loading={loading}
         handleAddToCart={handleAddToCart}
+        wishlist={wishlist}
+        onToggleWishlist={toggleWishlist}
       />
 
-      <WhyTeknode/>
-      <HowWorks/>
+      <WhyTeknode />
+      <HowWorks />
 
       {/* Trending Categories Carousel */}
       <HomeCategories categories={categories} />
-       <SmartHome/>
-      <HomeScene/>
-<HomeCounter/>
-<HomeApp/>
+      <SmartHome />
+      <HomeScene />
+      <HomeCounter />
+      <HomeApp />
       {/* Customer Reviews */}
       <HomeReviews />
-      <ReadyHome/>
+      <ReadyHome />
     </div>
   );
 }

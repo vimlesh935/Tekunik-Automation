@@ -12,12 +12,12 @@ import {
   SlidersHorizontal,
   Eye,
   Heart,
-  HeartOutline,
 } from "lucide-react";
 import WishlistHeart from "../components/WishlistHeart.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { productService, cartService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
@@ -161,22 +161,24 @@ export default function Shop({ token }) {
 
   const toggleWishlist = async (productId) => {
     if (addingToWishlist.has(productId)) return;
-
     setAddingToWishlist((prev) => new Map(prev).set(productId, true));
-
+    const alreadyIn = wishlist.includes(Number(productId));
     try {
       if (isAuthenticated) {
-        await wishlistService.addToWishlist(productId);
+        if (alreadyIn) {
+          await wishlistService.removeFromWishlist(productId);
+        } else {
+          await wishlistService.addToWishlist(productId);
+        }
       } else {
-        // Guest wishlist using localStorage
         const guestWishlist = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
-        if (!guestWishlist.includes(productId)) {
+        if (alreadyIn) {
+          localStorage.setItem("wishlist_guest", JSON.stringify(guestWishlist.filter((id) => Number(id) !== Number(productId))));
+        } else {
           guestWishlist.push(productId);
           localStorage.setItem("wishlist_guest", JSON.stringify(guestWishlist));
         }
       }
-
-      // Refresh wishlist state
       await fetchWishlist();
     } catch (error) {
       console.warn("toggleWishlist error:", error);
@@ -194,7 +196,10 @@ export default function Shop({ token }) {
     if (isAuthenticated) {
       try {
         const response = await wishlistService.getWishlist();
-        setWishlist(response.data || []);
+        // API returns { success: true, wishlist: [{product_id, name, ...}] }
+        const items = response?.wishlist || response?.data?.wishlist || response?.data || [];
+        // Store as array of product_id numbers for easy lookup
+        setWishlist(Array.isArray(items) ? items.map((item) => Number(item.product_id || item)) : []);
       } catch (error) {
         console.warn("fetchWishlist error:", error);
         setWishlist([]);
@@ -291,7 +296,7 @@ export default function Shop({ token }) {
                     <SafeImage
                       src={product.image_url}
                       alt={product.name}
-                      className="w-full h-full object-contain  rounded-xl overflow-hidden transition-transform duration-500 ease-out"
+                      className="w-full h-full object-contain rounded-xl overflow-hidden transition-transform duration-500 ease-out"
                       fallback={
                         <Cpu
                           size={36}
@@ -322,7 +327,7 @@ export default function Shop({ token }) {
                     </span>
                   </div>
 
-                  {/* Glassmorphic Sold Out Shield */}
+                  {/* Glassmorphic Sold Out Shield — z-10, does NOT cover heart */}
                   {product.stock_quantity === 0 && (
                     <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                       <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-xl bg-slate-900 shadow-xl shadow-black/50">
@@ -330,6 +335,16 @@ export default function Shop({ token }) {
                       </span>
                     </div>
                   )}
+                </div>
+
+                {/* Wishlist Heart — outside image box so overflow:hidden never clips it */}
+                <div className="absolute top-7 right-7 z-30">
+                  <WishlistHeart
+                    productId={product.id}
+                    product={product}
+                    isInWishlist={wishlist.includes(Number(product.id))}
+                    onToggle={toggleWishlist}
+                  />
                 </div>
 
                 {/* Component Specifications Info Meta Panel */}

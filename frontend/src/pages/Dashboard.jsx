@@ -26,9 +26,11 @@ import {
   CreditCard,
   X,
   Star,
+  Heart,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
-import apiCall, { productService, orderService, userService, reviewService } from "../services/api";
+import apiCall, { productService, orderService, userService, reviewService, wishlistService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -62,6 +64,8 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
+  const [wishlist, setWishlist] = useState([]);
+  const [removingFromWishlist, setRemovingFromWishlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -113,17 +117,20 @@ useEffect(() => {
     setLoading(true);
     setError("");
     try {
-      const [profileRes, ordersRes] = await Promise.all([
+      const [profileRes, ordersRes, wishlistRes] = await Promise.all([
         apiCall("/api/user/profile", {
           headers: { Authorization: `Bearer ${token}` },
         }),
         apiCall("/api/user/orders", {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        wishlistService.getWishlist(),
       ]);
 
       const userData = profileRes.data?.user || profileRes.data;
       setProfile(userData);
+
+      setWishlist(wishlistRes.wishlist || wishlistRes.data?.wishlist || []);
 
       const orderData = ordersRes.data?.orders || ordersRes.data || [];
       const parsedOrders = (Array.isArray(orderData) ? orderData : []).map(
@@ -210,6 +217,19 @@ useEffect(() => {
     e.stopPropagation();
     addToCart(product, 1);
     showNotification(`${product.name} added to cart!`, "success");
+  };
+
+  const handleRemoveWishlist = async (productId) => {
+    setRemovingFromWishlist(productId);
+    try {
+      await wishlistService.removeFromWishlist(productId);
+      setWishlist(prev => prev.filter(item => item.product_id !== productId));
+      showNotification("Product removed from wishlist", "success");
+    } catch (error) {
+      showNotification(error?.message || "Failed to remove from wishlist", "error");
+    } finally {
+      setRemovingFromWishlist(null);
+    }
   };
 
   const handleCancelOrder = async (orderId, orderNumber) => {
@@ -470,6 +490,16 @@ useEffect(() => {
               }`}
             >
               <MapPin size={16} /> Delivery Address
+            </button>
+            <button
+              onClick={() => setActiveTab("wishlist")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "wishlist"
+                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
+                  : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+              }`}
+            >
+              <Heart size={16} /> My Wishlist
             </button>
 
             </nav>
@@ -915,6 +945,104 @@ useEffect(() => {
                       </div>
                     </div>
                   </div>
+                </motion.div>
+              )}
+
+              {/* WISHLIST CONTROL VIEW */}
+              {activeTab === "wishlist" && (
+                <motion.div
+                  key="wishlist-tab"
+                  variants={tabContentVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="rounded-xl bg-slate-900 border border-slate-800/80 p-5 sm:p-7 shadow-xl"
+                >
+                  <div className="border-b border-slate-800 pb-5 mb-6">
+                    <h2 className="text-lg font-bold text-white">
+                      My Wishlist
+                    </h2>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Products you have saved for later.
+                    </p>
+                  </div>
+
+                  {wishlist.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                      {wishlist.map((item) => (
+                        <div key={item.id || item.product_id} className="relative rounded-lg bg-slate-950 border border-slate-800 p-4 flex flex-col group hover:border-slate-700 transition-colors">
+                          <Link to={`/product/${item.product_id}`} className="block flex-shrink-0 mb-3 w-full h-32 relative rounded-md overflow-hidden bg-slate-900 border border-slate-800/60 flex items-center justify-center">
+                            {item.image_url ? (
+                              <SafeImage src={item.image_url} alt={item.name} className="w-full h-full object-contain p-2" />
+                            ) : (
+                              <ShoppingBag size={24} className="text-slate-700" />
+                            )}
+                          </Link>
+                          
+                          <div className="flex-grow flex flex-col justify-between">
+                            <Link to={`/product/${item.product_id}`} className="block mb-2">
+                              <h3 className="text-sm font-bold text-slate-100 hover:text-cyan-400 line-clamp-2 transition-colors">
+                                {item.name}
+                              </h3>
+                            </Link>
+
+                            <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-800/60">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-black text-white">
+                                  ₹{parseFloat(item.final_price || item.price || 0).toFixed(2)}
+                                </span>
+                                {item.sale_price && parseFloat(item.sale_price) < parseFloat(item.price) && (
+                                  <span className="text-[10px] text-slate-500 line-through">
+                                    ₹{parseFloat(item.price || 0).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(e) => handleAddToCart(item, e)}
+                                  disabled={item.stock_quantity <= 0}
+                                  className="w-8 h-8 rounded-lg bg-cyan-600/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Add to Cart"
+                                >
+                                  <ShoppingCart size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveWishlist(item.product_id)}
+                                  disabled={removingFromWishlist === item.product_id}
+                                  className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-600 hover:text-white hover:border-rose-500 flex items-center justify-center transition-colors disabled:opacity-50"
+                                  title="Remove from Wishlist"
+                                >
+                                  {removingFromWishlist === item.product_id ? (
+                                    <Loader size={14} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={14} />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-800 p-10 text-center">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-slate-800/80 flex items-center justify-center mb-3">
+                        <Heart size={20} className="text-slate-500" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-300 mb-1">
+                        Your wishlist is empty
+                      </h3>
+                      <p className="text-xs text-slate-500 mb-4">
+                        Save items you love here to buy them later.
+                      </p>
+                      <Link
+                        to="/shop"
+                        className="inline-flex items-center justify-center text-xs font-bold rounded-lg bg-cyan-600 hover:bg-cyan-500 px-4 py-2 text-white shadow-md transition-colors"
+                      >
+                        Browse Products
+                      </Link>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

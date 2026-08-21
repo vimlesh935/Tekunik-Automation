@@ -17,7 +17,7 @@ import {
   Sparkles,
   Edit,
 } from "lucide-react";
-import { productService, cartService, reviewService } from "../services/api";
+import { productService, cartService, reviewService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -25,6 +25,7 @@ import { useTheme } from "../context/ThemeContext.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 import ProductReviewsModal from "../components/ProductReviewsModal.jsx";
+import WishlistHeart from "../components/WishlistHeart.jsx";
 
 export default function ProductDetails({ token }) {
   const { id } = useParams();
@@ -51,6 +52,10 @@ export default function ProductDetails({ token }) {
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, totalReviews: 0, fiveStar: 0, fourStar: 0, threeStar: 0, twoStar: 0, oneStar: 0 });
   const [showReviewModal, setShowReviewModal] = useState(false);
+  
+  // Wishlist state
+  const [wishlist, setWishlist] = useState([]);
+  const [addingToWishlist, setAddingToWishlist] = useState(new Map());
 
   // Inline styles for review section
   const reviewSectionStyle = {
@@ -132,6 +137,59 @@ export default function ProductDetails({ token }) {
         oneStar: s.oneStar || 0,
       });
     }).catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated]);
+
+  const toggleWishlist = async (productId) => {
+    if (addingToWishlist.has(productId)) return;
+    setAddingToWishlist((prev) => new Map(prev).set(productId, true));
+    const alreadyIn = wishlist.includes(Number(productId));
+    try {
+      if (isAuthenticated) {
+        if (alreadyIn) {
+          await wishlistService.removeFromWishlist(productId);
+        } else {
+          await wishlistService.addToWishlist(productId);
+        }
+      } else {
+        const guestWishlist = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+        if (alreadyIn) {
+          localStorage.setItem("wishlist_guest", JSON.stringify(guestWishlist.filter((id) => Number(id) !== Number(productId))));
+        } else {
+          guestWishlist.push(productId);
+          localStorage.setItem("wishlist_guest", JSON.stringify(guestWishlist));
+        }
+      }
+      await fetchWishlist();
+    } catch (error) {
+      console.warn("toggleWishlist error:", error);
+      addToast("Failed to update wishlist", "error");
+    } finally {
+      setAddingToWishlist((prev) => {
+        const next = new Map(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
+  const fetchWishlist = async () => {
+    if (isAuthenticated) {
+      try {
+        const response = await wishlistService.getWishlist();
+        const items = response?.wishlist || response?.data?.wishlist || response?.data || [];
+        setWishlist(Array.isArray(items) ? items.map((item) => Number(item.product_id || item)) : []);
+      } catch (error) {
+        console.warn("fetchWishlist error:", error);
+        setWishlist([]);
+      }
+    } else {
+      const guestWishlist = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+      setWishlist(guestWishlist.map((id) => Number(id)));
+    }
   };
 
   useEffect(() => {
@@ -282,6 +340,16 @@ export default function ProductDetails({ token }) {
                     [ NO DIAGRAM ATTACHED ]
                   </div>
                 )}
+
+                {/* Wishlist Button — outside overflow-hidden image box */}
+                <div className="absolute top-4 right-4 z-30">
+                  <WishlistHeart
+                    productId={product.id}
+                    product={product}
+                    isInWishlist={wishlist.includes(Number(product.id))}
+                    onToggle={toggleWishlist}
+                  />
+                </div>
 
                 {/* Inline Slider Touch Helpers for Multi-image setups */}
                 {allImages.length > 1 && (

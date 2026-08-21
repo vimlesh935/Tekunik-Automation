@@ -12,7 +12,7 @@ const {
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
-const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable } = require("./src/config/migrate");
+const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -271,6 +271,7 @@ const startServer = async () => {
 await ensureOffersTable();
     await ensureWebsiteFrontendInformationTable();
     await ensureSystemSettingsTable();
+    await ensureWishlistTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);

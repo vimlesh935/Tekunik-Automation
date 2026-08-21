@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { productService, cartService } from "../services/api";
+import { productService, cartService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
+import WishlistHeart from "../components/WishlistHeart.jsx";
 import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 import { formatCurrency } from "../utils/currency.js";
 
@@ -13,11 +15,58 @@ export default function SearchResults({ token }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [wishlist, setWishlist] = useState([]);
 
   const query = new URLSearchParams(location.search).get("q")?.trim() || "";
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated]);
+
+  const fetchWishlist = async () => {
+    if (isAuthenticated) {
+      try {
+        const res = await wishlistService.getWishlist();
+        const items = res?.wishlist || res?.data?.wishlist || [];
+        setWishlist(Array.isArray(items) ? items.map((i) => Number(i.product_id || i)) : []);
+      } catch {
+        setWishlist([]);
+      }
+    } else {
+      const guest = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+      setWishlist(guest.map((id) => Number(id)));
+    }
+  };
+
+  const toggleWishlist = async (productId) => {
+    const alreadyIn = wishlist.includes(Number(productId));
+    setWishlist((prev) =>
+      alreadyIn ? prev.filter((id) => id !== Number(productId)) : [...prev, Number(productId)]
+    );
+    try {
+      if (isAuthenticated) {
+        alreadyIn
+          ? await wishlistService.removeFromWishlist(productId)
+          : await wishlistService.addToWishlist(productId);
+      } else {
+        const guest = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+        if (alreadyIn) {
+          localStorage.setItem("wishlist_guest", JSON.stringify(guest.filter((id) => Number(id) !== Number(productId))));
+        } else {
+          guest.push(productId);
+          localStorage.setItem("wishlist_guest", JSON.stringify(guest));
+        }
+      }
+    } catch {
+      setWishlist((prev) =>
+        alreadyIn ? [...prev, Number(productId)] : prev.filter((id) => id !== Number(productId))
+      );
+    }
+  };
 
   useEffect(() => {
     if (!query) {
@@ -124,6 +173,14 @@ export default function SearchResults({ token }) {
                             {Math.round(discountInfo.discount_percent)}% OFF
                           </div>
                         )}
+                        <div className="absolute top-2 left-2 z-10">
+                          <WishlistHeart
+                            productId={product.id}
+                            product={product}
+                            isInWishlist={wishlist.includes(Number(product.id))}
+                            onToggle={toggleWishlist}
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-2">

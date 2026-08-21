@@ -749,6 +749,31 @@ const ensureSystemSettingsTable = async () => {
   }
 };
 
+const ensureWishlistTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'wishlist'");
+    if (!tables.length) {
+      await query(`
+        CREATE TABLE wishlist (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          product_id INT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_user_product (user_id, product_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          INDEX idx_wishlist_user (user_id)
+        )
+      `);
+      console.log("✅ [MIGRATE] Created wishlist table");
+    } else {
+      console.log("✅ [MIGRATE] wishlist table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure wishlist table:", error.message);
+  }
+};
+
 module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
@@ -762,4 +787,5 @@ module.exports = {
   ensureWebsiteFrontendInformationTable,
   ensureOffersTable,
   ensureSystemSettingsTable,
+  ensureWishlistTable,
 };
