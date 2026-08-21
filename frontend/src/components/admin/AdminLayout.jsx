@@ -1,7 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import AdminHeader from "./AdminHeader.jsx";
 import AdminSidebar from "./AdminSidebar.jsx";
+import AdminPageLoader from "./AdminPageLoader.jsx";
+import AdminRouteErrorBoundary from "./AdminRouteErrorBoundary.jsx";
 
 export default function AdminLayout() {
   return (
@@ -11,7 +13,11 @@ export default function AdminLayout() {
         <AdminHeader />
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-6">
-            <Outlet />
+            <AdminRouteErrorBoundary>
+              <Suspense fallback={<AdminPageLoader />}>
+                <Outlet />
+              </Suspense>
+            </AdminRouteErrorBoundary>
           </div>
         </main>
       </div>

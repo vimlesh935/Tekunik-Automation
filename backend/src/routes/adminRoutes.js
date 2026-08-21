@@ -1,5 +1,6 @@
 const express = require("express");
 const adminController = require("../controllers/adminController");
+const { requireAdmin } = require("../middleware/adminMiddleware");
 
 const router = express.Router();
 
@@ -11,5 +12,8 @@ const router = express.Router();
  * The password is verified using bcrypt.compare() against the stored hash.
  */
 router.post("/api/admin/login", adminController.adminLogin);
+
+// Update current admin login identity (email / password)
+router.put("/api/admin/account", requireAdmin, adminController.updateAdminAccount);
 
 module.exports = router;

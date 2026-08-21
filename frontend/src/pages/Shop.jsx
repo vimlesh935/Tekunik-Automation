@@ -12,9 +12,11 @@ import {
   SlidersHorizontal,
   Eye,
   Heart,
+  HeartOutline,
 } from "lucide-react";
+import WishlistHeart from "../components/WishlistHeart.jsx";
 import { motion, AnimatePresence } from "framer-motion";
-import { productService, cartService } from "../services/api";
+import { productService, cartService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
@@ -60,6 +62,7 @@ const cardVariants = {
 export default function Shop({ token }) {
   const { addToCart } = useCart();
   const { addToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,6 +72,10 @@ export default function Shop({ token }) {
   const navigate = useNavigate();
   const location = useLocation();
   const LIMIT = 12;
+
+  // Wishlist state
+  const [wishlist, setWishlist] = useState([]);
+  const [addingToWishlist, setAddingToWishlist] = useState(new Map());
 
   const queryParams = useMemo(
     () => new URLSearchParams(location.search),
@@ -127,6 +134,11 @@ export default function Shop({ token }) {
     }
   };
 
+  // Fetch wishlist on mount and when auth changes
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated]);
+
   const handleAddToCart = async (product) => {
     if (product.stock_quantity === 0) {
       addToast(`${product.name} is out of stock`, "warning");
@@ -144,6 +156,52 @@ export default function Shop({ token }) {
       addToast(`${product.name} added to cart! 🛒`, "success");
     } catch (error) {
       addToast(error.message || "Unable to add to cart", "error");
+    }
+  };
+
+  const toggleWishlist = async (productId) => {
+    if (addingToWishlist.has(productId)) return;
+
+    setAddingToWishlist((prev) => new Map(prev).set(productId, true));
+
+    try {
+      if (isAuthenticated) {
+        await wishlistService.addToWishlist(productId);
+      } else {
+        // Guest wishlist using localStorage
+        const guestWishlist = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+        if (!guestWishlist.includes(productId)) {
+          guestWishlist.push(productId);
+          localStorage.setItem("wishlist_guest", JSON.stringify(guestWishlist));
+        }
+      }
+
+      // Refresh wishlist state
+      await fetchWishlist();
+    } catch (error) {
+      console.warn("toggleWishlist error:", error);
+      addToast("Failed to update wishlist", "error");
+    } finally {
+      setAddingToWishlist((prev) => {
+        const next = new Map(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
+  const fetchWishlist = async () => {
+    if (isAuthenticated) {
+      try {
+        const response = await wishlistService.getWishlist();
+        setWishlist(response.data || []);
+      } catch (error) {
+        console.warn("fetchWishlist error:", error);
+        setWishlist([]);
+      }
+    } else {
+      const guestWishlist = JSON.parse(localStorage.getItem("wishlist_guest") || "[]");
+      setWishlist(guestWishlist.map((id) => Number(id)) || []);
     }
   };
 

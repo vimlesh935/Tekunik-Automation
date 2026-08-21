@@ -4,6 +4,7 @@ const { requireAdmin } = require("../middleware/adminMiddleware");
 const { getFrontendSettings, updateFrontendSettings } = require("../controllers/frontendSettingsController");
 
 router.get("/api/frontend-information", getFrontendSettings);
+router.get("/api/admin/frontend-information", requireAdmin, getFrontendSettings);
 router.put("/api/admin/frontend-information", requireAdmin, updateFrontendSettings);
 
 module.exports = router;

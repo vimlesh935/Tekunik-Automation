@@ -312,7 +312,7 @@ function Hero() {
             width: "auto",
             maxWidth: "100%",
             objectFit: "contain",
-          }} />
+          }} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/assest/logo.png"; }} />
         </motion.div>
 
         <motion.h1

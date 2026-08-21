@@ -115,7 +115,7 @@ export default function SmartHomeProposalDetail() {
     setDeleting(true);
     try {
       await smartHomeProposalService.remove(id);
-      navigate("/admin/smart-home-proposals");
+      navigate("/admin/smart-home-requests");
     } catch (err) {
       setError(err?.message || "Delete failed");
       setDeleting(false);
@@ -176,7 +176,7 @@ export default function SmartHomeProposalDetail() {
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-slate-500 mb-4">Proposal not found</p>
-          <Link to="/admin/smart-home-proposals" className="text-indigo-400 hover:text-indigo-300">
+          <Link to="/admin/smart-home-requests" className="text-indigo-400 hover:text-indigo-300">
             &larr; Back to Proposals
           </Link>
         </div>
@@ -189,7 +189,7 @@ export default function SmartHomeProposalDetail() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Navigation */}
         <div className="flex items-center justify-between mb-6">
-          <Link to="/admin/smart-home-proposals" className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+          <Link to="/admin/smart-home-requests" className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
             &larr; Back to Proposals
           </Link>
           <Link to="/admin" className="text-sm text-indigo-400 hover:text-indigo-300">

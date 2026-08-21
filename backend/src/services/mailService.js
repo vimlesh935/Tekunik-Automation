@@ -3,11 +3,53 @@ const tls = require("node:tls");
 const { X509Certificate } = require("node:crypto");
 const nodemailer = require("nodemailer");
 const env = require("../config/env");
+const settingsService = require("../config/settingsService");
 
 let transporter;
 let activeTransportLabel = null;
 let cachedCaCert = undefined;
+let currentSmtp = null;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+// Effective SMTP config: database (settingsService) preferred, .env fallback.
+// The DB value wins once set — see settingsService precedence model.
+const refreshSmtpSettings = async () => {
+  const [host, port, user, pass, from, secure, tlsRejectUnauthorized, allowSelfSignedFallback] =
+    await Promise.all([
+      settingsService.get("smtp.host"),
+      settingsService.getNumber("smtp.port"),
+      settingsService.get("smtp.user"),
+      settingsService.get("smtp.pass"),
+      settingsService.get("smtp.from"),
+      settingsService.getBool("smtp.secure"),
+      settingsService.getBool("smtp.tlsRejectUnauthorized"),
+      settingsService.getBool("smtp.allowSelfSignedFallback"),
+    ]);
+
+  const normalizedPort = Number(port) || 465;
+  currentSmtp = {
+    host: String(host || "smtp.gmail.com").trim(),
+    port: normalizedPort,
+    secure: Boolean(secure) || normalizedPort === 465,
+    user: normalizeSmtpUser(user),
+    pass: normalizeSmtpPass(pass),
+    from: normalizeSmtpUser(from),
+    tlsRejectUnauthorized: Boolean(tlsRejectUnauthorized),
+    allowSelfSignedFallback: Boolean(allowSelfSignedFallback),
+  };
+};
+
+const ensureSmtpReady = async () => {
+  if (!currentSmtp) await refreshSmtpSettings();
+  return currentSmtp;
+};
+
+/** Reinitialize the mail service after settings changes (no restart needed). */
+const resetTransporter = async () => {
+  transporter = null;
+  activeTransportLabel = null;
+  await refreshSmtpSettings();
+};
 
 const normalizeRecipient = (value) =>
   String(value || "")
@@ -29,15 +71,15 @@ const assertValidRecipient = (to) => {
   return recipient;
 };
 
-const getSmtpCandidates = () => {
-  const configuredHost = String(env.smtp.host || "").trim();
-  const configuredPort = Number(env.smtp.port || 0);
+const getSmtpCandidates = async () => {
+  const smtp = await ensureSmtpReady();
+  const configuredHost = smtp.host;
+  const configuredPort = smtp.port;
   const hasCustomConfig = Boolean(configuredHost || configuredPort);
 
   if (hasCustomConfig) {
     const port = configuredPort || 465;
-    const secure =
-      typeof env.smtp.secure === "boolean" ? env.smtp.secure : port === 465;
+    const secure = smtp.secure !== false ? smtp.secure : port === 465;
 
     return [
       {
@@ -162,9 +204,10 @@ const readConfiguredCaCert = () => {
 
 const buildTlsOptions = (config, tlsOverrides = {}) => {
   const caCert = readConfiguredCaCert();
+  const rejectUnauthorized = Boolean(currentSmtp?.tlsRejectUnauthorized);
 
   const tlsOptions = {
-    rejectUnauthorized: env.smtp.tlsRejectUnauthorized,
+    rejectUnauthorized,
     // Ensure SNI matches the configured host and require modern TLS
     servername: config.host,
     minVersion: "TLSv1.2",
@@ -182,8 +225,8 @@ const buildTlsOptions = (config, tlsOverrides = {}) => {
 };
 
 const createTransportFromConfig = (config, tlsOverrides = {}) => {
-  const smtpUser = normalizeSmtpUser(env.smtp.user);
-  const smtpPass = normalizeSmtpPass(env.smtp.pass);
+  const smtpUser = normalizeSmtpUser(currentSmtp?.user);
+  const smtpPass = normalizeSmtpPass(currentSmtp?.pass);
 
   return nodemailer.createTransport({
     host: config.host,
@@ -202,8 +245,8 @@ const createTransportFromConfig = (config, tlsOverrides = {}) => {
 };
 
 const assertSmtpCredentials = () => {
-  const smtpUser = normalizeSmtpUser(env.smtp.user);
-  const smtpPass = normalizeSmtpPass(env.smtp.pass);
+  const smtpUser = normalizeSmtpUser(currentSmtp?.user);
+  const smtpPass = normalizeSmtpPass(currentSmtp?.pass);
 
   if (!smtpUser || !smtpPass) {
     const error = `SMTP Configuration Error: SMTP_USER=${smtpUser ? "SET" : "NOT SET"}, SMTP_PASS=${smtpPass ? "SET" : "NOT SET"}`;
@@ -212,20 +255,22 @@ const assertSmtpCredentials = () => {
   }
 };
 
-const createTransporter = () => {
+const createTransporter = async () => {
+  await ensureSmtpReady();
   assertSmtpCredentials();
 
   if (!transporter) {
-    const [primaryConfig] = getSmtpCandidates();
+    const [primaryConfig] = await getSmtpCandidates();
 
     console.log("[mailService] Initializing SMTP transporter with:");
-    console.log(`  - SMTP User: ${normalizeSmtpUser(env.smtp.user)}`);
+    console.log(`  - Host/Port: ${currentSmtp.host}:${currentSmtp.port} (secure=${currentSmtp.secure})`);
+    console.log(`  - SMTP User: ${normalizeSmtpUser(currentSmtp.user)}`);
     console.log(
-      `  - SMTP Pass: ${env.smtp.pass ? `${normalizeSmtpPass(env.smtp.pass).substring(0, 3)}***` : "NOT SET"}`,
+      `  - SMTP Pass: ${currentSmtp.pass ? `${normalizeSmtpPass(currentSmtp.pass).substring(0, 3)}***` : "NOT SET"}`,
     );
-    console.log(`  - OTP From: ${env.smtp.from || "NOT SET"}`);
+    console.log(`  - OTP From: ${currentSmtp.from || "NOT SET"}`);
     console.log(
-      `  - TLS Reject Unauthorized: ${env.smtp.tlsRejectUnauthorized}`,
+      `  - TLS Reject Unauthorized: ${currentSmtp.tlsRejectUnauthorized}`,
     );
     console.log(`  - Transport: ${primaryConfig.label}`);
 
@@ -383,156 +428,139 @@ const describeCertificateInterception = (certificateInfo) => {
 };
 
 const verifyTransporter = async () => {
+  await ensureSmtpReady();
   assertSmtpCredentials();
 
-  const candidates = getSmtpCandidates();
+  const candidates = await getSmtpCandidates();
   const errors = [];
 
-  for (const config of candidates) {
-    try {
-      console.log(
-        `[mailService] Verifying SMTP transporter via ${config.label}...`,
-      );
-      const candidateTransporter = createTransportFromConfig(config);
-      await candidateTransporter.verify();
+  const isCertError = (err) =>
+    isSelfSignedCertificateError(err) ||
+    /unable (to )?(get|obtain) (the )?local issuer|certificate has expired|certificate not yet valid|root store|ca md too weak/i.test(
+      String(err?.message || ""),
+    );
 
-      transporter = candidateTransporter;
+  for (const config of candidates) {
+    console.log(
+      `[mailService] Verifying SMTP transporter via ${config.label}...`,
+    );
+
+    // Attempt 1: strict TLS using the configured CA bundle (if any).
+    try {
+      const strictTransporter = createTransportFromConfig(config);
+      await strictTransporter.verify();
+
+      transporter = strictTransporter;
       activeTransportLabel = config.label;
 
       console.log(
         `✅ [mailService] SMTP transporter verified successfully via ${config.label}`,
       );
       return;
-    } catch (error) {
-      errors.push({ config: config.label, error });
+    } catch (strictError) {
+      errors.push({ config: config.label, error: strictError });
+    }
 
-      const isSelfSignedError = isSelfSignedCertificateError(error);
+    const certIssue = isCertError(errors[errors.length - 1]?.error);
+    const certificateInfo = certIssue
+      ? await inspectServerCertificate(config)
+      : null;
+    const interceptionSource = certificateInfo
+      ? describeCertificateInterception(certificateInfo)
+      : null;
 
-      const certificateInfo = await inspectServerCertificate(config);
-      const interceptionSource =
-        describeCertificateInterception(certificateInfo);
+    if (interceptionSource && env.smtp.caCertPath) {
+      console.warn(
+        `[mailService] TLS interception detected: ${interceptionSource} (issuer: ${JSON.stringify(certificateInfo.issuer)}). ` +
+          "This certificate chain cannot be verified by strict TLS.",
+      );
 
-      if (interceptionSource) {
-        console.warn(
-          `[mailService] Detected TLS interception source: ${interceptionSource}. Issuer: ${JSON.stringify(certificateInfo.issuer)}`,
-        );
-
-        // Self-healing: extract the CURRENT root CA directly from the TLS
-        // handshake chain, merge it into the bundle, and retry strict TLS.
-        // The "Untrusted Root" is explicitly excluded — it must never be
-        // trusted. This handles Avast rotating its root CA without needing
-        // any external process (PowerShell may be unavailable).
-        if (interceptionSource.includes("Avast") && env.smtp.caCertPath) {
-          const rootPem = extractRootFromChain(certificateInfo.chain);
-          if (rootPem) {
-            try {
-              const certPath = env.smtp.caCertPath;
-              const existing = fs.existsSync(certPath)
-                ? fs.readFileSync(certPath, "utf8")
-                : "";
-              const merged = mergePemBundles(existing, rootPem);
-              fs.writeFileSync(certPath, merged);
-              cachedCaCert = undefined; // invalidate cached CA list
-
-              console.warn(
-                `[mailService] Updated ${certPath} with current Avast root CA from TLS chain. Retrying strict TLS...`,
-              );
-
-              const retryTransporter = createTransportFromConfig(config);
-              await retryTransporter.verify();
-
-              transporter = retryTransporter;
-              activeTransportLabel = config.label;
-              console.warn(
-                `✅ [mailService] SMTP verified via ${config.label} after updating CA bundle`,
-              );
-              return;
-            } catch (retryError) {
-              console.warn(
-                `[mailService] Strict TLS retry after CA extraction failed: ${retryError.message}`,
-              );
-            }
+      // Self-healing is opt-in (SMTP_CA_SELF_HEAL=true) and OFF by default so
+      // SMTP_CA_CERT_PATH is never rewritten automatically at runtime. Even
+      // when enabled it is often futile for Avast: its self-signed root fails
+      // SELF_SIGNED_CERT_IN_CHAIN even when explicitly trusted.
+      if (env.smtp.caSelfHeal) {
+        const rootPem = extractRootFromChain(certificateInfo.chain);
+        if (rootPem) {
+          try {
+            const certPath = env.smtp.caCertPath;
+            const existing = fs.existsSync(certPath)
+              ? fs.readFileSync(certPath, "utf8")
+              : "";
+            const merged = mergePemBundles(existing, rootPem);
+            fs.writeFileSync(certPath, merged);
+            cachedCaCert = undefined; // invalidate cached CA list
+            console.warn(
+              `[mailService] Updated ${certPath} with root CA extracted from TLS chain (SMTP_CA_SELF_HEAL=true).`,
+            );
+          } catch (writeError) {
+            console.warn(
+              `[mailService] Could not update ${certPath}: ${writeError.message}`,
+            );
           }
         }
       }
+    }
 
-      // Attempt 2: strict TLS using the system CA store (no custom bundle).
-      // With --use-system-ca, Node trusts the Windows root store, which
-      // contains Google's genuine Gmail roots. This succeeds when the
-      // interception is disabled or when the custom bundle is stale.
+    // Attempt 2: strict TLS using the system CA store (no custom bundle).
+    // With --use-system-ca, Node trusts the platform root store, which
+    // contains the genuine provider roots. This succeeds once the custom
+    // bundle is stale/missing or when interception is absent.
+    try {
+      const systemCaTransporter = createTransportFromConfig(config, {
+        ca: undefined,
+      });
+      await systemCaTransporter.verify();
+
+      transporter = systemCaTransporter;
+      activeTransportLabel = `${config.label} [system CA]`;
+
+      console.log(
+        `✅ [mailService] SMTP verified via ${activeTransportLabel}`,
+      );
+      return;
+    } catch (systemCaError) {
+      errors.push({
+        config: `${config.label} [system CA]`,
+        error: systemCaError,
+      });
+    }
+
+    // Attempt 3: relaxed TLS ONLY when the operator explicitly opted in via
+    // SMTP_ALLOW_SELF_SIGNED=true. Never relax silently.
+    if (env.smtp.allowSelfSignedFallback && env.smtp.tlsRejectUnauthorized) {
       try {
-        const systemCaTransporter = createTransportFromConfig(config, {
+        const relaxedTlsTransporter = createTransportFromConfig(config, {
+          rejectUnauthorized: false,
           ca: undefined,
         });
-        await systemCaTransporter.verify();
+        await relaxedTlsTransporter.verify();
 
-        transporter = systemCaTransporter;
-        activeTransportLabel = `${config.label} [system CA]`;
+        transporter = relaxedTlsTransporter;
+        activeTransportLabel = `${config.label} [TLS relaxed]`;
 
-        console.log(
-          `✅ [mailService] SMTP verified via ${activeTransportLabel}`,
+        console.warn(
+          `⚠️ [mailService] SMTP verified via ${activeTransportLabel}. Less secure; only enabled because SMTP_ALLOW_SELF_SIGNED=true is set.`,
         );
         return;
-      } catch (systemCaError) {
+      } catch (relaxedTlsError) {
         errors.push({
-          config: `${config.label} [system CA]`,
-          error: systemCaError,
+          config: `${config.label} [TLS relaxed]`,
+          error: relaxedTlsError,
         });
-        console.error(
-          `❌ [mailService] Strict TLS via system CA failed via ${config.label}: ${systemCaError.message}`,
-        );
       }
+    }
 
-      // Only relax TLS if the operator explicitly opted in via
-      // SMTP_ALLOW_SELF_SIGNED=true. Never relax silently.
-      if (
-        env.smtp.allowSelfSignedFallback &&
-        env.smtp.tlsRejectUnauthorized &&
-        isSelfSignedError
-      ) {
-        try {
-          const relaxedTlsTransporter = createTransportFromConfig(config, {
-            rejectUnauthorized: false,
-            ca: undefined,
-          });
-          await relaxedTlsTransporter.verify();
-
-          transporter = relaxedTlsTransporter;
-          activeTransportLabel = `${config.label} [TLS relaxed]`;
-
-          console.warn(
-            `⚠️ [mailService] SMTP verified via ${activeTransportLabel}. This is less secure and should only be used in trusted networks.`,
-          );
-          return;
-        } catch (relaxedTlsError) {
-          errors.push({
-            config: `${config.label} [TLS relaxed]`,
-            error: relaxedTlsError,
-          });
-          console.error(
-            `❌ [mailService] Verification failed via ${config.label} [TLS relaxed]: ${relaxedTlsError.message}`,
-          );
-        }
-      } else {
-        console.error(
-          `❌ [mailService] Strict TLS verification failed via ${config.label}: ${error.message}`,
-        );
-        if (interceptionSource) {
-          console.error(
-            `   Cause: ${interceptionSource} is intercepting the SMTP connection and presenting a certificate that cannot be verified.`,
-          );
-          console.error(
-            "   Fix: Disable SSL/TLS scanning for smtp.gmail.com in your antivirus settings, or",
-          );
-          console.error(
-            "   explicitly set SMTP_ALLOW_SELF_SIGNED=true only if you accept the risk on a trusted network.",
-          );
-        } else {
-          console.error(
-            "   Fix: Ensure SMTP_CA_CERT_PATH points to a valid CA bundle, or disable SSL/TLS interception.",
-          );
-        }
-      }
+    // This candidate is unusable — report concisely and move on. The full
+    // error report is printed only if every candidate fails.
+    const lastError = errors[errors.length - 1]?.error;
+    console.warn(
+      `[mailService] Skipping ${config.label}: ${lastError?.message || lastError}`,
+    );
+    if (interceptionSource) {
+      console.warn(
+        `   Cause: ${interceptionSource} is intercepting the SMTP connection and presenting a certificate beyond the reach of strict TLS verification.`,
+      );
     }
   }
 
@@ -581,22 +609,46 @@ const buildOtpTemplate = (otp, name = "User") => `
   </div>
 `;
 
+const getSmtpStatus = () => {
+  const maskedUser = (value) => {
+    const user = normalizeSmtpUser(value);
+    if (!user) return null;
+    const at = user.lastIndexOf("@");
+    if (at > 1) return `${user.slice(0, 1)}***${user.slice(at)}`;
+    return user;
+  };
+
+  const smtp = currentSmtp || {};
+
+  return {
+    configured: Boolean(smtp.user && smtp.pass),
+    host: String(smtp.host || "smtp.gmail.com").trim(),
+    port: Number(smtp.port || 465),
+    secure: smtp.secure === false ? false : true,
+    user: maskedUser(smtp.user),
+    from: String(smtp.from || "").trim() || null,
+    tlsRejectUnauthorized: Boolean(smtp.tlsRejectUnauthorized),
+    allowSelfSignedFallback: Boolean(smtp.allowSelfSignedFallback),
+    activeTransport: activeTransportLabel,
+  };
+};
+
 const sendOtpEmail = async ({ to, otp, name }) => {
   try {
     const recipient = assertValidRecipient(to);
 
     console.log("[mailService] Preparing OTP email:", {
       to: recipient,
-      from: env.smtp.from,
+      from: currentSmtp?.from || "<env fallback>",
       hasOtp: Boolean(otp),
       name,
       transport: activeTransportLabel,
     });
 
-    const smtp = createTransporter();
+    const smtp = await createTransporter();
 
     const mailOptions = {
-      from: env.smtp.from || normalizeSmtpUser(env.smtp.user),
+      from: currentSmtp?.from || normalizeSmtpUser(currentSmtp?.user),
       to: recipient,
       subject: "Password Reset OTP",
       text: `Your OTP is: ${otp}\n\nThis OTP expires in 10 minutes.\n\nIf you did not request a password reset, ignore this email.`,
@@ -644,4 +696,6 @@ module.exports = {
   verifyTransporter,
   sendOtpEmail,
   createTransporter,
+  getSmtpStatus,
+  resetTransporter,
 };

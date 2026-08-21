@@ -292,6 +292,18 @@ export const adminProductService = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// WISHLIST SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const wishlistService = {
+  getWishlist: () => apiCall("/api/wishlist"),
+  addToWishlist: (productId) =>
+    apiCall(`/api/wishlist/${productId}`, { method: "POST" }),
+  removeFromWishlist: (productId) =>
+    apiCall(`/api/wishlist/${productId}`, { method: "DELETE" }),
+};
+
+// ─────────────────────────────────────────────────────────────
 // CART SERVICES
 // ─────────────────────────────────────────────────────────────
 

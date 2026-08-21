@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import HomeTopOffers from "./components/HomeTopOffers.jsx";
@@ -13,7 +13,6 @@ import { WebsiteSettingsProvider } from "./context/WebsiteSettingsContext.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 
 const Home = React.lazy(() => import("./pages/Home.jsx"));
-const ComingSoon = React.lazy(() => import("./pages/ComingSoon.jsx"));
 const Shop = React.lazy(() => import("./pages/Shop.jsx"));
 const Login = React.lazy(() => import("./pages/Login.jsx"));
 const Register = React.lazy(() => import("./pages/Register.jsx"));
@@ -39,17 +38,20 @@ const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers.jsx"));
 const AdminReviews = React.lazy(() => import("./pages/admin/AdminReviews.jsx"));
 const AdminInventory = React.lazy(() => import("./pages/admin/AdminInventory.jsx"));
 const AdminOffers = React.lazy(() => import("./pages/admin/AdminOffers.jsx"));
-const AdminWebsiteInformation = React.lazy(() => import("./pages/admin/AdminWebsiteInformation.jsx"));
 const AdminSettings = React.lazy(() => import("./pages/admin/AdminSettings.jsx"));
-const AdminSmartHomeProposals = React.lazy(() => import("./pages/admin/AdminSmartHomeProposals.jsx"));
-const AdminSmartHomeProposalDetail = React.lazy(() => import("./pages/admin/AdminSmartHomeProposalDetail.jsx"));
-const AdminInstallationRequests = React.lazy(() => import("./pages/admin/AdminInstallationRequests.jsx"));
+const AdminFrontendSettings = React.lazy(() => import("./pages/admin/AdminFrontendSettings.jsx"));
+const AdminBackendSettings = React.lazy(() => import("./pages/admin/AdminBackendSettings.jsx"));
+const AdminSmartHomeRequests = React.lazy(() => import("./pages/admin/AdminSmartHomeRequests.jsx"));
+const AdminSmartHomeRequestDetail = React.lazy(() => import("./pages/admin/AdminSmartHomeRequestDetail.jsx"));
 const AdminDemoBookings = React.lazy(() => import("./pages/admin/AdminDemoBookings.jsx"));
 const AboutUs = React.lazy(() => import("./pages/AboutUs.jsx"));
 const ContactUs = React.lazy(() => import("./pages/ContactUs.jsx"));
 const SmartHomePlanner = React.lazy(() => import("./pages/SmartHomePlanner.jsx"));
-const SmartHomeProposals = React.lazy(() => import("./pages/SmartHomeProposals.jsx"));
-const SmartHomeProposalDetail = React.lazy(() => import("./pages/SmartHomeProposalDetail.jsx"));
+
+function SmartHomeProposalDetailRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/admin/smart-home-requests/${id}`} replace />;
+}
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -141,13 +143,17 @@ function AppContent() {
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="offers" element={<AdminOffers />} />
           <Route path="discounts" element={<Navigate to="/admin/offers" replace />} />
-          <Route path="website-information" element={<AdminWebsiteInformation />} />
+          <Route path="website-information" element={<Navigate to="/admin/settings/frontend" replace />} />
           <Route path="settings" element={<AdminSettings />} />
-          <Route path="frontend-information" element={<Navigate to="/admin/website-information" replace />} />
-          <Route path="smart-home-proposals" element={<AdminSmartHomeProposals />} />
-          <Route path="smart-home-proposals/:id" element={<AdminSmartHomeProposalDetail />} />
-          <Route path="installation-requests" element={<AdminInstallationRequests />} />
-          <Route path="installations" element={<Navigate to="/admin/installation-requests" replace />} />
+          <Route path="settings/frontend" element={<AdminFrontendSettings />} />
+          <Route path="settings/backend" element={<AdminBackendSettings />} />
+          <Route path="frontend-information" element={<Navigate to="/admin/settings/frontend" replace />} />
+          <Route path="smart-home-requests" element={<AdminSmartHomeRequests />} />
+          <Route path="smart-home-requests/:id" element={<AdminSmartHomeRequestDetail />} />
+          <Route path="smart-home-proposals" element={<Navigate to="/admin/smart-home-requests" replace />} />
+          <Route path="smart-home-proposals/:id" element={<SmartHomeProposalDetailRedirect />} />
+          <Route path="installation-requests" element={<Navigate to="/admin/smart-home-requests" replace />} />
+          <Route path="installations" element={<Navigate to="/admin/smart-home-requests" replace />} />
           <Route path="demobooking" element={<AdminDemoBookings />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>

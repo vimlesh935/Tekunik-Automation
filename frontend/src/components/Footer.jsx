@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import Logo from "./Logo.jsx";
 import {
   Mail,
   Phone,
@@ -87,7 +88,12 @@ export default function Footer() {
           {/* Column 1: Brand */}
           <motion.div variants={itemVariants} className="space-y-5">
             <Link to="/home" className="flex items-center gap-2.5 group w-fit">
-              <img src={logo} alt={settings.company_name || "Logo"} className="h-[55px] md:h-[70px] w-auto object-contain" />
+              <Logo
+                src={logo}
+                fallbackSrc={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"}
+                alt={settings.company_name || "Logo"}
+                className="h-[55px] md:h-[70px] w-auto object-contain"
+              />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed">
               {settings.footer_about || settings.company_description || `${settings.company_name || "Tekunik Automation"} — Premium automation solutions for modern living and working spaces.`}

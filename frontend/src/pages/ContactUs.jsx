@@ -429,7 +429,7 @@ export default function ContactUs() {
                   width: "auto",
                   maxWidth: "100%",
                   objectFit: "contain",
-                }} />
+                }} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/assest/logo.png"; }} />
               </div>
             </FadeIn>
 
@@ -685,7 +685,7 @@ export default function ContactUs() {
                       width: "auto",
                       maxWidth: "100%",
                       objectFit: "contain",
-                    }} />
+                    }} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/assest/logo.png"; }} />
                     <div style={{
                       fontFamily: "'DM Mono', monospace",
                       fontSize: 10, letterSpacing: "0.15em",

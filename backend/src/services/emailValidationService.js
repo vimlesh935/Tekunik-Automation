@@ -1,4 +1,5 @@
 const axios = require("axios");
+const settingsService = require("../config/settingsService");
 
 /**
  * Abstract Email Validation API Service
@@ -69,10 +70,12 @@ const formatOnlyResult = (email, reason = "format-only") => {
 };
 
 /**
- * Calls Abstract Email Validation API
+ * Calls Abstract Email Validation API.
+ * The API key is read at call time from the database-backed settings
+ * (settingsService), so Admin changes apply without a restart.
  */
 const validateEmailWithAPI = async (email) => {
-  const apiKey = process.env.ABSTRACT_EMAIL_API_KEY;
+  const apiKey = await settingsService.get("emailValidation.abstractApiKey");
   console.log("[EmailValidation] API key status:", maskApiKey(apiKey));
   console.log("[EmailValidation] Request URL:", ABSTRACT_EMAIL_API_URL);
   console.log("[EmailValidation] Request payload:", JSON.stringify({ email }));

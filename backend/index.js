@@ -12,7 +12,7 @@ const {
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
-const { ensureWebsiteFrontendInformationTable, ensureOffersTable } = require("./src/config/migrate");
+const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable } = require("./src/config/migrate");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -45,6 +45,7 @@ const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 const bulkImportRoutes = require("./src/routes/bulkImportRoutes");
 const frontendSettingsRoutes = require("./src/routes/frontendSettingsRoutes");
+const systemRoutes = require("./src/routes/systemRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -172,6 +173,7 @@ app.use(userAdminRoutes);
 app.use(inventoryRoutes);
 app.use(discountRoutes);
 app.use(cartRoutes);
+app.use(require("./src/routes/wishlistRoutes"));
 const paymentRoutes = require("./src/routes/paymentRoutes");
 app.use("/api/orders", paymentRoutes);
 app.use(reviewRoutes);
@@ -183,6 +185,7 @@ app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
 app.use(bulkImportRoutes);
 app.use(frontendSettingsRoutes);
+app.use(systemRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -265,8 +268,9 @@ const startServer = async () => {
     await ensureProductUpgradeTables();
     await ensurePaymentColumns();
     await ensureOrderItemDiscountColumns();
-    await ensureOffersTable();
+await ensureOffersTable();
     await ensureWebsiteFrontendInformationTable();
+    await ensureSystemSettingsTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
@@ -325,6 +329,17 @@ const startServer = async () => {
   }
 
   console.log(`\n💡 Server ready - Press Ctrl+C to stop\n`);
+
+  // Warm the SMTP status cache so the first settings request after boot is fast.
+  setTimeout(async () => {
+    try {
+      if (typeof systemRoutes.warmupSmtpCheck === "function") {
+        await systemRoutes.warmupSmtpCheck();
+      }
+    } catch {
+      // non-fatal: the cache will be populated lazily on first request
+    }
+  }, 750);
 
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {

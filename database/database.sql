@@ -295,6 +295,19 @@ CREATE TABLE IF NOT EXISTS leads (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 20. Wishlist
+CREATE TABLE IF NOT EXISTS wishlist (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  product_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, product_id),
+  INDEX idx_wishlist_product (product_id),
+  INDEX idx_wishlist_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
 -- ============================================================
 -- MIGRATION: Fix duplicate users & orphaned guest orders
 -- Run this ONCE on existing databases

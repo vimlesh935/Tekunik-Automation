@@ -70,6 +70,14 @@ module.exports = {
         ? process.env.SMTP_CA_CERT_PATH
         : path.join(projectRoot, process.env.SMTP_CA_CERT_PATH)
       : "",
+    // Off by default: when true, the CA bundle at SMTP_CA_CERT_PATH may be
+    // rewritten at runtime with the root extracted from the TLS handshake.
+    // Leave off unless you are behind a corporate/AV TLS-interception proxy
+    // whose root is NOT cryptographically verifiable (e.g. Avast Web/Mail
+    // Shield), where that rewrite is known to be futile anyway.
+    caSelfHeal: process.env.SMTP_CA_SELF_HEAL
+      ? process.env.SMTP_CA_SELF_HEAL === "true"
+      : false,
     connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 10000),
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 10000),
     socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000),

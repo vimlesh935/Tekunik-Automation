@@ -1,45 +1,57 @@
-# Product Review System Implementation - COMPLETED
+# Offers & Promotions System - COMPLETED
 
 ## All Tasks Completed:
-- [x] Analyze existing codebase structure
-- [x] Review existing review controller and routes
-- [x] Understand auth middleware for guest vs authenticated users
-- [x] Update database schema for guest reviews (update review-migration.sql)
-- [x] Modify reviewController.js to support guest submissions with email validation
-- [x] Update reviewRoutes.js for public review endpoint
-- [x] Update api.js with public review submission method
-- [x] Create ProductReviewsModal.jsx component
-- [x] Update ProductDetails.jsx with "Write a Review" feature
-- [x] Update migrate.js with customer_email column support
 
-## Database Changes Made:
-The `product_reviews` table now:
-- Has `customer_email` as NOT NULL (required for guest reviews)
-- Has `order_id` as nullable (no longer required)
-- Has `user_id` as nullable (no longer required)
-- Added index on `customer_email` for faster lookups
+### Backend
+- [x] Database migration (ensureOffersTable) creates `discounts`, `offer_products`, `offer_categories` tables
+- [x] `discountController.js` — full CRUD + public offer endpoints
+- [x] `discountRoutes.js` — routes wired for both `/api/admin/discounts/*` and `/api/admin/offers/*`
+- [x] `offerPricingService.js` — `getActiveOffers`, `calculateOfferPrice`, `enrichProductsWithOffers`
+- [x] `index.js` — `discountRoutes` wired in at line 174, `ensureOffersTable` called at line 270
+- [x] `productController.js` — `listProducts` and `getProduct` enrich products with offer pricing
+- [x] `orderController.js` — `createOrder` applies offers to line items with discount audit trail
 
-## API Endpoints:
-- **POST /api/products/:id/reviews** - Submit product review (public, no auth required)
-- **GET /api/products/:id/reviews** - Get approved reviews for a product
-- **GET /api/admin/reviews** - Admin: Get all reviews with filters
-- **PUT /api/reviews/:id/approve** - Admin: Approve review
-- **PUT /api/reviews/:id/reject** - Admin: Reject review
-- **DELETE /api/admin/reviews/:id** - Admin: Delete review
+### Frontend (Admin)
+- [x] `AdminOffers.jsx` — full admin page (list, create, edit, delete, toggle)
+- [x] `DiscountModal.jsx` — offer form modal (all fields + image upload)
+- [x] `AdminSidebar.jsx` — NavItem `/admin/offers` → "Offers & Promotions"
+- [x] `App.jsx` — routes `/admin/offers`, `/discounts` (redirect), `/offers` (customer)
+- [x] Admin components: AdminLoading, AdminPageToolbar, AdminPagination, Toast
+- [x] `api.js` — `offerService` with all admin + public methods
 
-## Frontend Changes:
-- **ProductReviewsModal.jsx** - New modal component for review submission
-- **ProductDetails.jsx** - Added "Write a Review" button and review section
-- **api.js** - Added submitProductReview method
-- **AdminPanel.jsx** - Updated to show customer_email in reviews table
+### Frontend (Customer)
+- [x] `HomeTopOffers.jsx` — active offer banner on home page
+- [x] `Offers.jsx` — customer-facing offers listing page
+- [x] `Shop.jsx` — product grid with discounted prices
+- [x] `ProductDetails.jsx` — product detail with original/final price
+- [x] `Cart.jsx` — per-item discounted pricing
+- [x] `Checkout.jsx` — order summary with savings breakdown
 
-## Features Implemented:
-1. ✅ Guest users can submit reviews without authentication
-2. ✅ Email is required and validated for guest submissions
-3. ✅ Logged-in users have their name/email auto-filled from profile
-4. ✅ Reviews are stored with status = 'pending' by default
-5. ✅ Admin can approve, reject, or delete reviews
-6. ✅ Only approved reviews appear on product pages
-7. ✅ Average rating calculated dynamically from approved reviews only
-8. ✅ Rating summary displayed above reviews
-9. ✅ No existing functionality affected (Products, Orders, Checkout unchanged)
+### Utilities
+- [x] `discount.js` — `calculateDiscount`, `formatPrice`, `hasDiscount`, `getDisplayPrice`
+- [x] `currency.js` — `formatCurrency` (INR)
+- [x] `imageUrl.js` — `getImageUrl` (upload path resolution)
+
+### API Endpoints
+- **GET /api/offers** — Public: list active offers
+- **GET /api/offers/:id** — Public: single active offer
+- **GET /api/offers/products** — Public: products with active offer pricing
+- **GET /api/discounts/active** — Public: alias for /api/offers
+- **GET /api/admin/discounts** — Admin: list discounts (with pagination)
+- **GET /api/admin/discounts/:id** — Admin: get single discount
+- **POST /api/admin/discounts** — Admin: create discount
+- **PUT /api/admin/discounts/:id** — Admin: update discount
+- **DELETE /api/admin/discounts/:id** — Admin: delete discount
+- **PATCH /api/admin/discounts/:id/toggle** — Admin: toggle active status
+- *(All routes also available at `/api/admin/offers/*` as aliases)*
+
+### Database Tables
+- `discounts` — offer definitions (name, type, value, scope, dates, active status)
+- `offer_products` — many-to-many: offers ↔ specific products
+- `offer_categories` — many-to-many: offers ↔ specific categories
+- `order_items` — extended with `original_price`, `discount_percent`, `discount_amount`, `final_price`
+
+## Environment
+- Backend: Port 8787, MySQL (Technique database)
+- Frontend: Vite dev server, Port 5173
+- Admin Login: admin@tekunik.com / AutoAdmin2024!

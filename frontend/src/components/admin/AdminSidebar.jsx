@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useWebsiteSettings } from "../../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../../utils/imageUrl.js";
+import Logo from "../Logo.jsx";
 import {
   LayoutDashboard,
   Package,
@@ -13,8 +14,6 @@ import {
   Star,
   Warehouse,
   Percent,
-  Info,
-  Wrench,
   LogOut,
   ClipboardList,
   Settings as SettingsIcon,
@@ -29,9 +28,7 @@ const NAV_ITEMS = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/demobooking", label: "Demo Bookings", icon: Calendar },
   { to: "/admin/reviews", label: "Reviews", icon: Star },
-  { to: "/admin/smart-home-proposals", label: "Smart Home Proposals", icon: ClipboardList },
-  { to: "/admin/installation-requests", label: "Installation Requests", icon: Wrench },
-  { to: "/admin/website-information", label: "Website Information", icon: Info },
+  { to: "/admin/smart-home-requests", label: "Smart Home Requests", icon: ClipboardList },
   { to: "/admin/offers", label: "Offers & Promotions", icon: Percent },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -43,8 +40,9 @@ export default function AdminSidebar() {
   return (
     <div className="w-full lg:w-64 bg-black border-b lg:border-b-0 lg:border-r border-gray-800 p-6 flex flex-col z-20 min-h-screen">
       <div className="flex items-center justify-center py-5">
-        <img
+<Logo
           src={settings?.company_logo ? getImageUrl(settings.company_logo) : "/assest/logowhite.png"}
+          fallbackSrc="/assest/logowhite.png"
           alt={settings?.company_name || "Logo"}
           className="h-[70px] w-auto max-w-full object-contain block"
         />

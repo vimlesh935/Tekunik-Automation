@@ -15,6 +15,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import Logo from "./Logo.jsx";
 import SmartSearch from "../components/SmartSearch.jsx";
 
 export default function Navbar() {
@@ -112,7 +113,12 @@ export default function Navbar() {
               className="flex items-center gap-2.5 group flex-shrink-0"
             >
               {settings.company_logo ? (
-                <img src={getImageUrl(settings.company_logo)} alt={settings.company_name || "Logo"} className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
+                <Logo
+                  src={getImageUrl(settings.company_logo)}
+                  fallbackSrc={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"}
+                  alt={settings.company_name || "Logo"}
+                  className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain"
+                />
               ) : (
                 <img src={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"} alt="Logo" className="h-[50px] md:h-[65px] lg:h-[85px] w-auto object-contain" />
               )}

@@ -1,20 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { smartHomeProposalService } from "../services/api";
-import { User, Home, DoorOpen, Cpu, ClipboardList, Check } from "lucide-react";
+import { smartHomeProposalService } from "../../services/api";
 
 const STATUSES = [
-  "New",
-  "Contacted",
-  "Under Review",
-  "Quotation Prepared",
-  "Quotation Sent",
-  "Site Visit Scheduled",
-  "Awaiting Customer Approval",
-  "Approved",
-  "Converted to Order",
+  "Pending",
+  "Confirmed",
   "Completed",
-  "Cancelled",
 ];
 
 const HOME_TYPES_LABELS = {
@@ -23,20 +14,12 @@ const HOME_TYPES_LABELS = {
 };
 
 const STATUS_COLORS = {
-  "New": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", dot: "bg-blue-500" },
-  "Contacted": { bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/20", dot: "bg-cyan-500" },
-  "Under Review": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20", dot: "bg-amber-500" },
-  "Quotation Prepared": { bg: "bg-indigo-500/10", text: "text-indigo-400", border: "border-indigo-500/20", dot: "bg-indigo-500" },
-  "Quotation Sent": { bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20", dot: "bg-purple-500" },
-  "Site Visit Scheduled": { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", dot: "bg-orange-500" },
-  "Awaiting Customer Approval": { bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-500/20", dot: "bg-yellow-500" },
-  "Approved": { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
-  "Converted to Order": { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20", dot: "bg-teal-500" },
+  "Pending": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20", dot: "bg-amber-500" },
+  "Confirmed": { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", dot: "bg-emerald-500" },
   "Completed": { bg: "bg-green-500/10", text: "text-green-400", border: "border-green-500/20", dot: "bg-green-500" },
-  "Cancelled": { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20", dot: "bg-red-500" },
 };
 
-export default function SmartHomeProposalDetail() {
+export default function SmartHomeRequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [proposal, setProposal] = useState(null);
@@ -79,7 +62,7 @@ export default function SmartHomeProposalDetail() {
       setQuotationAmount(data?.proposal?.quotation_amount || "");
       setAssignedAdmin(data?.proposal?.assigned_admin || "");
     } catch (err) {
-      setError(err?.message || "Failed to load proposal");
+      setError(err?.message || "Failed to load request");
     } finally {
       setLoading(false);
     }
@@ -112,12 +95,12 @@ export default function SmartHomeProposalDetail() {
   };
 
   const handleConvert = async () => {
-    if (!window.confirm("Convert this proposal to an order? This action cannot be undone.")) return;
+    if (!window.confirm("Convert this request to an order? This action cannot be undone.")) return;
     setConverting(true);
     setError("");
     try {
       await smartHomeProposalService.convert(id);
-      setSuccessMsg("Proposal converted to order successfully!");
+      setSuccessMsg("Request converted to order successfully!");
       setTimeout(() => setSuccessMsg(""), 3000);
       load();
     } catch (err) {
@@ -128,7 +111,7 @@ export default function SmartHomeProposalDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Permanently delete this proposal? This cannot be undone.")) return;
+    if (!window.confirm("Permanently delete this request? This cannot be undone.")) return;
     setDeleting(true);
     try {
       await smartHomeProposalService.remove(id);
@@ -178,14 +161,12 @@ export default function SmartHomeProposalDetail() {
     });
   };
 
-  const statusColors = STATUS_COLORS[proposal?.status] || STATUS_COLORS["New"];
-  const currentStep = proposal?.current_step || 0;
-  const wizardStatus = proposal?.wizard_status || "";
+  const statusColors = STATUS_COLORS[proposal?.status] || STATUS_COLORS["Pending"];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <div className="text-slate-500">Loading proposal...</div>
+        <div className="text-slate-500">Loading request...</div>
       </div>
     );
   }
@@ -194,9 +175,9 @@ export default function SmartHomeProposalDetail() {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-500 mb-4">Proposal not found</p>
+          <p className="text-slate-500 mb-4">Smart home request not found</p>
           <Link to="/admin/smart-home-requests" className="text-indigo-400 hover:text-indigo-300">
-            &larr; Back to Proposals
+            &larr; Back to Smart Home Requests
           </Link>
         </div>
       </div>
@@ -209,7 +190,7 @@ export default function SmartHomeProposalDetail() {
         {/* Navigation */}
         <div className="flex items-center justify-between mb-6">
           <Link to="/admin/smart-home-requests" className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-            &larr; Back to Proposals
+            &larr; Back to Smart Home Requests
           </Link>
           <Link to="/admin" className="text-sm text-indigo-400 hover:text-indigo-300">
             Dashboard
@@ -342,174 +323,7 @@ export default function SmartHomeProposalDetail() {
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* Steps Completed Banner */}
-            <div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 flex items-center gap-4">
-              <div className="flex items-center gap-3 flex-1">
-                <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Progress:</span>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <div key={s} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
-                      s <= currentStep
-                        ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/40"
-                        : "bg-slate-800/50 text-slate-600 border-slate-700"
-                    }`}>
-                      {s <= currentStep ? <Check className="w-3 h-3" /> : s}
-                    </div>
-                  ))}
-                </div>
-                <span className="text-sm font-bold text-indigo-400 ml-2">
-                  {wizardStatus === "Completed" ? "Completed" : `${currentStep}/5 Steps`}
-                </span>
-              </div>
-              <span className={`text-[10px] px-2 py-1 rounded-full border font-bold uppercase tracking-wider ${
-                wizardStatus === "Completed"
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  : wizardStatus === "In Progress"
-                  ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                  : "bg-gray-500/20 text-gray-300 border-gray-500/30"
-              }`}>
-                {wizardStatus || "New"}
-              </span>
-            </div>
-
-            {/* Step 1: Customer Details — always shown if full_name exists */}
-            {proposal.full_name && (
-              <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                <div className="flex items-center gap-2 mb-3">
-                  <User className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Customer Details</h2>
-                  {currentStep >= 1 && <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>}
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Full Name</span>
-                    <span className="text-slate-200 font-semibold">{proposal.full_name}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Email</span>
-                    <a href={`mailto:${proposal.email}`} className="text-indigo-400 hover:text-indigo-300">{proposal.email}</a>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Phone</span>
-                    <a href={`tel:${proposal.phone}`} className="text-slate-200 hover:text-white">{proposal.phone || "-"}</a>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">City</span>
-                    <span className="text-slate-200">{proposal.city || "-"}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Home Type */}
-            {currentStep >= 2 && proposal.home_type && (
-              <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                <div className="flex items-center gap-2 mb-3">
-                  <Home className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Home Details</h2>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Home Type</span>
-                    <span className="text-sm font-semibold text-slate-200">{HOME_TYPES_LABELS[proposal.home_type] || proposal.home_type || "-"}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Total Rooms</span>
-                    <span className="text-sm font-semibold text-slate-200">{proposal.total_rooms || 0}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Est. Budget</span>
-                    <span className="text-sm font-semibold text-emerald-400">{formatINR(proposal.estimated_cost)}</span>
-                  </div>
-                  {proposal.quotation_amount && (
-                    <div className="p-3 rounded-xl bg-slate-800/50">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Quotation</span>
-                      <span className="text-sm font-semibold text-amber-400">{formatINR(proposal.quotation_amount)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Rooms */}
-            {currentStep >= 3 && (() => {
-              let rooms = [];
-              try { rooms = proposal.rooms_json ? (typeof proposal.rooms_json === 'string' ? JSON.parse(proposal.rooms_json) : proposal.rooms_json) : []; } catch {}
-              if (!rooms.length) return null;
-              return (
-                <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                  <div className="flex items-center gap-2 mb-3">
-                    <DoorOpen className="w-4 h-4 text-indigo-400" />
-                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Selected Rooms</h2>
-                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {rooms.map((room, i) => (
-                      <span key={room.id || i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/50 text-xs text-slate-300 border border-slate-700/50">
-                        <Home size={12} className="text-indigo-400" />
-                        {room.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Step 4: Devices */}
-            {currentStep >= 4 && (() => {
-              let rooms = [];
-              try { rooms = proposal.rooms_json ? (typeof proposal.rooms_json === 'string' ? JSON.parse(proposal.rooms_json) : proposal.rooms_json) : []; } catch {}
-              if (!rooms.length) return null;
-              const hasDevices = rooms.some(r => Object.values(r.devices || {}).some(d => d && d.enabled));
-              if (!hasDevices) return null;
-              return (
-                <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Cpu className="w-4 h-4 text-indigo-400" />
-                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Selected Devices</h2>
-                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
-                  </div>
-                  <div className="space-y-3">
-                    {rooms.map((room) => {
-                      const enabled = Object.entries(room.devices || {}).filter(([, cfg]) => cfg && cfg.enabled);
-                      if (!enabled.length) return null;
-                      return (
-                        <div key={room.id} className="p-3 rounded-xl bg-slate-800/50">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-slate-200">{room.name}</span>
-                            <span className="text-[11px] text-slate-500">{enabled.length} devices</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {enabled.map(([deviceId, cfg]) => (
-                              <span key={deviceId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 text-[11px] text-indigo-300">
-                                {deviceId.replace(/-/g, " ")} &times;{cfg.quantity || 1}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Step 5: Notes & Submission */}
-            {currentStep >= 5 && proposal.additional_notes && (
-              <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                <div className="flex items-center gap-2 mb-3">
-                  <ClipboardList className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Additional Notes</h2>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
-                </div>
-                <p className="text-sm text-slate-300 whitespace-pre-wrap">{proposal.additional_notes}</p>
-              </div>
-            )}
-
-            {/* Home Configuration — fallback for legacy proposals without current_step */}
-            {!currentStep && (
+            {/* Home Configuration */}
             <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
               <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Home Configuration</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -532,10 +346,10 @@ export default function SmartHomeProposalDetail() {
                   </div>
                 )}
               </div>
-            </div>)}
+            </div>
 
-            {/* Rooms & Devices — fallback for legacy proposals without current_step */}
-            {!currentStep && (() => {
+            {/* Rooms & Devices */}
+            {(() => {
               let rooms = [];
               try { rooms = proposal.rooms_json ? (typeof proposal.rooms_json === 'string' ? JSON.parse(proposal.rooms_json) : proposal.rooms_json) : []; } catch {}
               if (!rooms.length) return null;
@@ -594,7 +408,7 @@ export default function SmartHomeProposalDetail() {
                 <div className="relative pl-6 space-y-4">
                   <div className="absolute left-2.5 top-1 bottom-1 w-px bg-slate-700"></div>
                   {statusHistory.map((entry) => {
-                    const colors = STATUS_COLORS[entry.to_status] || STATUS_COLORS["New"];
+                    const colors = STATUS_COLORS[entry.to_status] || STATUS_COLORS["Pending"];
                     return (
                       <div key={entry.id} className="relative">
                         <div className={`absolute -left-[18px] top-1.5 w-3 h-3 rounded-full border-2 border-slate-800 ${colors.dot}`}></div>
@@ -660,7 +474,7 @@ export default function SmartHomeProposalDetail() {
             <h3 className="text-lg font-bold mb-4">Admin Notes</h3>
             <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)}
               rows={5} className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50"
-              placeholder="Add notes about this proposal..." />
+              placeholder="Add notes about this request..." />
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowNotesModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
@@ -702,7 +516,7 @@ export default function SmartHomeProposalDetail() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowQuotationModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Set Quotation Amount</h3>
-            <p className="text-sm text-slate-400 mb-4">Enter the quotation amount for this proposal:</p>
+            <p className="text-sm text-slate-400 mb-4">Enter the quotation amount for this request:</p>
             <input type="number" step="0.01" min="0" value={quotationAmount} onChange={(e) => setQuotationAmount(e.target.value)}
               placeholder="Enter amount"
               className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50" />

@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const env = require("../config/env");
+const settingsService = require("../config/settingsService");
 
 let jsonwebtoken = null;
 try {
@@ -43,8 +44,11 @@ const verifyFallback = (token) => {
 };
 
 const signToken = (payload) => {
+  // Dynamic expiry: database value wins (e.g. "1d"), .env JWT_EXPIRES_IN is
+  // the fallback. Read at issue time — existing tokens keep their expiry.
+  const dynamicExpiry = settingsService.getCached("jwt.expiresIn") || env.jwtExpiresIn;
   if (jsonwebtoken) {
-    return jsonwebtoken.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+    return jsonwebtoken.sign(payload, env.jwtSecret, { expiresIn: dynamicExpiry });
   }
   return signFallback(payload);
 };

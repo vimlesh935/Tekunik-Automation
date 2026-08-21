@@ -10,12 +10,11 @@ const TITLES = {
   "/admin/users": "Users",
   "/admin/reviews": "Reviews",
   "/admin/inventory": "Inventory",
-  "/admin/offers": "Offers & Promotions",
-  "/admin/website-information": "Website Information",
+"/admin/offers": "Offers & Promotions",
   "/admin/settings": "Settings",
-  "/admin/smart-home-proposals": "Smart Home Proposals",
-  "/admin/installation-requests": "Installation Requests",
-  "/admin/installations": "Installation Requests",
+  "/admin/settings/frontend": "Settings / Frontend",
+  "/admin/settings/backend": "Settings / Backend",
+  "/admin/smart-home-requests": "Smart Home Requests",
   "/admin/demobooking": "Demo Bookings",
 };
 

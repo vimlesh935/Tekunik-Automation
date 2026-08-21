@@ -640,6 +640,115 @@ const ensureOffersTable = async () => {
   }
 };
 
+// The `system_settings` table already exists in this project (key/value store
+// with category + encrypted-type support). It is reused here — no duplicate
+// settings system is created. See `backend/src/config/settingsService.js` for
+// the runtime layer.
+const ensureSystemSettingsTable = async () => {
+  try {
+    const env = require("./env");
+    const settingsService = require("./settingsService");
+
+    const tables = await query("SHOW TABLES LIKE 'system_settings'");
+    if (!tables.length) {
+      console.log("[MIGRATE] Creating system_settings table...");
+      await query(`
+        CREATE TABLE system_settings (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          setting_key VARCHAR(100) NOT NULL,
+          setting_value LONGTEXT NULL,
+          setting_type ENUM('string','text','number','boolean','json','encrypted') NOT NULL DEFAULT 'string',
+          category VARCHAR(50) NULL,
+          is_encrypted TINYINT(1) NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY setting_key (setting_key),
+          INDEX idx_settings_key (setting_key),
+          INDEX idx_settings_category (category)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log("✅ [MIGRATE] Created system_settings table");
+    } else {
+      console.log("✅ [MIGRATE] system_settings table exists (reused)");
+    }
+
+    // Seed dynamic settings from the current .env VALUES so existing
+    // configuration is preserved. INSERT IGNORE means rows already in the
+    // database are never overwritten at boot — the database is the source of
+    // truth once seeded (see settingsService for the precedence model).
+    const envSmtpPort =
+      Number(env.smtp.port || 0) || (env.smtp.host ? 465 : 465);
+    const envSecure =
+      typeof env.smtp.secure === "boolean"
+        ? String(env.smtp.secure)
+        : String(envSmtpPort === 465);
+
+    const seeds = [
+      { key: "smtp.host", value: String(env.smtp.host || "smtp.gmail.com").trim(), type: "string", category: "email" },
+      { key: "smtp.port", value: String(envSmtpPort), type: "number", category: "email" },
+      { key: "smtp.user", value: String(env.smtp.user || "").trim(), type: "string", category: "email" },
+      {
+        key: "smtp.pass",
+        value: env.smtp.pass ? settingsService.encryptSecret(env.smtp.pass) : "",
+        type: "encrypted",
+        category: "email",
+        encrypted: 1,
+      },
+      { key: "smtp.from", value: String(env.smtp.from || "").trim(), type: "string", category: "email" },
+      { key: "smtp.secure", value: envSecure, type: "boolean", category: "email" },
+      { key: "smtp.tlsRejectUnauthorized", value: String(env.smtp.tlsRejectUnauthorized !== false), type: "boolean", category: "email" },
+      { key: "smtp.allowSelfSignedFallback", value: String(Boolean(env.smtp.allowSelfSignedFallback)), type: "boolean", category: "email" },
+      { key: "jwt.expiresIn", value: String(env.jwtExpiresIn || "1d").trim(), type: "string", category: "security" },
+      { key: "payment.razorpayKeyId", value: String(env.razorpay.keyId || "").trim(), type: "string", category: "payment" },
+      {
+        key: "payment.razorpayKeySecret",
+        value: env.razorpay.keySecret ? settingsService.encryptSecret(env.razorpay.keySecret) : "",
+        type: "encrypted",
+        category: "payment",
+        encrypted: 1,
+      },
+      {
+        key: "emailValidation.abstractApiKey",
+        value: process.env.ABSTRACT_EMAIL_API_KEY
+          ? settingsService.encryptSecret(process.env.ABSTRACT_EMAIL_API_KEY)
+          : "",
+        type: "encrypted",
+        category: "emailvalidation",
+        encrypted: 1,
+      },
+    ];
+
+    let seeded = 0;
+    for (const seed of seeds) {
+      const result = await query(
+        `INSERT IGNORE INTO system_settings
+          (setting_key, setting_value, setting_type, category, is_encrypted)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          seed.key,
+          seed.value,
+          seed.type,
+          seed.category,
+          seed.encrypted ? 1 : 0,
+        ]
+      );
+      if (result.affectedRows > 0) seeded += 1;
+    }
+    if (seeded > 0) {
+      console.log(
+        `✅ [MIGRATE] Seeded ${seeded} system settings from .env defaults`
+      );
+    }
+
+    await settingsService.invalidateCache();
+  } catch (error) {
+    console.warn(
+      "⚠️ [MIGRATE] Could not ensure system_settings table:",
+      error.message
+    );
+  }
+};
+
 module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
@@ -652,4 +761,5 @@ module.exports = {
   ensureEnquiriesTable,
   ensureWebsiteFrontendInformationTable,
   ensureOffersTable,
+  ensureSystemSettingsTable,
 };
