@@ -17,6 +17,7 @@ import {
   LogOut,
   ClipboardList,
   Settings as SettingsIcon,
+  Activity,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { to: "/admin/reviews", label: "Reviews", icon: Star },
   { to: "/admin/smart-home-requests", label: "Smart Home Requests", icon: ClipboardList },
   { to: "/admin/offers", label: "Offers & Promotions", icon: Percent },
+  { to: "/admin/notifications", label: "Activity Center", icon: Activity },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 

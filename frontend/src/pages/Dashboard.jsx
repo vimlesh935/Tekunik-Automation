@@ -34,6 +34,8 @@ import apiCall, { productService, orderService, userService, reviewService, wish
 import SafeImage from "../components/SafeImage.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
+import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
+import RecentlyViewedSection from "../components/RecentlyViewedSection.jsx";
 
 // Animation Configurations
 const fadeInContainer = {
@@ -59,6 +61,7 @@ export default function Dashboard() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const recentlyViewed = useRecentlyViewed();
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -198,7 +201,7 @@ useEffect(() => {
       const updatedUser = res.data?.user || res.data;
       setProfile(updatedUser);
       setEditMode(false);
-      showNotification("Profile updated successfully!", "success");
+      showNotification("Delivery address updated successfully.", "success");
     } catch (err) {
       setError(err.message || "Failed to update profile");
     } finally {
@@ -501,6 +504,14 @@ useEffect(() => {
             >
               <Heart size={16} /> My Wishlist
             </button>
+            <button
+              onClick={() => setActiveTab("recently-viewed")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "recently-viewed" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10" : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+              }`}
+            >
+              <Eye size={16} /> Recently Viewed
+            </button>
 
             </nav>
 
@@ -629,7 +640,7 @@ useEffect(() => {
                               lookupPincode(
                                 value,
                                 (result) => {
-                                  setForm({ ...form, pincode: value, city: result.city });
+                                  setForm((prev) => ({ ...prev, pincode: value, city: result.city }));
                                   setCityLocked(true);
                                 },
                                 () => {
@@ -912,12 +923,30 @@ useEffect(() => {
                   className="rounded-xl bg-slate-900 border border-slate-800/80 p-5 sm:p-7 shadow-xl"
                 >
                   <div className="border-b border-slate-800 pb-5 mb-6">
-                    <h2 className="text-lg font-bold text-white">
-                      Delivery Address
-                    </h2>
-                    <p className="text-slate-400 text-xs mt-0.5">
-                      Your saved delivery address for orders.
-                    </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-white">Delivery Address</h2>
+                        <p className="text-slate-400 text-xs mt-0.5">Your saved delivery address for orders.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm({
+                            first_name: profile?.first_name || "",
+                            last_name: profile?.last_name || "",
+                            phone: profile?.phone || "",
+                            address: profile?.address || "",
+                            city: profile?.city || "",
+                            pincode: profile?.pincode || "",
+                          });
+                          setEditMode(true);
+                          setActiveTab("profile");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all"
+                      >
+                        <Settings size={14} /> Edit Address
+                      </button>
+                    </div>
                   </div>
 
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-5">
@@ -934,6 +963,7 @@ useEffect(() => {
                             <>
                               {profile.address}
                               {profile.city && `, ${profile.city}`}
+                              {profile.pincode && ` - ${profile.pincode}`}
                             </>
                           ) : (
                             <span className="text-slate-500 italic">
@@ -988,6 +1018,11 @@ useEffect(() => {
 
                             <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-800/60">
                               <div className="flex flex-col">
+                                {item.price_dropped && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                                    🔥 Price Dropped{item.drop_amount > 0 ? ` ₹${Number(item.drop_amount).toLocaleString("en-IN")}` : ""}
+                                  </span>
+                                )}
                                 <span className="text-sm font-black text-white">
                                   ₹{parseFloat(item.final_price || item.price || 0).toFixed(2)}
                                 </span>
@@ -1044,6 +1079,17 @@ useEffect(() => {
                     </div>
                   )}
                 </motion.div>
+              )}
+
+              {activeTab === "recently-viewed" && (
+                <RecentlyViewedSection
+                  products={recentlyViewed.products}
+                  onRemove={recentlyViewed.remove}
+                  onClear={recentlyViewed.clear}
+                  onAddToCart={handleAddToCart}
+                  wishlist={wishlist.map((item) => Number(item.product_id))}
+                  compact
+                />
               )}
             </AnimatePresence>
           </div>

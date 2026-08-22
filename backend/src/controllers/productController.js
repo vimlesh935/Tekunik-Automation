@@ -11,6 +11,18 @@ const {
   getActiveOffers,
   enrichProductWithOffers,
 } = require("../services/offerPricingService");
+const { NOTIFICATION_TYPES, notifyUsers, getActiveUserIds, getInterestedUserIds } = require("../services/notificationService");
+const { ACTIVITY_TYPES, createActivity, detectHighProductInterest, detectProductDemand, detectZeroResultSearch } = require("../services/adminActivityService");
+const { processPriceDrop } = require("../services/priceDropService");
+
+const notifyProductEvent = async ({ product, type, title, message, audience = "interested", priority = "NORMAL", eventKey }) => {
+  try {
+    const userIds = audience === "all" ? await getActiveUserIds() : await getInterestedUserIds(product.id);
+    await notifyUsers({ userIds, type, title, message, data: { productId: product.id, productName: product.name, categoryId: product.category_id }, actionUrl: `/product/${product.id}`, eventKey, priority, entityType: "product", entityId: product.id });
+  } catch (error) {
+    console.warn("[NOTIFICATION] Product event failed:", error.message);
+  }
+};
 
 const hasOwn = (object, key) =>
   Object.prototype.hasOwnProperty.call(object || {}, key);
@@ -355,6 +367,71 @@ const listProducts = asyncHandler(async (req, res) => {
   }
 });
 
+/** GET /api/products/compare?ids=1,2,3 — Fetch active products for comparison */
+const compareProducts = asyncHandler(async (req, res) => {
+  const rawIds = String(req.query.ids || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (rawIds.length < 1 || rawIds.length > 4) {
+    throw new AppError("Provide between 1 and 4 product IDs", 400, "VALIDATION_ERROR");
+  }
+
+  const ids = [...new Set(rawIds)];
+  if (ids.length !== rawIds.length || ids.some((id) => !/^\d+$/.test(id) || Number(id) < 1)) {
+    throw new AppError("Product IDs must be unique positive integers", 400, "VALIDATION_ERROR");
+  }
+
+  const numericIds = ids.map(Number);
+  const placeholders = numericIds.map(() => "?").join(",");
+  const products = await query(
+    `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
+     FROM products p
+     LEFT JOIN product_categories pc ON p.category_id = pc.id
+     WHERE p.status = 'active' AND p.id IN (${placeholders})`,
+    numericIds,
+  );
+
+  const activeOffers = await getActiveOffers();
+  const extrasMap = await fetchProductsExtras(numericIds);
+  const result = products.map((product) => ({
+    ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers),
+    ...(extrasMap[product.id] || { images: [], colors: [], sizes: [] }),
+  }));
+
+  if (!result.length) {
+    throw new AppError("No active products found", 404, "NOT_FOUND");
+  }
+
+  result.sort((first, second) => numericIds.indexOf(Number(first.id)) - numericIds.indexOf(Number(second.id)));
+
+  // Admin activity: product compare (NORMAL priority, informational)
+  try {
+    const userId = req.user?.id || null;
+    await createActivity({
+      userId,
+      activityType: ACTIVITY_TYPES.PRODUCT_COMPARE,
+      entityType: "product",
+      entityId: numericIds[0],
+      metadata: {
+        productIds: numericIds,
+        productNames: result.map((p) => p.name),
+      },
+    });
+    // Detect high interest for the first compared product
+    if (userId) {
+      for (const id of numericIds) {
+        await detectHighProductInterest(userId, id);
+      }
+    }
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Compare activity failed:", activityError.message);
+  }
+
+  return success(res, "Products fetched for comparison", { products: result });
+});
+
 /** GET /api/products/:slug - Public product detail */
 const getProduct = asyncHandler(async (req, res) => {
   try {
@@ -385,6 +462,29 @@ if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
     const extras = await fetchProductExtras(product.id);
 
     const activeOffers = await getActiveOffers();
+
+    // Admin activity: product viewed (LOW priority, informational)
+    try {
+      const userId = req.user?.id || null;
+      await createActivity({
+        userId,
+        activityType: ACTIVITY_TYPES.PRODUCT_VIEWED,
+        entityType: "product",
+        entityId: product.id,
+        metadata: {
+          productId: product.id,
+          productName: product.name,
+          price: product.price,
+        },
+      });
+      // Smart detection: high product interest + demand
+      if (userId) {
+        await detectHighProductInterest(userId, product.id);
+      }
+      await detectProductDemand(product.id);
+    } catch (activityError) {
+      console.warn("[ACTIVITY] Product view activity failed:", activityError.message);
+    }
 
     return success(res, "Product fetched", {
       product: { ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers), ...extras },
@@ -580,6 +680,17 @@ const createProduct = asyncHandler(async (req, res) => {
 
     const extras = await fetchProductExtras(productId);
 
+    if (status === "active") {
+      await notifyProductEvent({
+        product: created,
+        type: NOTIFICATION_TYPES.NEW_PRODUCT,
+        title: "New Product Added",
+        message: `A new product, "${created.name}", is now available in the TekNode store.`,
+        audience: "all",
+        eventKey: `NEW_PRODUCT:PRODUCT_${created.id}`,
+      });
+    }
+
     return success(
       res,
       "Product created successfully",
@@ -609,7 +720,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       throw new AppError("Product ID is required", 400, "VALIDATION_ERROR");
 
     const existing = await query(
-      "SELECT id, image_url FROM products WHERE id = ?",
+      "SELECT id, name, price, sale_price, stock_quantity, status, category_id, image_url FROM products WHERE id = ?",
       [req.params.id],
     );
     if (!existing.length)
@@ -788,8 +899,52 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     const extras = await fetchProductExtras(req.params.id);
 
+    const oldProduct = existing[0];
+    const oldPrice = Number(oldProduct.price);
+    const newPrice = Number(updated.price);
+    const oldStock = Number(oldProduct.stock_quantity);
+    const newStock = Number(updated.stock_quantity);
+    // NOTE: Legacy PRICE_DROP broadcast removed — price-drop notifications are
+    // now handled by processPriceDrop() below with proper effective-price
+    // comparison, threshold, wishlist+cart targeting, event-key dedup, and
+    // admin activity recording (no duplicate alerts).
+    if (oldStock <= 0 && newStock > 0) {
+      await notifyProductEvent({
+        product: updated,
+        type: NOTIFICATION_TYPES.BACK_IN_STOCK,
+        title: "Back in Stock",
+        message: `"${updated.name}" is back in stock and ready to order.`,
+        priority: "HIGH",
+        eventKey: `BACK_IN_STOCK:PRODUCT_${updated.id}:${newStock}`,
+      });
+    }
+    if (oldProduct.status === "active" && updated.status !== "active") {
+      await notifyProductEvent({
+        product: updated,
+        type: NOTIFICATION_TYPES.PRODUCT_UNAVAILABLE,
+        title: "Product Currently Unavailable",
+        message: `"${updated.name}" is no longer available.`,
+        eventKey: `PRODUCT_UNAVAILABLE:PRODUCT_${updated.id}:${updated.updated_at}`,
+      });
+    }
+
+    // Price drop detection: compare real database prices before/after update.
+    // Triggers customer notifications for wishlist/cart customers + admin activity.
+    let priceDropInfo = null;
+    try {
+      priceDropInfo = await processPriceDrop({
+        product: updated,
+        oldProduct: oldProduct,
+        changedBy: req.admin?.id || null,
+      });
+    } catch (priceDropError) {
+      console.warn("[PRICE DROP] Detection failed:", priceDropError.message);
+    }
+
     return success(res, "Product updated successfully", {
       product: { ...enrichProductWithDiscount(withNormalizedImageUrl(updated)), ...extras },
+      priceDrop: priceDropInfo,
+      priceHistory: priceDropInfo?.detected ? await require("../services/priceDropService").getPriceHistory(updated.id) : undefined,
     });
   } catch (error) {
     console.error("[UPDATE PRODUCT ERROR]", error);
@@ -1108,6 +1263,26 @@ const searchProducts = asyncHandler(async (req, res) => {
       ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers),
     }));
 
+    // Admin activity: product searched (LOW priority, informational)
+    try {
+      const userId = req.user?.id || null;
+      await createActivity({
+        userId,
+        activityType: ACTIVITY_TYPES.PRODUCT_SEARCHED,
+        entityType: "search",
+        metadata: {
+          query: rawQuery,
+          resultCount: normalized.length,
+        },
+      });
+      // If zero results, detect product opportunity
+      if (normalized.length === 0) {
+        await detectZeroResultSearch(rawQuery);
+      }
+    } catch (activityError) {
+      console.warn("[ACTIVITY] Search activity failed:", activityError.message);
+    }
+
     return success(res, "Search results fetched", {
       products: normalized,
       total: normalized.length,
@@ -1161,6 +1336,7 @@ const getApplicationCounts = asyncHandler(async (req, res) => {
 module.exports = {
   listProducts,
   getProduct,
+  compareProducts,
   createProduct,
   updateProduct,
   deleteProduct,

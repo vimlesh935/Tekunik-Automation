@@ -2,6 +2,7 @@ const { query } = require("../config/db");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
+const { ACTIVITY_TYPES, createActivity } = require("../services/adminActivityService");
 
 const nowSql = () => new Date().toISOString().slice(0, 19).replace("T", " ");
 
@@ -109,6 +110,31 @@ const createProductReview = asyncHandler(async (req, res) => {
     ]
   );
 
+  // Admin activity: review submitted
+  try {
+    const [product] = await query("SELECT id, name FROM products WHERE id = ?", [product_id]);
+    const isLowRating = Number(rating) <= 2;
+    await createActivity({
+      userId: user_id,
+      activityType: isLowRating ? ACTIVITY_TYPES.REVIEW_LOW_RATING : ACTIVITY_TYPES.REVIEW_SUBMITTED,
+      entityType: "review",
+      entityId: result.insertId,
+      metadata: {
+        reviewId: result.insertId,
+        productId: product_id,
+        productName: product?.name || "Unknown",
+        rating: Number(rating),
+        reviewTitle: review_title || null,
+        reviewPreview: review_message ? String(review_message).slice(0, 200) : null,
+        customerName: customerName || 'Anonymous',
+        reviewStatus: "pending",
+      },
+      eventKey: `REVIEW:${result.insertId}`,
+    });
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Review activity failed:", activityError.message);
+  }
+
   return success(res, "Thank you! Your review has been submitted and is awaiting admin approval.", {
     review: {
       id: result.insertId,
@@ -193,6 +219,31 @@ const createReview = asyncHandler(async (req, res) => {
       imagesJson,
     ]
   );
+
+  // Admin activity: review submitted
+  try {
+    const [product] = await query("SELECT id, name FROM products WHERE id = ?", [product_id]);
+    const isLowRating = Number(rating) <= 2;
+    await createActivity({
+      userId: user_id,
+      activityType: isLowRating ? ACTIVITY_TYPES.REVIEW_LOW_RATING : ACTIVITY_TYPES.REVIEW_SUBMITTED,
+      entityType: "review",
+      entityId: result.insertId,
+      metadata: {
+        reviewId: result.insertId,
+        productId: product_id,
+        productName: product?.name || "Unknown",
+        rating: Number(rating),
+        reviewTitle: review_title || null,
+        reviewPreview: review_message ? String(review_message).slice(0, 200) : null,
+        customerName: customerName || 'Anonymous',
+        reviewStatus: "pending",
+      },
+      eventKey: `REVIEW:${result.insertId}`,
+    });
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Review activity failed:", activityError.message);
+  }
 
   return success(res, "Review submitted successfully. Awaiting admin approval.", {
     review: {

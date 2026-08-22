@@ -14,7 +14,7 @@ const normalizeOrderItemImages = (items) =>
 const getProfile = asyncHandler(async (req, res) => {
   const rows = await query(
     `SELECT u.id, u.email, u.is_verified, u.created_at,
-            up.first_name, up.last_name, up.phone, up.address, up.city
+            up.first_name, up.last_name, up.phone, up.address, up.city, up.pincode
      FROM users u
      LEFT JOIN user_profiles up ON u.id = up.user_id
      WHERE u.id = ?`,
@@ -29,25 +29,26 @@ const getProfile = asyncHandler(async (req, res) => {
 /** PUT /api/user/profile — Update current user's profile */
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { first_name, last_name, phone, address, city } = req.body;
+  const { first_name, last_name, phone, address, city, pincode } = req.body;
 
   // Update user_profiles table
   await query(
-    `INSERT INTO user_profiles (user_id, first_name, last_name, phone, address, city)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO user_profiles (user_id, first_name, last_name, phone, address, city, pincode)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        first_name = VALUES(first_name),
        last_name = VALUES(last_name),
        phone = VALUES(phone),
        address = VALUES(address),
-       city = VALUES(city)`,
-    [userId, (first_name && String(first_name)) || "User", (last_name && String(last_name)) || "-", (phone && String(phone)) || null, (address && String(address)) || null, (city && String(city)) || null]
+       city = VALUES(city),
+       pincode = VALUES(pincode)`,
+    [userId, (first_name && String(first_name)) || "User", (last_name && String(last_name)) || "-", (phone && String(phone)) || null, (address && String(address)) || null, (city && String(city)) || null, (pincode && String(pincode)) || null]
   );
 
   // Fetch updated profile
   const rows = await query(
     `SELECT u.id, u.email, u.is_verified, u.created_at,
-            up.first_name, up.last_name, up.phone, up.address, up.city
+            up.first_name, up.last_name, up.phone, up.address, up.city, up.pincode
      FROM users u
      LEFT JOIN user_profiles up ON u.id = up.user_id
      WHERE u.id = ?`,

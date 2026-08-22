@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
+import AdminNotificationBell from "./AdminNotificationBell.jsx";
 
 const TITLES = {
   "/admin": "Dashboard",
@@ -16,6 +17,7 @@ const TITLES = {
   "/admin/settings/backend": "Settings / Backend",
   "/admin/smart-home-requests": "Smart Home Requests",
   "/admin/demobooking": "Demo Bookings",
+  "/admin/notifications": "Activity Center",
 };
 
 function fallbackTitle(pathname) {
@@ -30,6 +32,9 @@ export default function AdminHeader() {
   return (
     <header className="h-20 border-b border-gray-800/50 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md">
       <h1 className="text-xl font-bold text-white">{title}</h1>
+      <div className="flex items-center gap-3">
+        <AdminNotificationBell />
+      </div>
     </header>
   );
 }

@@ -7,6 +7,7 @@ const AppError = require("../utils/appError");
 const asyncHandler = require("../utils/asyncHandler");
 const { success } = require("../utils/response");
 const { signToken } = require("../utils/jwt");
+const { ACTIVITY_TYPES, createActivity } = require("../services/adminActivityService");
 
 const BCRYPT_ROUNDS = 12;
 
@@ -119,6 +120,25 @@ const register = asyncHandler(async (req, res) => {
 
   console.log("[auth] New user registered:", { id: userId, email });
 
+  // Admin activity: new customer registered
+  try {
+    await createActivity({
+      userId,
+      activityType: ACTIVITY_TYPES.USER_REGISTERED,
+      entityType: "user",
+      entityId: userId,
+      metadata: {
+        name: `${first_name} ${last_name}`.trim(),
+        email,
+        phone,
+        city,
+      },
+      eventKey: `USER_REGISTERED:${userId}`,
+    });
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Registration activity failed:", activityError.message);
+  }
+
   return success(res, "Registration successful! Please login.", { redirectTo: "/login" }, 201);
 });
 
@@ -153,6 +173,24 @@ const login = asyncHandler(async (req, res) => {
   const formattedUser = formatUser(user);
 
   console.log("[auth] Login successful:", { userId: user.id, email });
+
+  // Register activity: customer login (LOW priority, informational)
+  try {
+    await createActivity({
+      userId: user.id,
+      activityType: ACTIVITY_TYPES.USER_LOGIN,
+      entityType: "user",
+      entityId: user.id,
+      metadata: {
+        name: formattedUser.name,
+        email: user.email,
+        userAgent: req.headers["user-agent"] || null,
+      },
+    });
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Login activity failed:", activityError.message);
+  }
+
   return success(res, "Login successful", {
     token,
     redirectTo: "/dashboard",

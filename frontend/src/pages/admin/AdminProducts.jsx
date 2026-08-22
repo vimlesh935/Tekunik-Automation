@@ -204,12 +204,20 @@ export default function AdminProducts() {
       };
       const endpoint = editingProduct ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products";
       const method = editingProduct ? "PUT" : "POST";
-      await apiCall(endpoint, { method, body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+      const saveRes = await apiCall(endpoint, { method, body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
       setShowProductModal(false);
       setProductForm(emptyProduct);
       setProductImageFile(null);
       setProductImagePreview("");
-      showToast(editingProduct ? "Product updated successfully." : "Product created successfully.");
+      // Professional price-drop feedback from the backend (real detection)
+      const drop = saveRes?.data?.priceDrop;
+      if (drop?.detected && drop?.notified) {
+        showToast(`Price Updated Successfully: ₹${Number(drop.oldPrice || 0).toLocaleString("en-IN")} → ₹${Number(drop.newPrice || 0).toLocaleString("en-IN")} (${Math.round(drop.dropPercent || 0)}% drop) • ${drop.notificationsCreated} wishlist/cart customers alerted.`);
+      } else if (drop?.detected && !drop?.notified) {
+        showToast(`Price updated: ₹${Number(drop.oldPrice || 0).toLocaleString("en-IN")} → ₹${Number(drop.newPrice || 0).toLocaleString("en-IN")}. Drop below alert threshold — no notifications sent.`);
+      } else {
+        showToast(editingProduct ? "Product updated successfully." : "Product created successfully.");
+      }
       fetchProducts();
     } catch (err) {
       setProductError(err.message || "Failed to save product");

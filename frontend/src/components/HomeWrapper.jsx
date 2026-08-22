@@ -17,6 +17,8 @@ import HomeCounter from "./HomeCounter.jsx";
 import HomeApp from "./HomeApp.jsx";
 import FaqHome from "./FaqHome.jsx";
 import ReadyHome from "./ReadyHome.jsx";
+import RecentlyViewedSection from "./RecentlyViewedSection.jsx";
+import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 
 
 export default function HomeWrapper({ token }) {
@@ -30,6 +32,7 @@ export default function HomeWrapper({ token }) {
   const [notification, setNotification] = useState(null);
   const [error, setError] = useState(null);
   const [wishlist, setWishlist] = useState([]);
+  const recentlyViewed = useRecentlyViewed();
 
   useEffect(() => {
     const loadData = async () => {
@@ -209,6 +212,17 @@ export default function HomeWrapper({ token }) {
         wishlist={wishlist}
         onToggleWishlist={toggleWishlist}
       />
+
+      {!recentlyViewed.loading && recentlyViewed.products.length > 0 && (
+        <RecentlyViewedSection
+          products={recentlyViewed.products}
+          onRemove={recentlyViewed.remove}
+          onClear={recentlyViewed.clear}
+          onAddToCart={handleAddToCart}
+          wishlist={wishlist}
+          onToggleWishlist={toggleWishlist}
+        />
+      )}
 
       <WhyTeknode />
       <HowWorks />

@@ -9,6 +9,7 @@ import SafeImage from "../components/SafeImage.jsx";
 import WishlistHeart from "../components/WishlistHeart.jsx";
 import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 import { formatCurrency } from "../utils/currency.js";
+import CompareButton from "../components/CompareButton.jsx";
 
 export default function SearchResults({ token }) {
   const location = useLocation();
@@ -208,6 +209,7 @@ export default function SearchResults({ token }) {
                       </div>
 
                       <div className="flex flex-wrap gap-3">
+                        <CompareButton productId={product.id} compact />
                         <button
                           type="button"
                           onClick={() => handleAddToCart(product)}

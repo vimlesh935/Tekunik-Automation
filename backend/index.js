@@ -13,6 +13,8 @@ const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
+const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable } = require("./src/config/migrate");
+const { detectAbandonedCarts } = require("./src/services/adminActivityService");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -46,6 +48,9 @@ const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 const bulkImportRoutes = require("./src/routes/bulkImportRoutes");
 const frontendSettingsRoutes = require("./src/routes/frontendSettingsRoutes");
 const systemRoutes = require("./src/routes/systemRoutes");
+const recentlyViewedRoutes = require("./src/routes/recentlyViewedRoutes");
+const notificationRoutes = require("./src/routes/notificationRoutes");
+const adminActivityRoutes = require("./src/routes/adminActivityRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -186,6 +191,9 @@ app.use("/api/smart-home/steps", smartHomeStepRoutes);
 app.use(bulkImportRoutes);
 app.use(frontendSettingsRoutes);
 app.use(systemRoutes);
+app.use(recentlyViewedRoutes);
+app.use(notificationRoutes);
+app.use(adminActivityRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -272,6 +280,10 @@ await ensureOffersTable();
     await ensureWebsiteFrontendInformationTable();
     await ensureSystemSettingsTable();
     await ensureWishlistTable();
+    await ensureRecentlyViewedTable();
+    await ensureNotificationsTable();
+    await ensureAdminActivityTable();
+    await ensureProductPriceHistoryTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
@@ -342,6 +354,26 @@ await ensureOffersTable();
     }
   }, 750);
 
+  // Abandoned cart detection - run every 15 minutes
+  const abandonedCartInterval = setInterval(async () => {
+    try {
+      const created = await detectAbandonedCarts();
+      if (created > 0) {
+        console.log(`[ACTIVITY] Detected ${created} abandoned cart(s)`);
+      }
+    } catch (error) {
+      console.warn("[ACTIVITY] Abandoned cart detection failed:", error.message);
+    }
+  }, 15 * 60 * 1000);
+  // Run once shortly after startup
+  setTimeout(async () => {
+    try {
+      await detectAbandonedCarts();
+    } catch (error) {
+      console.warn("[ACTIVITY] Initial abandoned cart detection failed:", error.message);
+    }
+  }, 60 * 1000);
+
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
     console.log(`\n\n⚠️  ${signal} received - shutting down gracefully...`);
@@ -365,6 +397,7 @@ await ensureOffersTable();
 
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+  process.on("exit", () => clearInterval(abandonedCartInterval));
 };
 
 // Error handlers

@@ -21,6 +21,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
+import CompareButton from "../components/CompareButton.jsx";
 
 /**
  * Formats a number to Indian currency notation (e.g. ₹50,000)
@@ -409,6 +410,9 @@ export default function Shop({ token }) {
 
                   {/* Core Action Executables */}
                   <div className="pt-4 mt-4 border-t border-slate-800/80">
+                    <div className="mb-2 flex justify-end">
+                      <CompareButton productId={product.id} compact />
+                    </div>
                     <button
                       onClick={(e) => {
                         e.preventDefault();

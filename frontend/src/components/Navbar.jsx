@@ -8,6 +8,7 @@ import {
   X,
   ChevronDown,
   ShoppingCart,
+  Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
@@ -17,11 +18,14 @@ import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
 import Logo from "./Logo.jsx";
 import SmartSearch from "../components/SmartSearch.jsx";
+import useNotifications from "../hooks/useNotifications.js";
+import NotificationList from "./NotificationList.jsx";
 
 export default function Navbar() {
   const { isAuthenticated: token, logout } = useAuth();
   const { theme } = useTheme();
   const { settings } = useWebsiteSettings();
+  const { unreadCount, notifications, loading: notificationsLoading, error: notificationsError, refresh: refreshNotifications, markRead, markAllRead } = useNotifications({ limit: 8 });
 
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -30,6 +34,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [smartSearchOpen, setSmartSearchOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -247,6 +252,30 @@ export default function Navbar() {
               >
                 Login
               </Link>
+            )}
+
+            {token && (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label={`Notifications, ${unreadCount} unread`}
+                  onClick={() => setShowNotifications((open) => !open)}
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-900 bg-slate-900/30 text-slate-300 transition hover:border-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                >
+                  <Bell size={16} className={unreadCount > 0 ? "text-cyan-400" : "text-slate-400"} />
+                  {unreadCount > 0 && <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[9px] font-black text-slate-950">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+                </button>
+                <AnimatePresence>
+                  {showNotifications && <>
+                    <button type="button" aria-label="Close notifications" className="fixed inset-0 z-40 h-full w-full cursor-default" onClick={() => setShowNotifications(false)} />
+                    <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+                      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><span className="text-sm font-black text-white">Notifications</span>{unreadCount > 0 && <button type="button" onClick={() => markAllRead()} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300">Mark all as read</button>}</div>
+                      <NotificationList notifications={notifications} loading={notificationsLoading} error={notificationsError} onRetry={refreshNotifications} onRead={async (id) => { await markRead(id); }} compact />
+                      <Link to="/notifications" onClick={() => setShowNotifications(false)} className="block border-t border-slate-800 px-4 py-3 text-center text-xs font-bold text-cyan-400 hover:bg-slate-950">View All Notifications <span aria-hidden="true">→</span></Link>
+                    </motion.div>
+                  </>}
+                </AnimatePresence>
+              </div>
             )}
 
             {/* Shopping Cart UI Microframe */}

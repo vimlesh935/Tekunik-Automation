@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { withNormalizedImageUrl } = require("../utils/uploadPaths");
+const { ACTIVITY_TYPES, createActivity, detectHighProductInterest } = require("../services/adminActivityService");
 const {
   getActiveOffers,
   enrichProductWithOffers,
@@ -147,6 +148,28 @@ const addToCart = asyncHandler(async (req, res) => {
     );
   }
 
+  // Admin activity: cart item added
+  try {
+    await createActivity({
+      userId,
+      activityType: ACTIVITY_TYPES.CART_ITEM_ADDED,
+      entityType: "product",
+      entityId: product_id,
+      metadata: {
+        productId: product_id,
+        productName: product.name,
+        quantity: requestedQuantity,
+        price: product.price,
+        cartId: cart.id,
+      },
+      eventKey: `CART_ADD:${userId}:${product_id}:${Date.now()}`,
+    });
+    // Smart detection: high product interest
+    await detectHighProductInterest(userId, product_id);
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Cart add activity failed:", activityError.message);
+  }
+
   const details = await getCartDetails(cart.id);
   return success(res, "Item added to cart", {
     cart: {
@@ -174,6 +197,25 @@ const updateCartItem = asyncHandler(async (req, res) => {
 
   if (quantity === 0) {
     await query("DELETE FROM cart_items WHERE id = ?", [item_id]);
+    // Record activity: CART_ITEM_REMOVED (LOW priority)
+    try {
+      const [product] = await query("SELECT id, name FROM products WHERE id = ?", [item.product_id]);
+      if (product) {
+        await createActivity({
+          userId,
+          activityType: ACTIVITY_TYPES.CART_ITEM_REMOVED,
+          entityType: "product",
+          entityId: item.product_id,
+          metadata: {
+            productId: item.product_id,
+            productName: product.name,
+            cartId: cart.id,
+          },
+        });
+      }
+    } catch (activityError) {
+      console.warn("[ACTIVITY] Cart remove activity failed:", activityError.message);
+    }
     const details = await getCartDetails(cart.id);
     return success(res, "Cart item removed", {
       cart: {
@@ -219,6 +261,25 @@ const removeCartItem = asyncHandler(async (req, res) => {
   }
 
   await query("DELETE FROM cart_items WHERE id = ?", [item_id]);
+  // Record activity: CART_ITEM_REMOVED (LOW priority)
+  try {
+    const [product] = await query("SELECT id, name FROM products WHERE id = ?", [item.product_id]);
+    if (product) {
+      await createActivity({
+        userId,
+        activityType: ACTIVITY_TYPES.CART_ITEM_REMOVED,
+        entityType: "product",
+        entityId: item.product_id,
+        metadata: {
+          productId: item.product_id,
+          productName: product.name,
+          cartId: cart.id,
+        },
+      });
+    }
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Cart remove activity failed:", activityError.message);
+  }
   const details = await getCartDetails(cart.id);
   return success(res, "Cart item removed", {
     cart: {

@@ -83,6 +83,25 @@ const ensureUsersOtpColumns = async () => {
   }
 };
 
+const ensureUserProfileColumns = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'user_profiles'");
+    if (!tables.length) return;
+
+    const [pincodeColumn] = await query(
+      "SHOW COLUMNS FROM user_profiles LIKE 'pincode'",
+    );
+    if (!pincodeColumn) {
+      await query(
+        "ALTER TABLE user_profiles ADD COLUMN pincode VARCHAR(10) NULL AFTER city",
+      );
+      console.log("✅ [MIGRATE] Added pincode column to user_profiles");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure user profile columns:", error.message);
+  }
+};
+
 const ensureReviewsTable = async () => {
   try {
     const tables = await query("SHOW TABLES LIKE 'product_reviews'");
@@ -364,6 +383,7 @@ const ensureSmartHomeProposalsTables = async () => {
 
 const ensureAdminTables = async () => {
   try {
+    await ensureUserProfileColumns();
     // Verify admin-related tables and migrations
     await ensureAdminsTable();
     await ensureProductsColumns();
@@ -774,10 +794,143 @@ const ensureWishlistTable = async () => {
   }
 };
 
+const ensureNotificationsTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'notifications'");
+    if (!tables.length) {
+      await query(`
+        CREATE TABLE notifications (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          type VARCHAR(50) NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          message TEXT NOT NULL,
+          data JSON NULL,
+          action_url VARCHAR(500) NULL,
+          event_key VARCHAR(150) NULL,
+          is_read BOOLEAN NOT NULL DEFAULT FALSE,
+          read_at DATETIME NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_notification_event (user_id, event_key),
+          INDEX idx_notifications_user (user_id),
+          INDEX idx_notifications_read (is_read),
+          INDEX idx_notifications_created (created_at),
+          INDEX idx_notifications_user_read (user_id, is_read),
+          INDEX idx_notifications_user_created (user_id, created_at),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ [MIGRATE] Created notifications table");
+    } else {
+      console.log("✅ [MIGRATE] notifications table exists");
+      const columns = [
+        ["priority", "ENUM('LOW','NORMAL','HIGH','URGENT') NOT NULL DEFAULT 'NORMAL' AFTER event_key"],
+        ["entity_type", "VARCHAR(50) NULL AFTER priority"],
+        ["entity_id", "INT NULL AFTER entity_type"],
+      ];
+      for (const [name, definition] of columns) {
+        const [column] = await query(`SHOW COLUMNS FROM notifications LIKE '${name}'`);
+        if (!column) await query(`ALTER TABLE notifications ADD COLUMN ${name} ${definition}`);
+      }
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure notifications table:", error.message);
+  }
+};
+
+const ensureRecentlyViewedTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'recently_viewed_products'");
+    if (!tables.length) {
+      await query(`
+        CREATE TABLE recently_viewed_products (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          product_id INT NOT NULL,
+          viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_recently_viewed_user_product (user_id, product_id),
+          INDEX idx_recently_viewed_user (user_id),
+          INDEX idx_recently_viewed_product (product_id),
+          INDEX idx_recently_viewed_viewed_at (viewed_at),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ [MIGRATE] Created recently_viewed_products table");
+    } else {
+      console.log("✅ [MIGRATE] recently_viewed_products table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure recently viewed table:", error.message);
+  }
+};
+
+const ensureProductPriceHistoryTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'product_price_history'");
+    if (!tables.length) {
+      await query(`CREATE TABLE product_price_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        old_price DECIMAL(10,2) NULL,
+        new_price DECIMAL(10,2) NOT NULL,
+        old_sale_price DECIMAL(10,2) NULL,
+        new_sale_price DECIMAL(10,2) NULL,
+        change_type ENUM('PRICE_INCREASE','PRICE_DECREASE','SALE_PRICE_CREATED','SALE_PRICE_UPDATED','SALE_PRICE_REMOVED','NO_CHANGE') NOT NULL DEFAULT 'NO_CHANGE',
+        drop_percentage DECIMAL(5,2) NULL,
+        changed_by INT NULL,
+        notes TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        INDEX idx_price_history_product (product_id),
+        INDEX idx_price_history_created (created_at),
+        INDEX idx_price_history_type (change_type)
+      )`);
+      console.log("✅ [MIGRATE] Created product_price_history table");
+    } else {
+      console.log("✅ [MIGRATE] product_price_history table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure product price history table:", error.message);
+  }
+};
+
+const ensureAdminActivityTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'admin_activity_logs'");
+    if (!tables.length) {
+      await query(`CREATE TABLE admin_activity_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        activity_type VARCHAR(60) NOT NULL,
+        entity_type VARCHAR(50) NULL,
+        entity_id INT NULL,
+        metadata JSON NULL,
+        priority ENUM('LOW','NORMAL','HIGH','CRITICAL') NOT NULL DEFAULT 'LOW',
+        is_actionable BOOLEAN NOT NULL DEFAULT FALSE,
+        is_read BOOLEAN NOT NULL DEFAULT FALSE,
+        read_at DATETIME NULL,
+        event_key VARCHAR(180) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_activity_event (event_key),
+        INDEX idx_activity_type (activity_type), INDEX idx_activity_user (user_id),
+        INDEX idx_activity_priority (priority), INDEX idx_activity_read (is_read),
+        INDEX idx_activity_created (created_at), INDEX idx_activity_user_created (user_id, created_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      )`);
+      console.log("✅ [MIGRATE] Created admin_activity_logs table");
+    } else console.log("✅ [MIGRATE] admin_activity_logs table exists");
+  } catch (error) { console.warn("⚠️ [MIGRATE] Could not ensure admin activity table:", error.message); }
+};
+
 module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
   ensureUsersOtpColumns,
+  ensureUserProfileColumns,
   ensureReviewsTable,
   ensureAdminsTable,
   ensureSmartHomeProposalsTables,
@@ -788,4 +941,8 @@ module.exports = {
   ensureOffersTable,
   ensureSystemSettingsTable,
   ensureWishlistTable,
+  ensureRecentlyViewedTable,
+  ensureNotificationsTable,
+  ensureAdminActivityTable,
+  ensureProductPriceHistoryTable,
 };

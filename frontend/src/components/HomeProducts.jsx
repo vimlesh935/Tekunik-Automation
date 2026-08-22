@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Cpu, Layers, Star } from "lucide-react";
+import CompareButton from "./CompareButton.jsx";
 import SafeImage from "./SafeImage.jsx";
 import WishlistHeart from "./WishlistHeart.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
@@ -152,6 +153,10 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                         {Math.round(product.discount_percent)}% OFF
                       </span>
                     )}
+                  </div>
+
+                  <div className="mb-3 flex justify-end">
+                    <CompareButton productId={product.id} compact />
                   </div>
 
                   {/* Add to Cart */}

@@ -15,6 +15,8 @@ const {
   getEstimatedDelivery,
   generateTrackingNumber,
 } = require("../config/orderMigration");
+const { NOTIFICATION_TYPES, createNotification } = require("../services/notificationService");
+const { ACTIVITY_TYPES, createActivity, detectProductDemand } = require("../services/adminActivityService");
 
 /**
  * Calculate discount price fields for a product.
@@ -52,6 +54,34 @@ const clearUserCart = async (userId) => {
   if (!cart) return;
 
   await query("DELETE FROM cart_items WHERE cart_id = ?", [cart.id]);
+};
+
+const notifyOrderStatus = async (order, status) => {
+  if (!order?.user_id) return;
+  const statuses = {
+    pending: [NOTIFICATION_TYPES.ORDER_PLACED, "Order Placed Successfully", `Your order #${order.order_number} has been placed successfully.`],
+    confirmed: [NOTIFICATION_TYPES.ORDER_CONFIRMED, "Order Confirmed", `Your order #${order.order_number} has been confirmed.`],
+    processing: [NOTIFICATION_TYPES.ORDER_PROCESSING, "Order Processing", `Your order #${order.order_number} is being prepared.`],
+    shipped: [NOTIFICATION_TYPES.ORDER_SHIPPED, "Your order is on the way", `Order #${order.order_number} has been shipped${order.tracking_number ? `. Tracking #: ${order.tracking_number}` : "."}`],
+    out_for_delivery: [NOTIFICATION_TYPES.ORDER_OUT_FOR_DELIVERY, "Out for Delivery", `Order #${order.order_number} is out for delivery.`],
+    delivered: [NOTIFICATION_TYPES.ORDER_DELIVERED, "Order Delivered", `Order #${order.order_number} was delivered successfully.`],
+    cancelled: [NOTIFICATION_TYPES.ORDER_CANCELLED, "Order Cancelled", `Order #${order.order_number} has been cancelled.`],
+  };
+  const definition = statuses[status];
+  if (!definition) return;
+  try {
+    await createNotification({
+      userId: order.user_id,
+      type: definition[0],
+      title: definition[1],
+      message: definition[2],
+      data: { orderId: order.id, orderNumber: order.order_number, trackingNumber: order.tracking_number || null },
+      actionUrl: `/orders/${order.id}`,
+      eventKey: `order:${order.id}:status:${status}`,
+    });
+  } catch (error) {
+    console.warn("[NOTIFICATION] Order notification failed:", error.message);
+  }
 };
 
 const ALLOWED_PAYMENT_METHODS = ["cod", "online", "card", "upi"];
@@ -375,6 +405,38 @@ const createOrder = asyncHandler(async (req, res) => {
        VALUES (?, 'pending', 'Order Confirmed', 'Your order has been placed and is awaiting confirmation')`,
       [orderId],
     );
+
+    await notifyOrderStatus({
+      id: orderId,
+      user_id,
+      order_number: orderNumber,
+      tracking_number: trackingNumber,
+    }, "pending");
+
+    // Admin activity: new order created (HIGH priority)
+    try {
+      await createActivity({
+        userId: user_id,
+        activityType: ACTIVITY_TYPES.ORDER_CREATED,
+        entityType: "order",
+        entityId: orderId,
+        metadata: {
+          orderId,
+          orderNumber,
+          totalAmount: totalAmount.toFixed(2),
+          itemCount: validatedItems.length,
+          customerName: normalizedCustomer.full_name,
+          paymentMethod: normalizedPaymentMethod,
+        },
+        eventKey: `ORDER_CREATED:${orderId}`,
+      });
+      // Detect product demand for each ordered product
+      for (const item of validatedItems) {
+        await detectProductDemand(item.product_id);
+      }
+    } catch (activityError) {
+      console.warn("[ACTIVITY] Order created activity failed:", activityError.message);
+    }
 
     await clearUserCart(user_id);
 
@@ -825,7 +887,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   );
 
   // Add tracking entry if status changed
-  if (status && trackingLabels[status]) {
+  if (status && status !== existing[0].status && trackingLabels[status]) {
     await query(
       `INSERT INTO order_tracking (order_id, status, label, description)
        VALUES (?, ?, ?, ?)`,
@@ -836,6 +898,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
         trackingLabels[status].description,
       ],
     );
+    const [updatedForNotification] = await query("SELECT id, user_id, order_number, tracking_number FROM orders WHERE id = ?", [id]);
+    await notifyOrderStatus(updatedForNotification, status);
   }
 
   const [updated] = await query("SELECT * FROM orders WHERE id = ?", [id]);
@@ -1053,6 +1117,8 @@ const cancelOrder = asyncHandler(async (req, res) => {
     "UPDATE orders SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP, cancelled_by = 'customer', cancel_reason = 'Cancelled by customer', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     [orderId],
   );
+
+  await notifyOrderStatus(order, "cancelled");
 
   await query(
     "INSERT INTO order_tracking (order_id, status, label, description) VALUES (?, 'cancelled', 'Order Cancelled', 'Customer cancelled this order')",

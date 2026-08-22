@@ -26,6 +26,8 @@ import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 import ProductReviewsModal from "../components/ProductReviewsModal.jsx";
 import WishlistHeart from "../components/WishlistHeart.jsx";
+import CompareButton from "../components/CompareButton.jsx";
+import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 
 export default function ProductDetails({ token }) {
   const { id } = useParams();
@@ -44,6 +46,7 @@ export default function ProductDetails({ token }) {
   const BG = isDark ? "#080B14" : "#f8fafc";
   const { addToCart } = useCart();
   const { addToast } = useToast();
+  const { track } = useRecentlyViewed();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
@@ -206,6 +209,7 @@ export default function ProductDetails({ token }) {
         const productData = response.data;
         const loaded = productData?.product || productData;
         setProduct(loaded);
+        if (loaded?.id) track(loaded.id);
 
         // Fetch related products right after, using the freshly loaded data
         if (loaded?.category_id) {
@@ -244,7 +248,7 @@ export default function ProductDetails({ token }) {
     };
 
     if (id) loadProduct();
-  }, [id]);
+  }, [id, track]);
 
   const handleAddToCart = async () => {
     if (!product || product.stock_quantity <= 0) {
@@ -565,6 +569,8 @@ export default function ProductDetails({ token }) {
                     )}
                     {addingToCart ? "Deploying Node..." : " Add to Cart"}
                   </button>
+
+                  <CompareButton productId={product.id} />
 
                 </div>
               </div>

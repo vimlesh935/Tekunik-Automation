@@ -243,6 +243,7 @@ export const productService = {
   getFeaturedProducts: (limit = 8) =>
     apiCall(`/api/products/featured?limit=${Math.max(1, Number(limit) || 8)}`),
   getProductById: (id) => apiCall(`/api/products/${id}`),
+  compareProducts: (ids) => apiCall(`/api/products/compare?ids=${ids.map(encodeURIComponent).join(",")}`),
   searchProducts: (query, limit = 20) => {
     const params = new URLSearchParams();
     params.set("search", query || "");
@@ -301,6 +302,31 @@ export const wishlistService = {
     apiCall(`/api/wishlist/${productId}`, { method: "POST" }),
   removeFromWishlist: (productId) =>
     apiCall(`/api/wishlist/${productId}`, { method: "DELETE" }),
+};
+
+export const recentlyViewedService = {
+  getAll: () => apiCall("/api/recently-viewed"),
+  add: (productId) => apiCall("/api/recently-viewed", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  }),
+  remove: (productId) => apiCall(`/api/recently-viewed/${productId}`, { method: "DELETE" }),
+  clear: () => apiCall("/api/recently-viewed", { method: "DELETE" }),
+};
+
+export const notificationService = {
+  list: ({ page = 1, limit = 20, unreadOnly = false, type = "" } = {}) => {
+    const params = new URLSearchParams({ page, limit });
+    if (unreadOnly) params.set("unread", "1");
+    if (type === "PRODUCTS") params.set("type", "PRODUCTS");
+    else if (type) params.set("type", type);
+    return apiCall(`/api/notifications?${params.toString()}`);
+  },
+  unreadCount: () => apiCall("/api/notifications/unread-count"),
+  markRead: (id) => apiCall(`/api/notifications/${id}/read`, { method: "PATCH" }),
+  markAllRead: () => apiCall("/api/notifications/read-all", { method: "PATCH" }),
+  remove: (id) => apiCall(`/api/notifications/${id}`, { method: "DELETE" }),
+  clear: () => apiCall("/api/notifications", { method: "DELETE" }),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -667,6 +693,44 @@ export const frontendSettingsService = {
 // ─────────────────────────────────────────────────────────────
 // OFFER SERVICES
 // ─────────────────────────────────────────────────────────────
+
+export const adminActivityService = {
+  list: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.type) query.set("type", params.type);
+    if (params.category) query.set("category", params.category);
+    if (params.priority) query.set("priority", params.priority);
+    if (params.unread) query.set("unread", params.unread);
+    if (params.search) query.set("search", params.search);
+    if (params.dateRange) query.set("dateRange", params.dateRange);
+    const qs = query.toString();
+    return apiCall(`/api/admin/activity${qs ? `?${qs}` : ""}`);
+  },
+  recent: (limit = 10) => apiCall(`/api/admin/activity/recent?limit=${limit}`),
+  unreadCount: () => apiCall("/api/admin/activity/unread-count"),
+  dashboardSummary: () => apiCall("/api/admin/activity/dashboard-summary"),
+  needsAttention: () => apiCall("/api/admin/activity/needs-attention"),
+  priceDropAnalytics: (days = 30) => apiCall(`/api/admin/activity/price-drop-analytics?days=${days}`),
+  markRead: (id) => apiCall(`/api/admin/activity/${id}/read`, { method: "PATCH" }),
+  markAllRead: () => apiCall("/api/admin/activity/read-all", { method: "PATCH" }),
+  remove: (id) => apiCall(`/api/admin/activity/${id}`, { method: "DELETE" }),
+  customer: (userId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    const qs = query.toString();
+    return apiCall(`/api/admin/activity/customer/${userId}${qs ? `?${qs}` : ""}`);
+  },
+  product: (productId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    const qs = query.toString();
+    return apiCall(`/api/admin/activity/product/${productId}${qs ? `?${qs}` : ""}`);
+  },
+};
 
 export const offerService = {
   getActiveOffers: () => apiCall("/api/offers"),

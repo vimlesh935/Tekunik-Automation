@@ -6,6 +6,27 @@ const {
   getActiveOffers,
   enrichProductsWithOffers,
 } = require("../services/offerPricingService");
+const { NOTIFICATION_TYPES, notifyUsers, getActiveUserIds } = require("../services/notificationService");
+
+const notifyOffer = async (offer, eventKey) => {
+  if (!offer?.is_active) return;
+  try {
+    await notifyUsers({
+      userIds: await getActiveUserIds(),
+      type: NOTIFICATION_TYPES.OFFER,
+      title: "New Offer",
+      message: `${offer.title || offer.name} is now available for a limited time.`,
+      data: { offerId: offer.id, offerName: offer.name },
+      actionUrl: "/offers",
+      eventKey,
+      priority: "NORMAL",
+      entityType: "offer",
+      entityId: offer.id,
+    });
+  } catch (error) {
+    console.warn("[NOTIFICATION] Offer event failed:", error.message);
+  }
+};
 
 /** GET /api/admin/discounts */
 const listDiscounts = asyncHandler(async (req, res) => {
@@ -115,6 +136,7 @@ const createDiscount = asyncHandler(async (req, res) => {
   }
 
   const [created] = await query("SELECT * FROM discounts WHERE id = ?", [offerId]);
+  await notifyOffer(created, `OFFER:PUBLISHED:${created.id}`);
   return success(res, "Discount created", { discount: created }, 201);
 });
 
@@ -126,7 +148,7 @@ const updateDiscount = asyncHandler(async (req, res) => {
     min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active 
   } = req.body;
 
-  const existing = await query("SELECT id FROM discounts WHERE id = ?", [id]);
+  const existing = await query("SELECT id, value FROM discounts WHERE id = ?", [id]);
   if (!existing.length) throw new AppError("Discount not found", 404, "NOT_FOUND");
 
   if (!name || !name.trim()) throw new AppError("Discount name is required", 400, "VALIDATION_ERROR");
@@ -174,6 +196,10 @@ const updateDiscount = asyncHandler(async (req, res) => {
   }
 
   const [updated] = await query("SELECT * FROM discounts WHERE id = ?", [id]);
+  const oldValue = Number(existing[0].value || 0);
+  if (updated.is_active && Number(updated.value || 0) !== oldValue) {
+    await notifyOffer(updated, `OFFER:UPDATED:${updated.id}:${updated.value}`);
+  }
   return success(res, "Discount updated", { discount: updated });
 });
 

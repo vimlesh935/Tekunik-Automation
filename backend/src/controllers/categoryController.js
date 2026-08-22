@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { normalizeImageUrl, withNormalizedImageUrl } = require("../utils/uploadPaths");
+const { NOTIFICATION_TYPES, notifyUsers, getActiveUserIds } = require("../services/notificationService");
 
 /** GET /api/admin/categories (with subcategories) */
 const listCategories = asyncHandler(async (req, res) => {
@@ -64,6 +65,21 @@ const createCategory = asyncHandler(async (req, res) => {
   );
 
   const [created] = await query("SELECT * FROM product_categories WHERE id = ?", [result.insertId]);
+  try {
+    await notifyUsers({
+      userIds: await getActiveUserIds(),
+      type: NOTIFICATION_TYPES.NEW_CATEGORY,
+      title: "New Category Available",
+      message: `Explore our new ${created.name} collection.`,
+      data: { categoryId: created.id, categoryName: created.name },
+      actionUrl: `/shop?category=${created.id}`,
+      eventKey: `NEW_CATEGORY:CATEGORY_${created.id}`,
+      entityType: "category",
+      entityId: created.id,
+    });
+  } catch (error) {
+    console.warn("[NOTIFICATION] Category event failed:", error.message);
+  }
   return success(res, "Category created", { category: withNormalizedImageUrl(created) }, 201);
 });
 

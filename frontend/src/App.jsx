@@ -7,10 +7,12 @@ import LoadingSpinner from "./components/LoadingSpinner.jsx";
 import WebsiteModeGuard from "./components/WebsiteModeGuard.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+import { ComparisonProvider } from "./context/ComparisonContext.jsx";
 import { ToastProvider } from "./components/Toast.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { WebsiteSettingsProvider } from "./context/WebsiteSettingsContext.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
+import ComparisonBar from "./components/ComparisonBar.jsx";
 
 const Home = React.lazy(() => import("./pages/Home.jsx"));
 const Shop = React.lazy(() => import("./pages/Shop.jsx"));
@@ -44,9 +46,12 @@ const AdminBackendSettings = React.lazy(() => import("./pages/admin/AdminBackend
 const AdminSmartHomeRequests = React.lazy(() => import("./pages/admin/AdminSmartHomeRequests.jsx"));
 const AdminSmartHomeRequestDetail = React.lazy(() => import("./pages/admin/AdminSmartHomeRequestDetail.jsx"));
 const AdminDemoBookings = React.lazy(() => import("./pages/admin/AdminDemoBookings.jsx"));
+const AdminActivityCenter = React.lazy(() => import("./pages/admin/AdminActivityCenter.jsx"));
 const AboutUs = React.lazy(() => import("./pages/AboutUs.jsx"));
 const ContactUs = React.lazy(() => import("./pages/ContactUs.jsx"));
 const SmartHomePlanner = React.lazy(() => import("./pages/SmartHomePlanner.jsx"));
+const Compare = React.lazy(() => import("./pages/Compare.jsx"));
+const Notifications = React.lazy(() => import("./pages/Notifications.jsx"));
 
 function SmartHomeProposalDetailRedirect() {
   const { id } = useParams();
@@ -88,6 +93,7 @@ function SiteLayout() {
           <Outlet />
         </Suspense>
       </main>
+      <ComparisonBar />
       <Footer />
     </div>
   );
@@ -97,11 +103,13 @@ function App() {
   return (
     <ThemeProvider>
       <CartProvider>
-        <ToastProvider>
+        <ComparisonProvider>
+          <ToastProvider>
           <WebsiteSettingsProvider>
             <AppContent />
           </WebsiteSettingsProvider>
-        </ToastProvider>
+          </ToastProvider>
+        </ComparisonProvider>
       </CartProvider>
     </ThemeProvider>
   );
@@ -155,6 +163,7 @@ function AppContent() {
           <Route path="installation-requests" element={<Navigate to="/admin/smart-home-requests" replace />} />
           <Route path="installations" element={<Navigate to="/admin/smart-home-requests" replace />} />
           <Route path="demobooking" element={<AdminDemoBookings />} />
+          <Route path="notifications" element={<AdminActivityCenter />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
 
@@ -167,6 +176,8 @@ function AppContent() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/offers" element={<Offers />} />
             <Route path="/cart" element={<Cart />} />

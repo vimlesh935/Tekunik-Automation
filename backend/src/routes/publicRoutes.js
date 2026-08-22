@@ -5,6 +5,7 @@ const {
 const {
   listProducts,
   getProduct,
+  compareProducts,
   searchProducts,
 } = require("../controllers/productController");
 const { submitContactForm } = require("../controllers/contactController");
@@ -52,6 +53,8 @@ router.get("/api/products/featured", (req, res, next) => {
  * MUST be defined BEFORE /api/products/:id to avoid :id catching "search" as a param
  */
 router.get("/api/products/search", searchProducts);
+
+router.get("/api/products/compare", compareProducts);
 
 /**
  * POST /api/products/:id/reviews - Public product review submission
