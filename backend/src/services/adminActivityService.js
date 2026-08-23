@@ -29,6 +29,11 @@ const ACTIVITY_TYPES = Object.freeze({
   PRODUCT_DEMAND: "PRODUCT_DEMAND",
   LOW_STOCK_DEMAND: "LOW_STOCK_DEMAND",
   PRICE_DROPPED: "PRICE_DROPPED",
+  BACK_IN_STOCK: "BACK_IN_STOCK",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DEMAND_EXCEEDS_RESTOCK: "DEMAND_EXCEEDS_RESTOCK",
+  RESTOCK_BELOW_DEMAND: "RESTOCK_BELOW_DEMAND",
+  POST_RESTOCK_PURCHASE: "POST_RESTOCK_PURCHASE",
 });
 
 const PRIORITY = Object.freeze({
@@ -68,6 +73,11 @@ const ACTIVITY_CONFIG = Object.freeze({
   PRODUCT_DEMAND: { priority: PRIORITY.HIGH, actionable: true },
   LOW_STOCK_DEMAND: { priority: PRIORITY.HIGH, actionable: true },
   PRICE_DROPPED: { priority: PRIORITY.HIGH, actionable: false },
+  BACK_IN_STOCK: { priority: PRIORITY.HIGH, actionable: false },
+  OUT_OF_STOCK: { priority: PRIORITY.NORMAL, actionable: true },
+  DEMAND_EXCEEDS_RESTOCK: { priority: PRIORITY.CRITICAL, actionable: true },
+  RESTOCK_BELOW_DEMAND: { priority: PRIORITY.HIGH, actionable: true },
+  POST_RESTOCK_PURCHASE: { priority: PRIORITY.NORMAL, actionable: false },
 });
 
 // Map activity types to their display category
@@ -100,6 +110,11 @@ const ACTIVITY_CATEGORY = {
   PRODUCT_DEMAND: "products",
   LOW_STOCK_DEMAND: "products",
   PRICE_DROPPED: "products",
+  BACK_IN_STOCK: "inventory",
+  OUT_OF_STOCK: "inventory",
+  DEMAND_EXCEEDS_RESTOCK: "inventory",
+  RESTOCK_BELOW_DEMAND: "inventory",
+  POST_RESTOCK_PURCHASE: "inventory",
 };
 
 /**

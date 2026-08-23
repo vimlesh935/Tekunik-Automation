@@ -116,7 +116,7 @@ const getCartUserIds = async (productId) => {
  *
  * Returns summary for the admin response.
  */
-const processPriceDropAfterUpdate = async ({ product, oldProduct, changedBy = null }) => {
+const processPriceDropAfterUpdate = async ({ product, oldProduct, changedBy = null, excludeUserIds = [] }) => {
   try {
     if (!product || !oldProduct || !product.id) {
       return { detected: false, reason: "missing_product_data" };
@@ -166,10 +166,15 @@ const processPriceDropAfterUpdate = async ({ product, oldProduct, changedBy = nu
       return { detected: true, notified: false, reason: "below_threshold", dropAmount, dropPercent };
     }
 
-    // Gather eligible user IDs: wishlist first, then cart (dedup)
+    // Gather eligible user IDs: wishlist first, then cart (dedup).
+    // excludeUserIds lets callers suppress duplicate alerts for users who will
+    // receive a richer combined notification instead (e.g. Back in Stock + Price Drop).
+    const excluded = new Set((excludeUserIds || []).map(Number));
     const wishlistUserIds = await getWishlistUserIds(product.id);
     const cartUserIds = await getCartUserIds(product.id);
-    const allUserIds = [...new Set([...wishlistUserIds, ...cartUserIds])];
+    const allUserIds = [...new Set([...wishlistUserIds, ...cartUserIds])].filter(
+      (id) => !excluded.has(Number(id))
+    );
 
     const inStock = Number(product.stock_quantity) > 0;
     const title = pickTitle(dropPercent);

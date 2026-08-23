@@ -13,7 +13,16 @@ const {
 } = require("../services/offerPricingService");
 const { NOTIFICATION_TYPES, notifyUsers, getActiveUserIds, getInterestedUserIds } = require("../services/notificationService");
 const { ACTIVITY_TYPES, createActivity, detectHighProductInterest, detectProductDemand, detectZeroResultSearch } = require("../services/adminActivityService");
-const { processPriceDrop } = require("../services/priceDropService");
+const {
+  processPriceDrop,
+  getEffectivePrice,
+  isEligibleDrop,
+  calculateDropPercent,
+} = require("../services/priceDropService");
+const {
+  processBackInStock,
+  getActiveSubscriberIds,
+} = require("../services/backInStockService");
 
 const notifyProductEvent = async ({ product, type, title, message, audience = "interested", priority = "NORMAL", eventKey }) => {
   try {
@@ -720,7 +729,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       throw new AppError("Product ID is required", 400, "VALIDATION_ERROR");
 
     const existing = await query(
-      "SELECT id, name, price, sale_price, stock_quantity, status, category_id, image_url FROM products WHERE id = ?",
+      "SELECT id, name, price, sale_price, stock_quantity, low_stock_limit, status, category_id, image_url FROM products WHERE id = ?",
       [req.params.id],
     );
     if (!existing.length)
@@ -786,10 +795,18 @@ const updateProduct = asyncHandler(async (req, res) => {
       }
     }
 
+    // Recompute stock_status from the REAL new stock so inventory state never
+    // goes stale when stock is changed through the product-edit form.
+    const oldStockForStatus = Number(existing[0].stock_quantity) || 0;
+    const lowStockLimit = Number(existing[0].low_stock_limit ?? 10);
+    let stock_status = "in_stock";
+    if (stock === 0) stock_status = "out_of_stock";
+    else if (oldStockForStatus <= 0 || stock <= lowStockLimit) stock_status = "limited_stock";
+
     await query(
       `UPDATE products
        SET name = ?, description = ?, short_description = ?, price = ?, sale_price = ?,
-           discount_percent = ?, stock = ?, stock_quantity = ?, category_id = ?,
+           discount_percent = ?, stock = ?, stock_quantity = ?, stock_status = ?, category_id = ?,
            subcategory_id = ?, image_url = ?, sku = ?, status = ?, featured = ?,
            brand = ?, features = ?, applications = ?, updated_at = NOW()
        WHERE id = ?`,
@@ -802,6 +819,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         discount_percent,
         stock,
         stock,
+        stock_status,
         category_id,
         subcategory_id,
         image_url,
@@ -900,24 +918,74 @@ const updateProduct = asyncHandler(async (req, res) => {
     const extras = await fetchProductExtras(req.params.id);
 
     const oldProduct = existing[0];
-    const oldPrice = Number(oldProduct.price);
-    const newPrice = Number(updated.price);
     const oldStock = Number(oldProduct.stock_quantity);
     const newStock = Number(updated.stock_quantity);
-    // NOTE: Legacy PRICE_DROP broadcast removed — price-drop notifications are
-    // now handled by processPriceDrop() below with proper effective-price
-    // comparison, threshold, wishlist+cart targeting, event-key dedup, and
-    // admin activity recording (no duplicate alerts).
-    if (oldStock <= 0 && newStock > 0) {
-      await notifyProductEvent({
-        product: updated,
-        type: NOTIFICATION_TYPES.BACK_IN_STOCK,
-        title: "Back in Stock",
-        message: `"${updated.name}" is back in stock and ready to order.`,
-        priority: "HIGH",
-        eventKey: `BACK_IN_STOCK:PRODUCT_${updated.id}:${newStock}`,
-      });
+
+    // ─── BACK IN STOCK + PRICE DROP ORCHESTRATION ──────────────────────
+    // Stock transition is detected from REAL database values read BEFORE the
+    // update (oldStock) vs AFTER (newStock). Only a genuine 0 -> positive
+    // transition triggers Back-in-Stock alerts.
+    const restockTransition = oldStock <= 0 && newStock > 0;
+
+    // If the SAME update also caused a qualifying effective-price drop, the
+    // Back-in-Stock subscribers receive ONE combined notification instead of two.
+    const oldEffective = getEffectivePrice(oldProduct);
+    const newEffective = getEffectivePrice(updated);
+    const qualifyingPriceDrop =
+      newEffective < oldEffective && isEligibleDrop(oldEffective, newEffective)
+        ? {
+            oldPrice: oldEffective,
+            newPrice: newEffective,
+            dropAmount: Math.round((oldEffective - newEffective) * 100) / 100,
+            dropPercent: calculateDropPercent(oldEffective, newEffective),
+          }
+        : null;
+
+    let priceDropInfo = null;
+    let backInStockInfo = null;
+    try {
+      if (restockTransition) {
+        // Subscribers are excluded from the standalone PRICE_DROP broadcast so
+        // they only receive the single combined Back-in-Stock (+ Price Drop) alert.
+        let subscriberIds = [];
+        try {
+          subscriberIds = await getActiveSubscriberIds(updated.id);
+        } catch (subscriberError) {
+          console.warn("[BACK IN STOCK] Subscriber lookup failed:", subscriberError.message);
+        }
+        try {
+          priceDropInfo = await processPriceDrop({
+            product: updated,
+            oldProduct: oldProduct,
+            changedBy: req.admin?.id || null,
+            excludeUserIds: subscriberIds,
+          });
+        } catch (priceDropError) {
+          console.warn("[PRICE DROP] Detection failed:", priceDropError.message);
+        }
+        backInStockInfo = await processBackInStock({
+          product: updated,
+          oldStock,
+          newStock,
+          changedBy: req.admin?.id || null,
+          priceChange: qualifyingPriceDrop,
+        });
+      } else {
+        // No restock transition: normal price-drop handling only.
+        try {
+          priceDropInfo = await processPriceDrop({
+            product: updated,
+            oldProduct: oldProduct,
+            changedBy: req.admin?.id || null,
+          });
+        } catch (priceDropError) {
+          console.warn("[PRICE DROP] Detection failed:", priceDropError.message);
+        }
+      }
+    } catch (orchestrationError) {
+      console.warn("[PRODUCT UPDATE] Notification orchestration failed:", orchestrationError.message);
     }
+
     if (oldProduct.status === "active" && updated.status !== "active") {
       await notifyProductEvent({
         product: updated,
@@ -928,22 +996,10 @@ const updateProduct = asyncHandler(async (req, res) => {
       });
     }
 
-    // Price drop detection: compare real database prices before/after update.
-    // Triggers customer notifications for wishlist/cart customers + admin activity.
-    let priceDropInfo = null;
-    try {
-      priceDropInfo = await processPriceDrop({
-        product: updated,
-        oldProduct: oldProduct,
-        changedBy: req.admin?.id || null,
-      });
-    } catch (priceDropError) {
-      console.warn("[PRICE DROP] Detection failed:", priceDropError.message);
-    }
-
     return success(res, "Product updated successfully", {
       product: { ...enrichProductWithDiscount(withNormalizedImageUrl(updated)), ...extras },
       priceDrop: priceDropInfo,
+      backInStock: backInStockInfo,
       priceHistory: priceDropInfo?.detected ? await require("../services/priceDropService").getPriceHistory(updated.id) : undefined,
     });
   } catch (error) {

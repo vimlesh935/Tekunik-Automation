@@ -898,6 +898,31 @@ const ensureProductPriceHistoryTable = async () => {
   }
 };
 
+const ensureBackInStockTables = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'back_in_stock_alerts'");
+    if (!tables.length) {
+      await query(`CREATE TABLE back_in_stock_alerts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        variant_id INT NULL,
+        status ENUM('ACTIVE','NOTIFIED','CANCELLED') NOT NULL DEFAULT 'ACTIVE',
+        notified_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_bis_user_product (user_id, product_id),
+        INDEX idx_bis_product_status (product_id, status),
+        INDEX idx_bis_status (status),
+        INDEX idx_bis_notified_at (notified_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      )`);
+      console.log("✅ [MIGRATE] Created back_in_stock_alerts table");
+    } else console.log("✅ [MIGRATE] back_in_stock_alerts table exists");
+  } catch (error) { console.warn("⚠️ [MIGRATE] Could not ensure back-in-stock alerts table:", error.message); }
+};
+
 const ensureAdminActivityTable = async () => {
   try {
     const tables = await query("SHOW TABLES LIKE 'admin_activity_logs'");
@@ -945,4 +970,5 @@ module.exports = {
   ensureNotificationsTable,
   ensureAdminActivityTable,
   ensureProductPriceHistoryTable,
+  ensureBackInStockTables,
 };

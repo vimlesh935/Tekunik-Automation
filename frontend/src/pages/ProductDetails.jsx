@@ -16,8 +16,9 @@ import {
   Layers,
   Sparkles,
   Edit,
+  Bell,
 } from "lucide-react";
-import { productService, cartService, reviewService, wishlistService } from "../services/api";
+import { productService, cartService, reviewService, wishlistService, backInStockService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -59,6 +60,9 @@ export default function ProductDetails({ token }) {
   // Wishlist state
   const [wishlist, setWishlist] = useState([]);
   const [addingToWishlist, setAddingToWishlist] = useState(new Map());
+
+  // Back-in-stock "Notify Me" state: idle | loading | success | active
+  const [notifyState, setNotifyState] = useState("idle");
 
   // Inline styles for review section
   const reviewSectionStyle = {
@@ -200,6 +204,7 @@ export default function ProductDetails({ token }) {
     setProduct(null);
     setRelatedProducts([]);
     setSelectedImageIndex(0);
+    setNotifyState("idle");
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     const loadProduct = async () => {
@@ -271,6 +276,48 @@ export default function ProductDetails({ token }) {
       addToast(error?.message || "Unable to add item to cart.", "error");
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  // ─── BACK IN STOCK: Notify Me ────────────────────────────────────
+  // Load this customer's real alert status from the backend whenever an
+  // out-of-stock product page is viewed while signed in.
+  useEffect(() => {
+    let cancelled = false;
+    const loadAlertStatus = async () => {
+      if (!isAuthenticated || !product?.id || Number(product.stock_quantity) > 0) return;
+      try {
+        const res = await backInStockService.getStatus(product.id);
+        if (!cancelled && res?.data?.active) setNotifyState("active");
+      } catch {
+        // Non-critical: button simply stays in default state.
+      }
+    };
+    loadAlertStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, product?.id, product?.stock_quantity]);
+
+  const handleNotifyMe = async () => {
+    if (!product?.id) return;
+    if (!isAuthenticated) {
+      addToast("Sign in to get notified when this product is back in stock.", "info");
+      navigate("/login");
+      return;
+    }
+    setNotifyState("loading");
+    try {
+      await backInStockService.subscribe(product.id);
+      setNotifyState("success");
+      addToast("We'll notify you when this product is back in stock! 🔔", "success");
+    } catch (error) {
+      if (error?.code === "ALREADY_IN_STOCK") {
+        addToast("Good news — this product is back in stock!", "success");
+      } else {
+        addToast(error?.message || "Could not register your notification.", "error");
+      }
+      setNotifyState("idle");
     }
   };
 
@@ -552,23 +599,50 @@ export default function ProductDetails({ token }) {
 
                 {/* CTA Action Array Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    disabled={product.stock_quantity === 0 || addingToCart}
-                    className={`flex-1 inline-flex items-center justify-center gap-2.5 rounded-xl px-6 py-4 text-xs uppercase tracking-wider font-bold transition-all duration-300 active:scale-98 ${
-                      product.stock_quantity === 0
-                        ? "bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed"
-                        : "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-500 hover:to-indigo-600 shadow-lg shadow-indigo-600/10 border border-indigo-500/20"
-                    }`}
-                  >
-                    {addingToCart ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <ShoppingCart size={15} />
-                    )}
-                    {addingToCart ? "Deploying Node..." : " Add to Cart"}
-                  </button>
+                  {product.stock_quantity === 0 ? (
+                    /* Out of stock → Notify Me replaces Add to Cart */
+                    <button
+                      type="button"
+                      onClick={handleNotifyMe}
+                      disabled={notifyState === "loading" || notifyState === "success" || notifyState === "active"}
+                      className={`flex-1 inline-flex items-center justify-center gap-2.5 rounded-xl px-6 py-4 text-xs uppercase tracking-wider font-bold transition-all duration-300 active:scale-98 ${
+                        notifyState === "success" || notifyState === "active"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default"
+                          : "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-600/10 border border-amber-400/20"
+                      }`}
+                    >
+                      {notifyState === "loading" ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : notifyState === "success" || notifyState === "active" ? (
+                        <CheckCircle size={15} />
+                      ) : (
+                        <Bell size={15} />
+                      )}
+                      {notifyState === "loading"
+                        ? "Registering..."
+                        : notifyState === "success"
+                          ? "We'll Notify You"
+                          : notifyState === "active"
+                            ? "Notification Active"
+                            : "Notify Me"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={addingToCart}
+                      className={`flex-1 inline-flex items-center justify-center gap-2.5 rounded-xl px-6 py-4 text-xs uppercase tracking-wider font-bold transition-all duration-300 active:scale-98 ${
+                        "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-500 hover:to-indigo-600 shadow-lg shadow-indigo-600/10 border border-indigo-500/20"
+                      }`}
+                    >
+                      {addingToCart ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : (
+                        <ShoppingCart size={15} />
+                      )}
+                      {addingToCart ? "Deploying Node..." : " Add to Cart"}
+                    </button>
+                  )}
 
                   <CompareButton productId={product.id} />
 

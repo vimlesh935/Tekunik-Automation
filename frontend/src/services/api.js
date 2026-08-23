@@ -304,6 +304,23 @@ export const wishlistService = {
     apiCall(`/api/wishlist/${productId}`, { method: "DELETE" }),
 };
 
+export const backInStockService = {
+  subscribe: (productId) =>
+    apiCall(`/api/back-in-stock/${productId}`, { method: "POST" }),
+  cancel: (productId) =>
+    apiCall(`/api/back-in-stock/${productId}`, { method: "DELETE" }),
+  getStatus: (productId) =>
+    apiCall(`/api/back-in-stock/status/${productId}`),
+  myAlerts: () => apiCall("/api/back-in-stock/my"),
+  // Admin
+  adminWaitingCustomers: (productId, page = 1, limit = 50) =>
+    apiCall(`/api/admin/back-in-stock/product/${productId}/waiting?page=${page}&limit=${limit}`),
+  adminWaitingCounts: (ids = "") =>
+    apiCall(`/api/admin/back-in-stock/waiting-counts${ids ? `?ids=${ids}` : ""}`),
+  adminRestockAnalytics: (productId) =>
+    apiCall(`/api/admin/back-in-stock/product/${productId}/analytics`),
+};
+
 export const recentlyViewedService = {
   getAll: () => apiCall("/api/recently-viewed"),
   add: (productId) => apiCall("/api/recently-viewed", {

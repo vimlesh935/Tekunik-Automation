@@ -28,9 +28,10 @@ import {
   Star,
   Heart,
   Trash2,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
-import apiCall, { productService, orderService, userService, reviewService, wishlistService } from "../services/api";
+import apiCall, { productService, orderService, userService, reviewService, wishlistService, backInStockService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -69,6 +70,9 @@ export default function Dashboard() {
   const [totalItems, setTotalItems] = useState(0);
   const [wishlist, setWishlist] = useState([]);
   const [removingFromWishlist, setRemovingFromWishlist] = useState(null);
+  // Back-in-stock alert state per wishlist item (product_id -> true)
+  const [notifySubscribed, setNotifySubscribed] = useState({});
+  const [notifyLoadingId, setNotifyLoadingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -232,6 +236,25 @@ useEffect(() => {
       showNotification(error?.message || "Failed to remove from wishlist", "error");
     } finally {
       setRemovingFromWishlist(null);
+    }
+  };
+
+  // ─── BACK IN STOCK: Notify Me for out-of-stock wishlist items ────
+  const handleNotifyWishlistItem = async (productId) => {
+    if (!productId || notifyLoadingId) return;
+    setNotifyLoadingId(productId);
+    try {
+      await backInStockService.subscribe(productId);
+      setNotifySubscribed((prev) => ({ ...prev, [productId]: true }));
+      showNotification("We'll notify you when this product is back in stock! 🔔", "success");
+    } catch (error) {
+      if (error?.code === "ALREADY_IN_STOCK") {
+        showNotification("Good news — this product is back in stock!", "success");
+      } else {
+        showNotification(error?.message || "Could not register your notification.", "error");
+      }
+    } finally {
+      setNotifyLoadingId(null);
     }
   };
 
@@ -1016,6 +1039,33 @@ useEffect(() => {
                               </h3>
                             </Link>
 
+                            {/* Out of stock → one-click Back-in-Stock alert */}
+                            {Number(item.stock_quantity) <= 0 && (
+                              <div className="mb-3">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 text-[10px] font-bold text-rose-400 mb-2">
+                                  Out of Stock
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleNotifyWishlistItem(item.product_id)}
+                                  disabled={notifyLoadingId === item.product_id || notifySubscribed[item.product_id]}
+                                  className={`w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                                    notifySubscribed[item.product_id]
+                                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default"
+                                      : "bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500 hover:text-white hover:border-amber-500"
+                                  }`}
+                                >
+                                  {notifyLoadingId === item.product_id ? (
+                                    <Loader size={13} className="animate-spin" />
+                                  ) : (
+                                    <Bell size={13} />
+                                  )}
+                                  {notifySubscribed[item.product_id]
+                                    ? "✓ Notification Active"
+                                    : "🔔 Notify Me When Available"}
+                                </button>
+                              </div>
+                            )}
                             <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-800/60">
                               <div className="flex flex-col">
                                 {item.price_dropped && (

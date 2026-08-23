@@ -434,6 +434,47 @@ const createOrder = asyncHandler(async (req, res) => {
       for (const item of validatedItems) {
         await detectProductDemand(item.product_id);
       }
+
+      // Post-restock purchase signal: customer bought a product they had been
+      // notified about via a Back-in-Stock alert. Correlation signal only —
+      // never claimed as proof the notification caused the purchase.
+      if (user_id) {
+        try {
+          const itemIds = validatedItems.map((i) => Number(i.product_id)).filter(Boolean);
+          if (itemIds.length > 0) {
+            const placeholders = itemIds.map(() => "?").join(",");
+            const matches = await query(
+              `SELECT a.id, a.product_id, a.notified_at, p.name AS product_name
+               FROM back_in_stock_alerts a
+               JOIN products p ON p.id = a.product_id
+               WHERE a.user_id = ? AND a.status = 'NOTIFIED'
+                 AND a.product_id IN (${placeholders})
+                 AND a.notified_at IS NOT NULL
+                 AND a.notified_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`,
+              [user_id, ...itemIds],
+            );
+            for (const match of matches) {
+              await createActivity({
+                userId: user_id,
+                activityType: ACTIVITY_TYPES.POST_RESTOCK_PURCHASE,
+                entityType: "product",
+                entityId: match.product_id,
+                metadata: {
+                  productId: match.product_id,
+                  productName: match.product_name,
+                  orderId,
+                  orderNumber,
+                  notifiedAt: match.notified_at,
+                  label: "Purchase after Restock Alert",
+                },
+                eventKey: `POST_RESTOCK_PURCHASE:${orderId}:${match.product_id}`,
+              });
+            }
+          }
+        } catch (restockSignalError) {
+          console.warn("[ACTIVITY] Post-restock purchase signal failed:", restockSignalError.message);
+        }
+      }
     } catch (activityError) {
       console.warn("[ACTIVITY] Order created activity failed:", activityError.message);
     }

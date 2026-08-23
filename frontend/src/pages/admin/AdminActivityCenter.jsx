@@ -32,6 +32,11 @@ const ACTIVITY_META = {
   PRODUCT_DEMAND: { icon: Zap, color: "text-orange-400", bg: "bg-orange-500/10", label: "Product Demand" },
   LOW_STOCK_DEMAND: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", label: "Inventory Attention" },
   PRICE_DROPPED: { icon: Tag, color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Price Dropped" },
+  BACK_IN_STOCK: { icon: Package, color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Product Back in Stock" },
+  OUT_OF_STOCK: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", label: "Product Out of Stock" },
+  DEMAND_EXCEEDS_RESTOCK: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10", label: "Demand Exceeds Restock" },
+  RESTOCK_BELOW_DEMAND: { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10", label: "Restocked Below Customer Demand" },
+  POST_RESTOCK_PURCHASE: { icon: ShoppingCart, color: "text-cyan-400", bg: "bg-cyan-500/10", label: "Purchase after Restock Alert" },
   OFFER_VIEWED: { icon: Percent, color: "text-green-400", bg: "bg-green-500/10", label: "Offer Viewed" },
   OFFER_USED: { icon: Percent, color: "text-green-400", bg: "bg-green-500/10", label: "Offer Used" },
   ADDRESS_ADDED: { icon: MapPin, color: "text-gray-400", bg: "bg-gray-500/10", label: "Address Added" },
@@ -45,6 +50,7 @@ const CATEGORIES = [
   { value: "orders", label: "Orders" },
   { value: "reviews", label: "Reviews" },
   { value: "products", label: "Products" },
+  { value: "inventory", label: "Inventory" },
   { value: "search", label: "Search" },
   { value: "smart_home", label: "Smart Home" },
   { value: "offers", label: "Offers" },
@@ -127,6 +133,16 @@ const getActivityTitle = (activity) => {
     case "PRODUCT_DEMAND": return `${m.productName || "A product"} is trending`;
     case "LOW_STOCK_DEMAND": return `${m.productName || "A product"} is trending with low stock`;
     case "PRICE_DROPPED": return `${m.productName || "A product"} price dropped from ₹${Number(m.oldPrice || 0).toLocaleString("en-IN")} to ₹${Number(m.newPrice || 0).toLocaleString("en-IN")}`;
+    case "BACK_IN_STOCK": {
+      const priceNote = m.combinedWithPriceDrop
+        ? ` at ₹${Number(m.newPrice || 0).toLocaleString("en-IN")} (🔥 Price Drop + Restock)`
+        : "";
+      return `${m.productName || "A product"} is back in stock${priceNote} — stock ${m.previousStock ?? 0} → ${m.newStock ?? 0}, ${m.notificationsCreated || 0} customer(s) notified`;
+    }
+    case "OUT_OF_STOCK": return `${m.productName || "A product"} became Out of Stock (${m.previousStock ?? 0} → ${m.newStock ?? 0})`;
+    case "DEMAND_EXCEEDS_RESTOCK": return `${m.message || `${m.waitingCustomers || 0} customers were waiting but only ${m.restockedUnits || 0} units were restocked`}`;
+    case "RESTOCK_BELOW_DEMAND": return `${m.message || `${m.currentStock || 0} units are available, but ${m.waitingCustomers || 0} customers were waiting for this product`}`;
+    case "POST_RESTOCK_PURCHASE": return `${activity.customer_name || m.customerName || "A customer"} purchased ${m.productName || "a product"} after a restock alert`;
     case "OFFER_VIEWED": return `Offer viewed`;
     case "OFFER_USED": return `Offer used`;
     case "ADDRESS_ADDED": return `Customer added a delivery address`;

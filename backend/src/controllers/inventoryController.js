@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 const { success } = require("../utils/response");
 const { withNormalizedImageUrl } = require("../utils/uploadPaths");
+const { processBackInStock, getWaitingCount } = require("../services/backInStockService");
 
 const toCategorySlug = (value) =>
   String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -122,7 +123,8 @@ const listInventory = asyncHandler(async (req, res) => {
 
   const products = await query(
     `SELECT p.id, p.name, p.sku, p.price, p.stock, p.stock_quantity, p.low_stock_limit, 
-            p.stock_status, p.image_url, pc.name AS category_name, p.updated_at
+            p.stock_status, p.image_url, pc.name AS category_name, p.updated_at,
+            (SELECT COUNT(*) FROM back_in_stock_alerts b WHERE b.product_id = p.id AND b.status = 'ACTIVE') AS waiting_customers
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
      ${where}
@@ -162,11 +164,18 @@ const getInventoryItem = asyncHandler(async (req, res) => {
      FROM inventory_logs
      WHERE product_id = ?
      ORDER BY created_at DESC
-     LIMIT 20`,
+     LIMIT 50`,
     [req.params.id]
   );
 
-  return success(res, "Inventory item fetched", { product: withNormalizedImageUrl(product), logs });
+  // Real demand data: customers actively waiting for this product.
+  const waitingCustomers = await getWaitingCount(product.id);
+
+  return success(res, "Inventory item fetched", {
+    product: withNormalizedImageUrl(product),
+    waitingCustomers,
+    logs,
+  });
 });
 
 /**
@@ -244,13 +253,41 @@ const updateStock = asyncHandler(async (req, res) => {
     [productId, oldStock, newStock, action, req.admin?.id || req.user?.id || null, `Manual ${action} update`]
   );
 
+  // ─── BACK IN STOCK TRANSITION DETECTION ────────────────────────────
+  // Reads real DB values: previous stock vs new stock. Only a genuine
+  // 0 -> positive transition notifies subscribers. Failures here never
+  // roll back the inventory update.
+  let backInStockInfo = null;
+  try {
+    backInStockInfo = await processBackInStock({
+      product: updatedProductRef(product, newStock, stockStatus),
+      oldStock,
+      newStock,
+      changedBy: req.admin?.id || req.user?.id || null,
+      priceChange: null,
+    });
+  } catch (bisError) {
+    console.warn("[BACK IN STOCK] Processing failed:", bisError.message);
+  }
+
   const [updated] = await query("SELECT * FROM products WHERE id = ?", [productId]);
   console.log(`[STOCK UPDATE] Success: ${product.name} | ${oldStock} → ${newStock} (${action})`);
   return success(res, "Stock updated successfully", { 
     product: updated,
     oldStock,
-    newStock
+    newStock,
+    backInStock: backInStockInfo
   });
+});
+
+/**
+ * Build a lightweight product reference for notification processing without
+ * re-querying the database.
+ */
+const updatedProductRef = (originalProduct, newStock, stockStatus) => ({
+  ...originalProduct,
+  stock_quantity: newStock,
+  stock_status: stockStatus,
 });
 
 /**
@@ -320,6 +357,33 @@ const bulkUpdateStock = asyncHandler(async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?)`,
         [product_id, oldStock, newStock, action_type, req.admin?.id || req.user?.id || null, notes || null]
       );
+
+      // Back-in-stock transition detection per product (bulk restock safe).
+      try {
+        const bisResult = await processBackInStock({
+          product: updatedProductRef(product, newStock, stockStatus),
+          oldStock,
+          newStock,
+          changedBy: req.admin?.id || req.user?.id || null,
+          priceChange: null,
+        });
+        if (bisResult.backInStock) {
+          results.push({
+            product_id,
+            oldStock,
+            newStock,
+            status: "updated",
+            backInStock: {
+              notificationsCreated: bisResult.notificationsCreated,
+              waitingCustomers: bisResult.waitingCustomers,
+              demandExceedsRestock: bisResult.demandExceedsRestock,
+            },
+          });
+          continue;
+        }
+      } catch (bisError) {
+        console.warn("[BACK IN STOCK] Bulk processing failed:", bisError.message);
+      }
 
       results.push({ product_id, oldStock, newStock, status: "updated" });
     } catch (error) {

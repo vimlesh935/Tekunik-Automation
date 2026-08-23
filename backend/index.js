@@ -13,7 +13,7 @@ const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
-const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable } = require("./src/config/migrate");
+const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables } = require("./src/config/migrate");
 const { detectAbandonedCarts } = require("./src/services/adminActivityService");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -51,6 +51,7 @@ const systemRoutes = require("./src/routes/systemRoutes");
 const recentlyViewedRoutes = require("./src/routes/recentlyViewedRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const adminActivityRoutes = require("./src/routes/adminActivityRoutes");
+const backInStockRoutes = require("./src/routes/backInStockRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -194,6 +195,7 @@ app.use(systemRoutes);
 app.use(recentlyViewedRoutes);
 app.use(notificationRoutes);
 app.use(adminActivityRoutes);
+app.use(backInStockRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -284,6 +286,7 @@ await ensureOffersTable();
     await ensureNotificationsTable();
     await ensureAdminActivityTable();
     await ensureProductPriceHistoryTable();
+    await ensureBackInStockTables();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
