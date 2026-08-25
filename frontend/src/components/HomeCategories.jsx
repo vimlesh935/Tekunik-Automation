@@ -50,8 +50,8 @@ function CategoryCard({ cat }) {
         <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors duration-200 line-clamp-1">
           {cat.name}
         </h3>
-        <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-          {cat.desc}
+<p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+{cat.description || cat.name}
         </p>
       </div>
     </Link>

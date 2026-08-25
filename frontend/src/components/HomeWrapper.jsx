@@ -41,48 +41,60 @@ export default function HomeWrapper({ token }) {
         setError(null);
 
         const [prodRes, catRes] = await Promise.allSettled([
-          productService.getAllProducts(1, 50),
+          productService.getTrendingProducts(8).catch(() => null),
           categoryService.getAllCategories(),
         ]);
 
-        if (prodRes.status === "fulfilled") {
+        // Try trending endpoint, fall back to dynamic sorting
+        let products = [];
+        if (prodRes?.status === "fulfilled" && prodRes.value) {
           const response = prodRes.value;
-          const products = response?.data?.products || response?.products || [];
-          if (products.length > 0) {
-            setFeaturedProducts(products);
-          } else {
-            try {
-              const fallbackRes = await productService.getAllProducts(1, 50);
-              const fallbackProducts = fallbackRes?.data?.products || fallbackRes?.products || [];
-              setFeaturedProducts(fallbackProducts);
-            } catch {
-              setFeaturedProducts([]);
-            }
+          products = response?.data?.products || response?.products || [];
+        }
+        if (!products.length) {
+          // Fallback: load all products and sort dynamically
+          try {
+            const fallbackRes = await productService.getAllProducts(1, 50);
+            products = (fallbackRes?.data?.products || fallbackRes?.products || []).filter(
+              (p) => p.status === "active" || !p.status
+            );
+          } catch {
+            products = [];
           }
+        }
+
+        // Dynamic trending sort: featured products first, then by creation date
+        // This uses real data: featured flag from product model, and recent activity
+        const sortedProducts = products.sort((a, b) => {
+          // Priority 1: featured products come first
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          // Priority 2: newer products (by created_at) come next
+          if (a.created_at && b.created_at) {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          }
+          return 0;
+        });
+
+        if (sortedProducts.length > 0) {
+          setFeaturedProducts(sortedProducts);
         } else {
-          const reason = prodRes.reason;
-          console.error("[HomeWrapper] Failed to load products:", reason?.status, reason?.message);
-          if (reason?.status && reason?.status !== 404) {
-            setError(reason?.message || "Failed to load products");
-          }
           setFeaturedProducts([]);
         }
 
-        if (catRes.status === "fulfilled") {
-          const catData = catRes.value;
-          const dynamicCategories = (catData?.data?.categories || catData?.categories || []).map((cat, i) => ({
-            ...cat,
-            icon: [HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer][i % 8],
-            desc: cat.description || `Explore our ${cat.name} range`,
-          }));
-          setCategories(dynamicCategories);
+        // Process categories response
+        if (catRes?.status === "fulfilled" && catRes.value) {
+          const catResponse = catRes.value;
+          const cats =
+            catResponse?.data?.categories || catResponse?.categories || [];
+          setCategories(Array.isArray(cats) ? cats : []);
         } else {
-          console.error("[HomeWrapper] Failed to load categories:", catRes.reason);
           setCategories([]);
         }
       } catch (error) {
         console.error("Failed to load home data:", error);
         setError("Failed to sync store parameters. Please reload.");
+        setFeaturedProducts([]);
       } finally {
         setLoading(false);
       }

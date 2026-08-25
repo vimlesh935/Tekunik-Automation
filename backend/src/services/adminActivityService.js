@@ -608,7 +608,7 @@ const detectZeroResultSearch = async (searchTerm) => {
  * Deduplicated by event_key per day.
  */
 const detectAbandonedCarts = async () => {
-  const [rows] = await query(
+  const rows = await query(
     `SELECT c.user_id, c.id AS cart_id,
             COUNT(ci.id) AS item_count,
             SUM(p.price * ci.quantity) AS cart_value,
@@ -624,11 +624,15 @@ const detectAbandonedCarts = async () => {
   );
 
   let created = 0;
+  if (!Array.isArray(rows)) {
+    console.warn("[ACTIVITY] Abandoned cart detection: invalid rows returned");
+    return 0;
+  }
   for (const cart of rows) {
     const [user] = await query("SELECT id, email FROM users WHERE id = ?", [cart.user_id]);
     if (!user) continue;
 
-    const [products] = await query(
+    const products = await query(
       `SELECT p.id, p.name, p.image_url, ci.quantity
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id

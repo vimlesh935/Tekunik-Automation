@@ -264,6 +264,8 @@ export const productService = {
     apiCall(`/api/products/application/${encodeURIComponent(application)}?page=${page}&limit=${limit}`),
   getApplicationCounts: () =>
     apiCall("/api/products/applications/counts"),
+  getTrendingProducts: (limit = 8) =>
+    apiCall(`/api/products/trending?limit=${Math.max(1, Number(limit) || 8)}`),
 };
 
 export const adminProductService = {

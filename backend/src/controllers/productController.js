@@ -441,32 +441,35 @@ const compareProducts = asyncHandler(async (req, res) => {
   return success(res, "Products fetched for comparison", { products: result });
 });
 
-/** GET /api/products/:slug - Public product detail */
+/** GET /api/products/:id or /api/products/:slug - Public product detail */
 const getProduct = asyncHandler(async (req, res) => {
   try {
-    const identifier = req.params.id || req.params.slug;
-    const bySlug = !req.params.id && req.params.slug;
+    const identifier = (req.params.id || req.params.slug || "").trim();
+    const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
+
+    const productSelect = `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
+         FROM products p
+         LEFT JOIN product_categories pc ON p.category_id = pc.id`;
 
     let product;
-    if (bySlug) {
+    // The route param is a single :id; it may hold a numeric product id or a slug.
+    // Try by id first, then fall back to slug lookup (e.g. /product/<slug> links from SmartSearch).
+    if (numericId !== null) {
       [product] = await query(
-        `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
-         FROM products p
-         LEFT JOIN product_categories pc ON p.category_id = pc.id
-         WHERE p.slug = ?`,
-        [identifier],
-      );
-    } else {
-      [product] = await query(
-        `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
-         FROM products p
-         LEFT JOIN product_categories pc ON p.category_id = pc.id
+        `${productSelect}
          WHERE p.id = ?`,
+        [numericId],
+      );
+    }
+    if (!product) {
+      [product] = await query(
+        `${productSelect}
+         WHERE p.slug = ?`,
         [identifier],
       );
     }
 
-if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
+    if (!product) throw new AppError("Product not found", 404, "NOT_FOUND");
 
     const extras = await fetchProductExtras(product.id);
 
@@ -1389,6 +1392,24 @@ const getApplicationCounts = asyncHandler(async (req, res) => {
   }
 });
 
+/** GET /api/products/trending - Public: trending products based on featured + recent activity */
+const getTrendingProducts = asyncHandler(async (req, res) => {
+  const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 8));
+
+  const products = await query(
+    `SELECT p.id, p.name, p.short_description, p.price, p.discount_percent, p.stock_quantity, p.stock_status, p.image_url,
+            p.brand, p.sku, pc.name AS category_name
+     FROM products p
+     LEFT JOIN product_categories pc ON p.category_id = pc.id
+     WHERE p.status = 'active'
+     ORDER BY p.featured DESC, p.created_at DESC
+     LIMIT ?`,
+    [limit],
+  );
+
+  return success(res, "Trending products fetched", { products });
+});
+
 module.exports = {
   listProducts,
   getProduct,
@@ -1407,4 +1428,5 @@ module.exports = {
   getProductsByApplication,
   getApplicationCounts,
   searchProducts,
+  getTrendingProducts,
 };
