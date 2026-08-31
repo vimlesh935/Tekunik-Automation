@@ -1,0 +1,4 @@
+[1] registered+logged in + server cart 1x prod19
+[2] localStorage: token=true guestCart=[]
+[3] emptyState=true hasCouponSection=false
+[4] summary img count ~ 0

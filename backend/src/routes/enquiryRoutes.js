@@ -163,7 +163,7 @@ router.post("/api/enquiry/demo", async (req, res) => {
     let emailError = null;
 
     try {
-      const smtp = createTransporter();
+      const smtp = await createTransporter();
       const htmlContent = buildEnquiryEmailHTML(sanitizedData);
       const adminEmail = env.smtp.from || env.smtp.user || "vimleshnew29@gmail.com";
 

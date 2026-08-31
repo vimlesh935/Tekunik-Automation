@@ -1,0 +1,6 @@
+[1] user + server cart 12x prod19 (base 12000)
+[2] SAVE10 apply button after poll: "Apply coupon SAVE10"
+[3] apply buttons: ["Apply coupon SMART20-5DYZVD","Apply coupon SMART20-KQSFF9","Apply coupon SMART20-UQV6JY","Apply coupon SMART20-4U39NZ","Apply coupon SMART20-CZQVFY","Apply coupon SMART20-UNDKVQ","Apply coupon SMART20-499FRD","Apply coupon SMART20-CSEVGZ","Apply coupon SMART20-SWA6T9","Apply coupon SMART20-JDNJJH","Apply coupon SMART20-DH3PBV","Apply coupon SMART20-H5T44B","Apply coupon SMART20-FUHZ7K","Apply coupon SMART20-PAGGMM","Apply coupon SMART20-NPAM8S","Apply coupon SMART20-6P86DQ","Apply coupon SMART20-NV6VGX","Apply coupon SMART20-ZXNQVF","Apply coupon SMART20-7WCD2G","Apply coupon WELCOME-7U8YD2","Apply coupon SAVE10","Apply coupon FLAT200"]
+[4] Remove-Coupon appeared (applied)= true
+[5] after apply: {"text":["Coupon applied","You save ₹500.00","Remove Coupon","You Save"],"total":"Total Amount\n₹5,500.00\n\nEstimated Delivery"}
+[6] after remove, promo input back: true

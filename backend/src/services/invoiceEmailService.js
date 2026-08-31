@@ -184,7 +184,7 @@ const buildInvoiceEmailHTML = (order, items, invoiceNumber) => {
 
 const sendInvoiceEmail = async ({ order, items, pdfPath, invoiceNumber }) => {
   try {
-    const smtp = createTransporter();
+    const smtp = await createTransporter();
     const customerName = order.guest_name || "Valued Customer";
     const totalAmount = parseFloat(order.total_amount).toFixed(2);
     const htmlContent = buildInvoiceEmailHTML(order, items, invoiceNumber);

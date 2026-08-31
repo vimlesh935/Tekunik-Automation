@@ -8,6 +8,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const { success } = require("../utils/response");
 const { signToken } = require("../utils/jwt");
 const { ACTIVITY_TYPES, createActivity } = require("../services/adminActivityService");
+const { generateWelcomeCoupon } = require("../services/couponService");
 
 const BCRYPT_ROUNDS = 12;
 
@@ -120,6 +121,37 @@ const register = asyncHandler(async (req, res) => {
 
   console.log("[auth] New user registered:", { id: userId, email });
 
+  // 🎁 Automatic new-user (welcome) coupon.
+  let welcomeCouponCode = null;
+  try {
+    const welcomeCoupon = await generateWelcomeCoupon(userId);
+    if (welcomeCoupon) {
+      welcomeCouponCode = welcomeCoupon.code;
+      const pctOff =
+        welcomeCoupon.offer_type === "percentage" && Number(welcomeCoupon.offer_value)
+          ? `${Math.round(Number(welcomeCoupon.offer_value))}%`
+          : null;
+      const notifTitle = pctOff ? `Your ${pctOff} Welcome Offer is ready` : "Your Welcome Offer is ready";
+      const notifMessage = pctOff
+        ? `🎁 Your ${pctOff} Welcome Offer is ready — open My Offers & Coupons to copy your code`
+        : "🎁 Your Welcome Offer is ready — open My Offers & Coupons to copy your code";
+      const { createNotification } = require("../services/notificationService");
+      await createNotification({
+        userId,
+        type: "OFFER",
+        title: notifTitle,
+        message: notifMessage,
+        data: { couponCode: welcomeCoupon.code, couponId: welcomeCoupon.id, offerId: welcomeCoupon.offer_id },
+        actionUrl: "/dashboard?tab=offers-coupons",
+        eventKey: `WELCOME_COUPON:${userId}`,
+        entityType: "coupon",
+        entityId: welcomeCoupon.id,
+      });
+    }
+  } catch (couponError) {
+    console.warn("[COUPON] Welcome coupon generation failed:", couponError.message);
+  }
+
   // Admin activity: new customer registered
   try {
     await createActivity({
@@ -139,7 +171,7 @@ const register = asyncHandler(async (req, res) => {
     console.warn("[ACTIVITY] Registration activity failed:", activityError.message);
   }
 
-  return success(res, "Registration successful! Please login.", { redirectTo: "/login" }, 201);
+  return success(res, "Registration successful! Please login.", { redirectTo: "/login", welcomeCouponCode }, 201);
 });
 
 /**

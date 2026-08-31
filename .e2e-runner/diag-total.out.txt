@@ -1,0 +1,51 @@
+
+=== Total diag 1788160456828 ===
+applyBtn=true
+lines=[
+ {
+  "i": 67,
+  "l": "You save ₹500.00",
+  "next": [
+   "You save ₹500.00",
+   "Remove Coupon",
+   ""
+  ]
+ },
+ {
+  "i": 499,
+  "l": "Subtotal (Original)",
+  "next": [
+   "Subtotal (Original)",
+   "₹6,000.00",
+   "You Save"
+  ]
+ },
+ {
+  "i": 501,
+  "l": "You Save",
+  "next": [
+   "You Save",
+   "-₹3,000.00",
+   "Coupon (SAVE10)"
+  ]
+ },
+ {
+  "i": 503,
+  "l": "Coupon (SAVE10)",
+  "next": [
+   "Coupon (SAVE10)",
+   "-₹500.00",
+   "Shipping"
+  ]
+ },
+ {
+  "i": 507,
+  "l": "Total Amount",
+  "next": [
+   "Total Amount",
+   "₹2,500.00",
+   ""
+  ]
+ }
+]
+totals_api={"status":200,"data":{"couponCode":"SAVE10","discount":500}}

@@ -1,0 +1,21 @@
+
+=== Browser E2E 1787989404543 ===
+[PASS] Setup — user registered + logged in + cart built — token=eyJhbGciOi...
+[PASS] TEST 1 — Available coupons loaded from backend — count=24
+[PASS] TEST 2 - SMART20 eligible apply button visible — Apply coupon SMART20-S7S8YQ
+[PASS] TEST 3 - Coupon applied (Remove Coupon appears) — found
+[FAIL] TEST 3b - 'Coupon applied' message shown — no message
+[FAIL] TEST 4 - Discount = You save 1200 — You Save
+[FAIL] TEST 5 - Total = 4800.00 — Total Amount
+ERR: eval error: TypeError: Cannot read properties of undefined (reading 'click')
+    at <anonymous>:1:115
+    at <anonymous>:1:139
+Error: eval error: TypeError: Cannot read properties of undefined (reading 'click')
+    at <anonymous>:1:115
+    at <anonymous>:1:139
+    at evalJs (C:\Users\visha\Desktop\Tekunik\Automation\.e2e-runner\cdp.js:131:11)
+    at async C:\Users\visha\Desktop\Tekunik\Automation\.e2e-runner\browser-test.js:95:7
+
+========================================
+Browser E2E RESULT  PASS=4 FAIL=3
+========================================

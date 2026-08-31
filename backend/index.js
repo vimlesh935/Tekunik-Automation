@@ -13,7 +13,7 @@ const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
-const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables } = require("./src/config/migrate");
+const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables, ensureCouponTables } = require("./src/config/migrate");
 const { detectAbandonedCarts } = require("./src/services/adminActivityService");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -37,6 +37,9 @@ const userAdminRoutes = require("./src/routes/userAdminRoutes");
 const uploadRoutes = require("./src/routes/uploadRoutes");
 const inventoryRoutes = require("./src/routes/inventoryRoutes");
 const discountRoutes = require("./src/routes/discountRoutes");
+const couponRoutes = require("./src/routes/couponRoutes");
+const { ensureOfferLinkedCouponTables } = require("./src/config/couponMigration");
+const { notifyCouponsNearExpiry } = require("./src/services/couponService");
 const cartRoutes = require("./src/routes/cartRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const reviewRoutes = require("./src/routes/reviewRoutes");
@@ -178,6 +181,7 @@ app.use(orderRoutes);
 app.use(userAdminRoutes);
 app.use(inventoryRoutes);
 app.use(discountRoutes);
+app.use(couponRoutes);
 app.use(cartRoutes);
 app.use(require("./src/routes/wishlistRoutes"));
 const paymentRoutes = require("./src/routes/paymentRoutes");
@@ -287,6 +291,7 @@ await ensureOffersTable();
     await ensureAdminActivityTable();
     await ensureProductPriceHistoryTable();
     await ensureBackInStockTables();
+    await ensureOfferLinkedCouponTables();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
@@ -377,6 +382,24 @@ await ensureOffersTable();
     }
   }, 60 * 1000);
 
+  // Coupon expiry reminders - scan every 6 hours (first pass after 90s).
+  const couponExpiryInterval = setInterval(async () => {
+    try {
+      const notified = await notifyCouponsNearExpiry();
+      if (notified > 0) console.log(`[COUPON] Sent ${notified} coupon expiry reminder(s)`);
+    } catch (error) {
+      console.warn("[COUPON] Coupon expiry reminder scan failed:", error.message);
+    }
+  }, 6 * 60 * 60 * 1000);
+  setTimeout(async () => {
+    try {
+      const notified = await notifyCouponsNearExpiry();
+      if (notified > 0) console.log(`[COUPON] Sent ${notified} coupon expiry reminder(s)`);
+    } catch (error) {
+      console.warn("[COUPON] Initial coupon expiry reminder failed:", error.message);
+    }
+  }, 90 * 1000);
+
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
     console.log(`\n\n⚠️  ${signal} received - shutting down gracefully...`);
@@ -400,7 +423,10 @@ await ensureOffersTable();
 
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-  process.on("exit", () => clearInterval(abandonedCartInterval));
+  process.on("exit", () => {
+    clearInterval(abandonedCartInterval);
+    clearInterval(couponExpiryInterval);
+  });
 };
 
 // Error handlers

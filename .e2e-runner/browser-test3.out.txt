@@ -1,0 +1,24 @@
+
+=== Browser E2E v3 1788164773294 ===
+[PASS] Setup - user + cart (6x product 19 = 6000) — undefined
+[PASS] TEST 1 - Coupons loaded from backend — count=29
+[PASS] TEST 2 - SAVE10 eligible button visible — Apply coupon SAVE10
+[PASS] TEST 3 - Remove Coupon appears (applied) — found
+[PASS] TEST 3b - 'Coupon applied' on page — Coupon applied
+[PASS] TEST 4 - 'You save' with 500 on page — You save ₹500.00
+[PASS] TEST 5 - Total 2500.00 on page (6000 gross - 3000 offer - 500 coupon) — Total Amount ₹2,500.00 Estimated Delivery: 3–5 Business Days PROCEED TO CHECKOUT
+[PASS] TEST 7 - Promo input restored after remove — yes
+[PASS] TEST 8 - Fake code 'not found' — Coupon not found.
+[PASS] TEST 9 - FUTURE50 'not active yet' (NOT not found) — not active yet.
+[PASS] API - Fake code -> 400 COUPON_NOT_FOUND — status=400 code=COUPON_NOT_FOUND msg=Coupon not found.
+[PASS] API - FUTURE50 -> 400 OFFER_NOT_STARTED — status=400 code=OFFER_NOT_STARTED msg=This coupon is not active yet.
+[PASS] API - SAVE10 -> 200 success — status=200
+[PASS] API - SAVE10 discount = 500 (capped at 500) — discount=500
+[PASS] API - POST /validate SAVE10 valid=true + discount=500 — valid=true disc=500
+[PASS] API - FLAT200 min order (1000<1499) -> MIN_CART_NOT_REACHED — status=400 code=MIN_CART_NOT_REACHED msg=Add ₹499 more to unlock this coupon.
+[PASS] API - GET /available includes SAVE10 card — found=true
+[PASS] API - SAVE10 card has eligible=true — eligible=true
+
+========================================
+Browser E2E v3 RESULT  PASS=18 FAIL=0
+========================================

@@ -1,0 +1,18 @@
+
+=== Browser E2E v4 1788165447920 ===
+[PASS] Setup - user + cart (6x product 19 = 6000) — undefined
+[FAIL] TEST 7 - SAVE10 applied (Remove Coupon appears) — NOT found
+[PASS] TEST 1 - Coupon section visible on mobile — HAVE A PROMO CODE?
+[PASS] TEST 2 - No horizontal scroll (mobile) — scrollWidth=390 innerWidth=390
+[PASS] TEST 3 - Coupon input visible/tappable on mobile — input visible
+[FAIL] TEST 4 - Empty input shows 'Please enter a coupon code' — no message
+[FAIL] TEST 4b - Message is inline (below input) — Invalid coupon code
+[PASS] TEST 5 - Invalid coupon shows 'Invalid coupon code' — Invalid coupon code
+[FAIL] TEST 7b - 'You save ₹500.00' on page — no save text
+[FAIL] TEST 8 - Total Amount rendered on mobile — no total
+[PASS] TEST 9 - Promo input restored after Remove (mobile) — yes
+[PASS] TEST 10 - User-friendly error shown (toast or inline) — Invalid coupon code
+
+==========================================================
+Browser E2E v4 RESULT  PASS=7 FAIL=5
+==========================================================

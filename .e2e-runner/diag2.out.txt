@@ -1,0 +1,6 @@
+[api] available count=21
+[api] SAVE10 card: {"code":"SAVE10","couponType":"shared","title":"10% OFF sitewide","description":"Get 10% off up to ₹500 on your order.","discountType":"percentage","discountValue":10,"maxDiscount":500,"minOrder":999,"expiresAt":null,"eligible":true,"reasonCode":null,"message":"You can use this coupon on this order.","shortfall":0,"estimatedDiscount":100}
+[api] first3: [{"code":"WELCOME-335TJ5","elig":true,"lock":false,"reason":null,"short":0},{"code":"SAVE10","elig":true,"lock":false,"reason":null,"short":0},{"code":"FLAT200","elig":false,"lock":false,"reason":"MIN_CART_NOT_REACHED","short":499}]
+[dom] {"apply":[],"copy":[],"locked":[]}
+[net] 204 http://localhost:8787/api/coupons/available 
+[net] 204 http://localhost:8787/api/coupons/available 

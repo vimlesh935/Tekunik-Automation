@@ -764,4 +764,43 @@ export const offerService = {
   adminToggle: (id) => apiCall(`/api/admin/offers/${id}/toggle`, { method: "PATCH" }),
 };
 
+export const couponService = {
+  apply: (couponCode) =>
+    apiCall("/api/coupons/apply", { method: "POST", body: JSON.stringify({ couponCode }) }),
+  remove: () => apiCall("/api/coupons/remove", { method: "POST" }),
+  my: () => apiCall("/api/coupons/my"),
+  totals: () => apiCall("/api/coupons/totals"),
+  available: ({ cartItems, cartTotal } = {}) =>
+    apiCall("/api/coupons/available", {
+      method: "POST",
+      body: JSON.stringify({ cartItems: cartItems || [], cartTotal: Number(cartTotal || 0) }),
+    }),
+  validate: (code, { cartItems, cartTotal } = {}) =>
+    apiCall("/api/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code, cartItems, cartTotal }),
+    }),
+  // Admin
+  adminList: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.search) query.set("search", params.search);
+    if (params.status) query.set("status", params.status);
+    const qs = query.toString();
+    return apiCall(`/api/admin/coupons${qs ? `?${qs}` : ""}`);
+  },
+  adminCreate: (data) =>
+    apiCall("/api/admin/coupons", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdate: (id, data) =>
+    apiCall(`/api/admin/coupons/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminGenerate: (data) =>
+    apiCall("/api/admin/coupons/generate", { method: "POST", body: JSON.stringify(data) }),
+  adminStatus: (id, status) =>
+    apiCall(`/api/admin/coupons/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  adminGet: (id) => apiCall(`/api/admin/coupons/${id}`),
+  adminDelete: (id) => apiCall(`/api/admin/coupons/${id}`, { method: "DELETE" }),
+  adminStats: () => apiCall("/api/admin/coupons/stats"),
+};
+
 export default apiCall;

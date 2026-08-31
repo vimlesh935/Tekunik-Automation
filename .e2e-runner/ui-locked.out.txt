@@ -1,0 +1,9 @@
+
+=== Locked-coupon UI 1788161851813 ===
+[PASS] API - FLAT200 card locked with reason — locked=true reason=MIN_CART_NOT_REACHED msg="Add ₹499 more to unlock this coupon." shortfall=499
+[PASS] UI - FLAT200 locked card rendered (shortfall + copy button) — shortfall="Add ₹499.00 more to unlock" apply=false
+[PASS] UI - Lock reason shown (Add ₹499.00 more to unlock) — Add ₹499.00 more to unlock
+[PASS] UI - No enabled Apply button for locked FLAT200 — no apply button (correct)
+[PASS] UI - Copy button still available for locked code — yes
+
+LOCKED-UI RESULT PASS=5 FAIL=0

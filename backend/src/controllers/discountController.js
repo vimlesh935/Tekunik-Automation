@@ -90,7 +90,8 @@ const getDiscount = asyncHandler(async (req, res) => {
 const createDiscount = asyncHandler(async (req, res) => {
   const { 
     name, title, description, type, value, apply_to, product_ids, category_ids, 
-    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active 
+    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active,
+    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
   } = req.body;
 
   if (!name || !name.trim()) throw new AppError("Discount name is required", 400, "VALIDATION_ERROR");
@@ -103,8 +104,8 @@ const createDiscount = asyncHandler(async (req, res) => {
   }
 
   const result = await query(
-    `INSERT INTO discounts (name, title, description, type, value, apply_to, min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO discounts (name, title, description, type, value, apply_to, min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active, audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       name.trim(),
       title ? title.trim() : null,
@@ -118,6 +119,12 @@ const createDiscount = asyncHandler(async (req, res) => {
       starts_at || null,
       expires_at || null,
       is_active !== undefined ? (is_active ? 1 : 0) : 1,
+      audience || "ALL",
+      new_user_only !== undefined ? (new_user_only ? 1 : 0) : 0,
+      coupon_generation || null,
+      coupon_prefix || null,
+      usage_limit === undefined || usage_limit === null || usage_limit === "" ? null : Math.max(0, parseInt(usage_limit, 10) || 0),
+      coupon_validity_days === undefined || coupon_validity_days === null || coupon_validity_days === "" ? null : Math.max(0, parseInt(coupon_validity_days, 10) || 0),
     ]
   );
 
@@ -145,10 +152,11 @@ const updateDiscount = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { 
     name, title, description, type, value, apply_to, product_ids, category_ids, 
-    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active 
+    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active,
+    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
   } = req.body;
 
-  const existing = await query("SELECT id, value FROM discounts WHERE id = ?", [id]);
+  const existing = await query("SELECT id, value, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days FROM discounts WHERE id = ?", [id]);
   if (!existing.length) throw new AppError("Discount not found", 404, "NOT_FOUND");
 
   if (!name || !name.trim()) throw new AppError("Discount name is required", 400, "VALIDATION_ERROR");
@@ -161,7 +169,8 @@ const updateDiscount = asyncHandler(async (req, res) => {
   await query(
     `UPDATE discounts
      SET name = ?, title = ?, description = ?, type = ?, value = ?, apply_to = ?, min_order_value = ?,
-         maximum_discount = ?, banner_image = ?, starts_at = ?, expires_at = ?, is_active = ?
+         maximum_discount = ?, banner_image = ?, starts_at = ?, expires_at = ?, is_active = ?,
+         audience = ?, new_user_only = ?, coupon_generation = ?, coupon_prefix = ?, usage_limit = ?, coupon_validity_days = ?
      WHERE id = ?`,
     [
       name.trim(),
@@ -176,6 +185,16 @@ const updateDiscount = asyncHandler(async (req, res) => {
       starts_at || null,
       expires_at || null,
       is_active !== undefined ? (is_active ? 1 : 0) : 1,
+      audience || "ALL",
+      new_user_only !== undefined ? (new_user_only ? 1 : 0) : existing[0].new_user_only || 0,
+      coupon_generation !== undefined ? coupon_generation : existing[0].coupon_generation || null,
+      coupon_prefix !== undefined ? coupon_prefix : existing[0].coupon_prefix || null,
+      usage_limit !== undefined
+        ? (usage_limit === null || usage_limit === "" ? null : Math.max(0, parseInt(usage_limit, 10) || 0))
+        : (existing[0].usage_limit ?? null),
+      coupon_validity_days !== undefined
+        ? (coupon_validity_days === null || coupon_validity_days === "" ? null : Math.max(0, parseInt(coupon_validity_days, 10) || 0))
+        : (existing[0].coupon_validity_days ?? null),
       id,
     ]
   );

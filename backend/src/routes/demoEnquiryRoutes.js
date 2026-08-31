@@ -106,7 +106,7 @@ router.post("/api/demo-enquiry", async (req, res) => {
     let emailErrorMsg = null;
 
     try {
-      const smtp = createTransporter();
+      const smtp = await createTransporter();
 
       const emailHTML = `
         <!DOCTYPE html>
@@ -267,7 +267,7 @@ router.post("/api/enquiry/demo", async (req, res) => {
 
     let emailSent = false;
     try {
-      const smtp = createTransporter();
+      const smtp = await createTransporter();
       await smtp.sendMail({
         from: `"Tek Node Demos" <${env.smtp.user}>`,
         to: ADMIN_EMAIL,

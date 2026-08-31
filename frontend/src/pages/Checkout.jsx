@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { cartService, guestOrderService, userService, orderService } from "../services/api";
+import { cartService, guestOrderService, couponService, userService, orderService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
+import CouponOffers from "../components/checkout/CouponOffers.jsx";
 import { formatCurrency } from "../utils/currency.js";
 import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,7 @@ import {
   ShieldCheck,
   Truck,
   CheckCircle,
+  AlertCircle,
   User,
   Zap,
   Lock,
@@ -67,32 +69,211 @@ export default function Checkout() {
     payment_method: "cod",
     create_account: false,
   });
-  const [checkoutItems, setCheckoutItems] = useState([]);
-  const [checkoutTotals, setCheckoutTotals] = useState(EMPTY_CART);
+  const [checkoutItems, setCheckoutItems] = useState(() => guestCart.items || []);
+  const [checkoutTotals, setCheckoutTotals] = useState(() => ({
+    items: guestCart.items || [],
+    itemCount: guestCart.itemCount || (guestCart.items ? guestCart.items.length : 0),
+    totalQuantity: guestCart.totalQuantity || (guestCart.items ? guestCart.items.reduce((s, it) => s + Number(it.quantity || 0), 0) : 0),
+    totalAmount: guestCart.totalAmount || (guestCart.items ? guestCart.items.reduce((s, it) => s + Number(it.final_price || it.price || 0) * Number(it.quantity || 0), 0) : 0),
+  }));
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [cityLocked, setCityLocked] = useState(false);
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
   const isAuthenticated = authIsAuthenticated;
 
+  // ── Coupon state ──────────────────────────────────────────────────────
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, offerName, discount }
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [busyCode, setBusyCode] = useState(null);
+  const [couponMessage, setCouponMessage] = useState(null); // { type: "success" | "error", text }
+
+  // User-friendly inline messages for backend coupon error codes.
+  const couponErrorMessage = (code, fallback) => {
+    const map = {
+      COUPON_REQUIRED: "Please enter a coupon code",
+      COUPON_NOT_FOUND: "Invalid coupon code",
+      COUPON_DISABLED: "This coupon is not active right now",
+      COUPON_USED: "This coupon has already been used",
+      COUPON_LIMIT: "This coupon has reached its usage limit",
+      COUPON_USER_LIMIT: "You have already used this coupon",
+      COUPON_EXPIRED: "This coupon has expired",
+      COUPON_NOT_STARTED: "This coupon is not active yet",
+      COUPON_NOT_ASSIGNED: "This coupon is assigned to another account",
+      OFFER_STACK_DISALLOWED: "This coupon cannot be combined with the current offer.",
+      MIN_CART_NOT_REACHED: "Minimum purchase amount required",
+      CART_EMPTY: "Your cart is empty",
+      OFFER_NOT_APPLICABLE: "This coupon is not applicable to your cart items",
+      NEW_USER_FAILED: "This coupon is for new customers only",
+    };
+    return map[code] || fallback || "Unable to apply coupon";
+  };
+
+  const loadAvailableCoupons = async () => {
+    try {
+      setCouponsLoading(true);
+      const res = await couponService.available({
+        cartItems: checkoutItems,
+        cartTotal: checkoutTotals.totalAmount,
+      });
+      setAvailableCoupons(res?.data?.coupons || []);
+    } catch {
+      setAvailableCoupons([]);
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
+
+  const refreshCouponFromServer = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await couponService.totals();
+      const totals = res?.data || {};
+      if (totals.couponCode) {
+        setAppliedCoupon({
+          code: totals.couponCode,
+          offerName: totals.couponOfferName || totals.coupon?.description || "Coupon Discount",
+          discount: Number(totals.discount || 0),
+        });
+      } else {
+        setAppliedCoupon(null);
+        if (totals.invalidatedReason?.message) {
+          addToast(`Your coupon was removed — ${totals.invalidatedReason.message}`, "warning");
+        }
+      }
+    } catch (err) {
+      // quietly ignore — coupon preview is optional
+    }
+  };
+
+  const handleApplyCoupon = async (codeArg) => {
+    const code = String(codeArg ?? couponInput ?? "").trim();
+    if (!code) {
+      setCouponMessage({ type: "error", text: "Please enter a coupon code" });
+      addToast("Please enter a coupon code.", "warning");
+      return;
+    }
+    setCouponBusy(true);
+    setBusyCode(code);
+    try {
+      let res;
+      if (isAuthenticated) {
+        res = await couponService.apply(code);
+      } else {
+        res = await couponService.validate(code, {
+          cartItems: checkoutItems,
+          cartTotal: checkoutTotals.totalAmount,
+        });
+      }
+      addToast(res?.message || "Coupon applied successfully! 🎉", "success");
+      const d = res?.data || {};
+      setAppliedCoupon({
+        code: d.coupon?.code || code,
+        offerName: d.coupon?.offerName || d.couponOfferName || d.coupon?.description || "Coupon Discount",
+        discount: Number(d.coupon?.discount || d.discount || 0),
+      });
+      setCouponInput("");
+      setCouponMessage({ type: "success", text: "Coupon applied successfully" });
+    } catch (err) {
+      const codeLabel = err?.code || err?.response?.data?.code || null;
+      setCouponMessage({ type: "error", text: couponErrorMessage(codeLabel, err?.message) });
+      addToast(err?.message || "Unable to apply coupon", "error");
+    } finally {
+      setCouponBusy(false);
+      setBusyCode(null);
+      loadAvailableCoupons();
+    }
+  };
+
+  const handleRemoveCoupon = async () => {
+    setCouponBusy(true);
+    try {
+      if (isAuthenticated) {
+        await couponService.remove();
+      }
+      setAppliedCoupon(null);
+      setCouponMessage(null);
+      addToast("Coupon removed", "success");
+    } catch (err) {
+      addToast(err?.message || "Unable to remove coupon", "error");
+    } finally {
+      setCouponBusy(false);
+      loadAvailableCoupons();
+    }
+  };
+
   const handleChange = (key, value) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const syncGuestCart = () => {
-    setCheckoutItems(guestCart.items || []);
+    const items = guestCart.items || [];
+    setCheckoutItems(items);
     setCheckoutTotals({
-      items: guestCart.items || [],
-      itemCount: guestCart.itemCount || 0,
-      totalQuantity: guestCart.totalQuantity || 0,
-      totalAmount: guestCart.totalAmount || 0,
+      items,
+      itemCount: guestCart.itemCount || items.length,
+      totalQuantity: guestCart.totalQuantity || items.reduce((s, it) => s + Number(it.quantity || 0), 0),
+      totalAmount: guestCart.totalAmount || items.reduce((s, it) => s + Number(it.final_price || it.price || 0) * Number(it.quantity || 0), 0),
     });
   };
 
   useEffect(() => {
-    syncGuestCart();
-    if (!isAuthenticated) return;
     let isMounted = true;
+    const loadCart = async () => {
+      setLoading(true);
+      try {
+        if (!isAuthenticated) {
+          syncGuestCart();
+          return;
+        }
+        try {
+          const res = await cartService.getCart();
+          if (!isMounted) return;
+          const c = res?.data?.cart || res?.data || {};
+          const serverItems = (c.items || []).map((it) => ({
+            ...it,
+            cart_item_id: it.cart_item_id,
+            product_id: it.product_id,
+            max_quantity: it.max_quantity ?? it.stock_quantity ?? it.maxQuantity ?? 99,
+          }));
+
+          // If server returned items, use them; otherwise, maintain CartContext items
+          if (serverItems.length > 0) {
+            const totalQuantity =
+              c.totalQuantity ??
+              serverItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+            const totalAmount =
+              c.totalAmount ??
+              serverItems.reduce(
+                (s, it) => s + Number(it.final_price ?? it.price ?? 0) * Number(it.quantity || 0),
+                0,
+              );
+            setCheckoutItems(serverItems);
+            setCheckoutTotals({
+              items: serverItems,
+              itemCount: c.itemCount ?? serverItems.length,
+              totalQuantity,
+              totalAmount: Number(totalAmount.toFixed(2)),
+            });
+          } else if (guestCart.items && guestCart.items.length > 0) {
+            syncGuestCart();
+          } else {
+            setCheckoutItems([]);
+            setCheckoutTotals(EMPTY_CART);
+          }
+        } catch (err) {
+          if (isMounted) syncGuestCart();
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    loadCart();
+    if (!isAuthenticated) return;
+    refreshCouponFromServer();
     const load = async () => {
       try {
         const profileRes = await userService.getCurrentUser();
@@ -126,8 +307,17 @@ export default function Checkout() {
     guestCart.itemCount,
     guestCart.totalAmount,
     guestCart.totalQuantity,
-    addToast,
   ]);
+
+  // Load available coupons only after the cart has settled, so eligibility is
+  // computed against the real cart instead of an empty/loading one. Re-evaluates
+  // whenever the checkout cart changes. (Bug fix: coupon list not showing.)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (loading) return;
+    loadAvailableCoupons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, loading, checkoutItems, checkoutTotals.totalAmount]);
 
   const validate = () => {
     const emailEntered = form.email;
@@ -262,6 +452,7 @@ export default function Checkout() {
         },
         payment_method: form.payment_method,
         create_account: form.create_account,
+        coupon_code: appliedCoupon?.code || undefined,
       };
       console.log("[Checkout] Payload:", JSON.stringify(payload));
       const response = isAuthenticated
@@ -292,8 +483,20 @@ export default function Checkout() {
     }
   };
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <p className="text-sm text-slate-400 font-medium">Loading checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Empty cart state ──────────────────────────────────────────────────────
-  if (!loading && checkoutItems.length === 0) {
+  if (checkoutItems.length === 0) {
     return (
       <div className="min-h-screen bg-background font-sans flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(99,102,241,0.08),transparent_70%)]" />
@@ -674,6 +877,90 @@ export default function Checkout() {
                 </AnimatePresence>
               </div>
 
+              {/* Coupon Section */}
+              {isAuthenticated && (
+                <div className="px-6 py-5 border-t border-slate-800 space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Have a promo code?
+                  </p>
+                  {appliedCoupon ? (
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-emerald-300">Coupon applied</p>
+                            <p className="text-xs text-slate-300 font-mono">{appliedCoupon.code}</p>
+                            <p className="text-xs text-slate-400">{appliedCoupon.offerName}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-300 whitespace-nowrap">
+                          You save {formatCurrency(appliedCoupon.discount || 0)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        disabled={couponBusy}
+                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 hover:text-rose-300 disabled:opacity-50"
+                      >
+                        Remove Coupon
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          disabled={couponBusy}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value.toUpperCase());
+                            if (couponMessage) setCouponMessage(null);
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter" && !couponBusy) handleApplyCoupon(); }}
+                          placeholder="Enter coupon code"
+                          aria-label="Coupon code"
+                          className="flex-1 min-w-0 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white uppercase placeholder:normal-case placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={couponBusy}
+                          className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50"
+                        >
+                          {couponBusy ? <Loader2 size={14} className="animate-spin" /> : "APPLY"}
+                        </button>
+                      </div>
+                      {couponMessage && (
+                        <p
+                          data-testid="coupon-status-message"
+                          className={`flex items-start gap-1.5 text-[11px] font-semibold leading-snug ${
+                            couponMessage.type === "success" ? "text-emerald-400" : "text-rose-400"
+                          }`}
+                        >
+                          {couponMessage.type === "success" ? (
+                            <CheckCircle size={12} className="mt-px shrink-0" />
+                          ) : (
+                            <AlertCircle size={12} className="mt-px shrink-0" />
+                          )}
+                          {couponMessage.text}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <CouponOffers
+                    coupons={availableCoupons}
+                    loading={couponsLoading}
+                    subtotal={Number(checkoutTotals.totalAmount || 0)}
+                    appliedCode={appliedCoupon?.code || null}
+                    busyCode={busyCode}
+                    onApply={handleApplyCoupon}
+                    onPrefill={setCouponInput}
+                  />
+                </div>
+              )}
+
               {/* Price Breakdown */}
               <div className="px-6 py-5 border-t border-slate-800 bg-slate-950/30 space-y-3">
                 <div className="flex items-center justify-between text-sm">
@@ -690,6 +977,17 @@ export default function Checkout() {
                     </span>
                   </div>
                 )}
+                {appliedCoupon && Number(appliedCoupon.discount) > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-indigo-400 flex items-center gap-1.5">
+                      <CheckCircle size={13} />
+                      Coupon ({appliedCoupon.code})
+                    </span>
+                    <span className="font-semibold text-emerald-400">
+                      -{formatCurrency(appliedCoupon.discount)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">Shipping</span>
                   <span className="font-semibold text-emerald-400">FREE</span>
@@ -697,7 +995,7 @@ export default function Checkout() {
                 <div className="flex items-center justify-between text-sm border-t border-slate-800 pt-3">
                   <span className="font-bold text-white">Total Amount</span>
                   <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-mono tracking-tight">
-                    {formatCurrency(checkoutTotals.totalAmount)}
+                    {formatCurrency(Math.max(0, checkoutTotals.totalAmount - (Number(appliedCoupon?.discount) || 0)))}
                   </span>
                 </div>
               </div>

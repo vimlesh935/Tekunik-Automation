@@ -26,7 +26,7 @@ const submitContactForm = asyncHandler(async (req, res) => {
     // Try to send email notification (non-blocking)
     try {
       const { createTransporter } = require("../services/mailService");
-      const transporter = createTransporter();
+      const transporter = await createTransporter();
 
       const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@teknode.com",

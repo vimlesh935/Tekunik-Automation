@@ -29,9 +29,11 @@ import {
   Heart,
   Trash2,
   Bell,
+  Ticket,
+  Copy,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
-import apiCall, { productService, orderService, userService, reviewService, wishlistService, backInStockService } from "../services/api";
+import apiCall, { productService, orderService, userService, reviewService, wishlistService, backInStockService, couponService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
@@ -63,7 +65,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const recentlyViewed = useRecentlyViewed();
-  const [activeTab, setActiveTab] = useState("profile");
+  // Honor deep links such as /dashboard?tab=offers-coupons (notifications).
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = new URLSearchParams(window.location.search).get("tab");
+    return tabParam === "offers-coupons" ? "offers-coupons" : "profile";
+  });
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [totalOrders, setTotalOrders] = useState(0);
@@ -102,6 +108,32 @@ export default function Dashboard() {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [cityLocked, setCityLocked] = useState(false);
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
+
+  const [myCoupons, setMyCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [copiedCode, setCopiedCode] = useState("");
+
+  const copyCouponCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(""), 1800);
+    } catch (err) {
+      setCopiedCode("");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== "offers-coupons") return;
+    let mounted = true;
+    setCouponsLoading(true);
+    couponService
+      .my()
+      .then((res) => { if (mounted) setMyCoupons(res?.data?.coupons || []); })
+      .catch(() => { if (mounted) setMyCoupons([]); })
+      .finally(() => { if (mounted) setCouponsLoading(false); });
+    return () => { mounted = false; };
+  }, [activeTab]);
 
 useEffect(() => {
     loadDashboardData();
@@ -534,6 +566,16 @@ useEffect(() => {
               }`}
             >
               <Eye size={16} /> Recently Viewed
+            </button>
+            <button
+              onClick={() => setActiveTab("offers-coupons")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "offers-coupons"
+                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
+                  : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+              }`}
+            >
+              <Ticket size={16} /> Offers & Coupons
             </button>
 
             </nav>
@@ -1140,6 +1182,72 @@ useEffect(() => {
                   wishlist={wishlist.map((item) => Number(item.product_id))}
                   compact
                 />
+              )}
+              {activeTab === "offers-coupons" && (
+                <motion.div key="offers-coupons-tab" variants={tabContentVariants} initial="hidden" animate="show" className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                      <Ticket size={20} className="text-cyan-400" /> My Offers & Coupons
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Redeem your coupons at checkout to unlock exclusive offers.
+                    </p>
+                  </div>
+
+                  {couponsLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <Loader size={20} className="animate-spin text-cyan-400" />
+                    </div>
+                  ) : myCoupons.length === 0 ? (
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
+                      <Ticket size={28} className="mx-auto text-slate-600" />
+                      <p className="mt-3 text-slate-400 text-sm">You have no active coupons right now.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {myCoupons.map((c) => {
+                        const daysLeft = c.expiresAt ? Math.max(1, Math.ceil((new Date(c.expiresAt) - new Date()) / 86400000)) : null;
+                        const isPct = c.offerType === "percentage" || c.offerType === "percent";
+                        const valueLabel = isPct ? `${c.offerValue}% OFF` : `₹${Number(c.offerValue || 0).toLocaleString("en-IN")} OFF`;
+                        return (
+                          <div key={c.id} className="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 to-slate-900/60 p-5 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Welcome Offer</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                                {daysLeft ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}` : "No expiry"}
+                              </span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold text-white">{c.offerName || "Offer"}</h3>
+                              <p className="text-sm text-slate-400">{c.offerDescription || valueLabel}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                              <span>{valueLabel}</span>
+                              {Number(c.minOrder || 0) > 0 && <span>Min order ₹{Number(c.minOrder).toLocaleString("en-IN")}</span>}
+                              {Number(c.maxDiscount || 0) > 0 && <span>Max savings ₹{Number(c.maxDiscount).toLocaleString("en-IN")}</span>}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <code className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 text-sm font-mono text-cyan-300 tracking-wide">
+                                {c.code}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() => copyCouponCode(c.code)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-cyan-500/50 hover:text-cyan-300 transition-colors"
+                              >
+                                {copiedCode === c.code ? <CheckCircle size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                                {copiedCode === c.code ? "Copied" : "Copy Code"}
+                              </button>
+                              <Link to="/shop" className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 px-4 py-1.5 text-xs font-bold text-white hover:from-cyan-500 hover:to-indigo-500">
+                                Shop Now
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

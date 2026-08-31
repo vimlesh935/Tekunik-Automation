@@ -923,6 +923,80 @@ const ensureBackInStockTables = async () => {
   } catch (error) { console.warn("⚠️ [MIGRATE] Could not ensure back-in-stock alerts table:", error.message); }
 };
 
+const ensureCouponTables = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'coupons'");
+    if (!tables.length) {
+      console.log("[MIGRATE] Creating coupons table...");
+      await query(`
+        CREATE TABLE IF NOT EXISTS coupons (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          code VARCHAR(50) NOT NULL,
+          description TEXT NULL,
+          discount_type ENUM('percentage','fixed') NOT NULL DEFAULT 'percentage',
+          discount_value DECIMAL(10,2) NOT NULL,
+          max_discount DECIMAL(10,2) NULL,
+          minimum_order_value DECIMAL(10,2) NULL DEFAULT 0.00,
+          start_date DATETIME NULL,
+          expiry_date DATETIME NULL,
+          usage_limit INT NULL,
+          used_count INT NOT NULL DEFAULT 0,
+          per_user_limit INT NOT NULL DEFAULT 1,
+          first_order_only TINYINT(1) NOT NULL DEFAULT 0,
+          is_active TINYINT(1) NOT NULL DEFAULT 1,
+          free_shipping TINYINT(1) NOT NULL DEFAULT 0,
+          created_by INT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY uk_coupons_code (code),
+          CONSTRAINT chk_coupons_discount_value CHECK (discount_value >= 0),
+          CONSTRAINT chk_coupons_max_discount CHECK (max_discount IS NULL OR max_discount >= 0),
+          CONSTRAINT chk_coupons_minimum_order CHECK (minimum_order_value IS NULL OR minimum_order_value >= 0),
+          CONSTRAINT chk_coupons_usage_limit CHECK (usage_limit IS NULL OR usage_limit >= 0),
+          CONSTRAINT chk_coupons_used_count CHECK (used_count >= 0),
+          CONSTRAINT chk_coupons_per_user_limit CHECK (per_user_limit >= 0),
+          CONSTRAINT chk_coupons_dates CHECK (expiry_date IS NULL OR start_date IS NULL OR expiry_date >= start_date),
+          INDEX idx_coupons_code (code),
+          INDEX idx_coupons_active_dates (is_active, start_date, expiry_date),
+          INDEX idx_coupons_created_by (created_by),
+          FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log("✅ [MIGRATE] Created coupons table");
+    } else {
+      console.log("✅ [MIGRATE] coupons table exists");
+    }
+
+    const usageTables = await query("SHOW TABLES LIKE 'coupon_usage'");
+    if (!usageTables.length) {
+      console.log("[MIGRATE] Creating coupon_usage table...");
+      await query(`
+        CREATE TABLE IF NOT EXISTS coupon_usage (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          coupon_id INT NOT NULL,
+          user_id INT NULL,
+          order_id INT NULL,
+          discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT chk_coupon_usage_discount CHECK (discount_amount >= 0),
+          INDEX idx_coupon_usage_coupon_user (coupon_id, user_id),
+          INDEX idx_coupon_usage_coupon (coupon_id),
+          INDEX idx_coupon_usage_user (user_id),
+          INDEX idx_coupon_usage_order (order_id),
+          FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log("✅ [MIGRATE] Created coupon_usage table");
+    } else {
+      console.log("✅ [MIGRATE] coupon_usage table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure coupon tables:", error.message);
+  }
+};
+
 const ensureAdminActivityTable = async () => {
   try {
     const tables = await query("SHOW TABLES LIKE 'admin_activity_logs'");
@@ -952,6 +1026,7 @@ const ensureAdminActivityTable = async () => {
 };
 
 module.exports = {
+  ensureCouponTables,
   ensureGuestOrderColumns,
   ensureProductsColumns,
   ensureUsersOtpColumns,

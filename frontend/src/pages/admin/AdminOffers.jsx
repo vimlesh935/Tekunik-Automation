@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Edit2, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { formatCurrency } from "../../utils/currency.js";
-import apiCall, { categoryService } from "../../services/api.js";
+import apiCall, { categoryService, couponService } from "../../services/api.js";
 import { getImageUrl } from "../../utils/imageUrl.js";
 import AdminLoading from "../../components/admin/AdminLoading.jsx";
 import AdminPageToolbar from "../../components/admin/AdminPageToolbar.jsx";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
+import AdminCoupons from "../../components/admin/AdminCoupons.jsx";
 import Toast from "../../admin/components/common/Toast.jsx";
 import DiscountModal from "../../admin/components/discounts/DiscountModal.jsx";
 
@@ -47,6 +48,9 @@ export default function AdminOffers() {
     const timer = window.setTimeout(() => setToast(null), 3200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  // ─── Section switcher ─────────────────────────────────────────────────
+  const [adminTab, setAdminTab] = useState("offers");
 
   const fetchOffers = useCallback(async () => {
     setLoading(true);
@@ -177,8 +181,40 @@ export default function AdminOffers() {
   return (
     <div className="space-y-6">
       <Toast toast={toast} />
-      <AdminPageToolbar title="Offers & Promotions" description="Manage percentage and fixed amount offers for products and categories." actions={[{ label: "Add Offer", onClick: openAddDiscount }]} />
-      {loading ? <AdminLoading /> : (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setAdminTab("offers")}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+            adminTab === "offers"
+              ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
+              : "bg-gray-900 text-slate-400 border border-gray-800 hover:text-cyan-400"
+          }`}
+        >
+          Offers
+        </button>
+        <button
+          onClick={() => setAdminTab("coupons")}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+            adminTab === "coupons"
+              ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
+              : "bg-gray-900 text-slate-400 border border-gray-800 hover:text-cyan-400"
+          }`}
+        >
+          Coupons
+        </button>
+      </div>
+      <AdminPageToolbar
+        title={adminTab === "offers" ? "Offers & Promotions" : "Coupons"}
+        description={
+          adminTab === "offers"
+            ? "Manage percentage and fixed amount offers for products and categories."
+            : "Redeemable codes that unlock one offer each. Codes are generated securely server-side."
+        }
+        actions={
+          adminTab === "offers" ? [{ label: "Add Offer", onClick: openAddDiscount }] : []
+        }
+      />
+      {adminTab === "offers" && (loading ? <AdminLoading /> : (
         <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead><tr className="bg-black/50 border-b border-gray-800 text-xs uppercase tracking-wider text-gray-400"><th className="p-4 font-semibold">Offer / Promotion</th><th className="p-4 font-semibold">Type</th><th className="p-4 font-semibold text-right">Value</th><th className="p-4 font-semibold">Applies To</th><th className="p-4 font-semibold text-center">Expires</th><th className="p-4 font-semibold text-center">Status</th><th className="p-4 font-semibold text-center">Actions</th></tr></thead>
@@ -199,6 +235,9 @@ export default function AdminOffers() {
           </table>
           <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
+      ))}
+      {adminTab === "coupons" && (
+        <AdminCoupons discounts={discounts} showToast={showToast} />
       )}
       <DiscountModal show={showDiscountModal} editingDiscount={editingDiscount} discountForm={discountForm} discountError={discountError} discountSaving={discountSaving} products={allProductsForDiscount} categories={categories} onFieldChange={handleDiscountFieldChange} onClose={() => setShowDiscountModal(false)} onSave={saveDiscount} onImageUpload={uploadBannerImage} />
     </div>

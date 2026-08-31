@@ -272,9 +272,21 @@ const createOrder = asyncHandler(async (req, res) => {
       });
 
       totalAmount += itemPrice * parseInt(quantity, 10);
+    const orderSubtotal = totalAmount;
+    const couponService = require("../services/couponService");
+    let couponSnapshot = null;
+    let couponCode = req.body.coupon_code || req.body.couponCode || null;
+    let offerDiscountAmount = 0;
+
+    // Check cart for applied coupon if not explicitly in payload
+    if (!couponCode && user_id) {
+      const [cart] = await query("SELECT applied_coupon_code FROM carts WHERE user_id = ?", [user_id]);
+      if (cart && cart.applied_coupon_code) {
+        couponCode = cart.applied_coupon_code;
+      }
     }
 
-    const orderSubtotal = totalAmount;
+    // 1. First calculate active product offer pricing for each item
     const activeOffers = await getActiveOffers();
     totalAmount = 0;
     validatedItems.forEach((item) => {
@@ -285,9 +297,42 @@ const createOrder = asyncHandler(async (req, res) => {
       item.final_price = offerPrice.final_price;
       item.offer_id = offerPrice.offer_id;
       item.offer_name = offerPrice.offer_name;
-      totalAmount += offerPrice.final_price * item.quantity;
+      offerDiscountAmount += (item.original_price - offerPrice.final_price) * item.quantity;
+      totalAmount += item.final_price * item.quantity;
       delete item.product;
     });
+
+    const offerSubtotal = totalAmount;
+
+    // 2. Authoritative server-side coupon re-validation (never trust frontend discount)
+    if (couponCode) {
+      const verdict = await couponService.validateCoupon({
+        userId: user_id || null,
+        code: couponCode,
+        items: validatedItems.map((i) => ({
+          product_id: i.product_id,
+          category_id: i.category_id,
+          original_price: i.original_price,
+          price: i.price,
+          final_price: i.final_price,
+          discount_percent: i.discount_percent,
+          discount_amount: i.discount_amount,
+          offer_id: i.offer_id,
+          quantity: i.quantity,
+        })),
+        subtotal: offerSubtotal,
+      });
+
+      if (!verdict.ok) {
+        throw new AppError(verdict.message, 400, verdict.code);
+      }
+      couponSnapshot = verdict;
+      couponCode = verdict.coupon.code;
+    }
+
+    const couponDiscountAmount = couponSnapshot ? Number(couponSnapshot.discount || 0) : 0;
+    const totalSavingsAmount = offerDiscountAmount + couponDiscountAmount;
+    if (couponSnapshot) totalAmount = Math.max(0, totalAmount - couponDiscountAmount);
 
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -315,8 +360,18 @@ const createOrder = asyncHandler(async (req, res) => {
         guest_state,
         guest_pincode,
         user_email,
-        estimated_delivery
-      ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        estimated_delivery,
+        subtotal,
+        offer_discount,
+        coupon_code,
+        coupon_offer_id,
+        coupon_offer_name,
+        coupon_coupon_id,
+        coupon_discount,
+        shipping,
+        tax,
+        total_savings
+      ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user_id,
         orderNumber,
@@ -333,6 +388,16 @@ const createOrder = asyncHandler(async (req, res) => {
         normalizedCustomer.pincode,
         userEmail,
         estimatedDelivery,
+        Number(orderSubtotal).toFixed(2),
+        Number(offerDiscountAmount).toFixed(2),
+        couponCode || null,
+        couponSnapshot ? couponSnapshot.offer.id : null,
+        couponSnapshot ? (couponSnapshot.offer.name || couponSnapshot.offer.title) : null,
+        couponSnapshot ? couponSnapshot.coupon.id : null,
+        Number(couponDiscountAmount).toFixed(2),
+        "0.00",
+        "0.00",
+        Number(totalSavingsAmount).toFixed(2),
       ],
     );
 
@@ -396,6 +461,41 @@ const createOrder = asyncHandler(async (req, res) => {
             item.product_id,
             `Product "${product.name}" is now OUT OF STOCK after purchase`,
           ],
+        );
+      }
+    }
+
+    // 💳 Coupon redemption (runs within the order-creation flow, after the
+    // order + items exist; if any step above failed the coupon is NOT consumed).
+    if (couponSnapshot && couponCode) {
+      const cid = couponSnapshot.coupon.id;
+      await query(
+        "INSERT INTO coupon_usage (coupon_id, user_id, order_id, discount_amount) VALUES (?, ?, ?, ?)",
+        [cid, user_id, orderId, Number(couponDiscountAmount).toFixed(2)]
+      );
+      await query(
+        "UPDATE coupons SET used_count = used_count + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [cid]
+      );
+      // Offer-level redemption counter keeps §2 (offers.used_count) accurate.
+      if (couponSnapshot.offer?.id) {
+        await query(
+          "UPDATE discounts SET used_count = used_count + 1 WHERE id = ?",
+          [couponSnapshot.offer.id]
+        );
+      }
+      // One-shot personal/welcome coupons move to USED so they stop appearing.
+      if (couponSnapshot.coupon.user_id) {
+        await query(
+          "UPDATE coupons SET status = 'USED', used_at = CURRENT_TIMESTAMP, created_order_id = ? WHERE id = ?",
+          [orderId, cid]
+        );
+      }
+      const [cartForCoupon] = await query("SELECT id FROM carts WHERE user_id = ?", [user_id]);
+      if (cartForCoupon) {
+        await query(
+          "UPDATE carts SET applied_coupon_id = NULL, applied_coupon_code = NULL, applied_coupon_discount = 0.00 WHERE id = ?",
+          [cartForCoupon.id]
         );
       }
     }

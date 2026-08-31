@@ -101,11 +101,7 @@ const normalizeCartItem = (product, quantity = 1) => {
 };
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([]);
-
-  useEffect(() => {
-    setItems(loadCartItems());
-  }, []);
+  const [items, setItems] = useState(() => loadCartItems());
 
   useEffect(() => {
     saveCartItems(items);

@@ -1,4 +1,4 @@
-import { X, Save, RefreshCw, Upload } from "lucide-react";
+import { X, Save, RefreshCw, Upload, Ticket } from "lucide-react";
 import { getImageUrl } from "../../../utils/imageUrl.js";
 
 export default function DiscountModal({ show, editingDiscount, discountForm, discountError, discountSaving, products, categories, onFieldChange, onClose, onSave, onImageUpload }) {
@@ -88,6 +88,62 @@ export default function DiscountModal({ show, editingDiscount, discountForm, dis
           <div><label className="block text-sm font-semibold text-gray-300 mb-2">Expiry Date</label>
             <input type="datetime-local" value={discountForm.expires_at ? new Date(discountForm.expires_at).toISOString().slice(0, 16) : ""}
               onChange={(e) => onFieldChange("expires_at", e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+
+          {/* ─── Coupon Configuration ─── */}
+          <div className="md:col-span-2 mt-3 pt-5 border-t border-gray-800">
+            <div className="flex items-center gap-2 mb-1">
+              <Ticket size={16} className="text-cyan-400" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-400">Coupon Configuration</h3>
+            </div>
+            <p className="text-xs text-gray-500">Optional — controls how coupons that unlock this offer are issued.</p>
+          </div>
+
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Coupon Generation Mode</label>
+            <select value={discountForm.coupon_generation || "NONE"}
+              onChange={(e) => {
+                onFieldChange("coupon_generation", e.target.value);
+                if (e.target.value === "AUTOMATIC") onFieldChange("new_user_only", true);
+              }}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
+              <option value="NONE">Manual (no auto coupons)</option>
+              <option value="SHARED">Shared coupon code</option>
+              <option value="UNIQUE">Unique coupon per user</option>
+              <option value="AUTOMATIC">Automatic new-user coupon</option>
+            </select></div>
+
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">New Users Only</label>
+            <label className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer">
+              <input type="checkbox" checked={!!discountForm.new_user_only}
+                onChange={(e) => onFieldChange("new_user_only", e.target.checked)}
+                disabled={(discountForm.coupon_generation || "NONE") === "AUTOMATIC"}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500" />
+              <span className={`text-sm ${(discountForm.coupon_generation || "NONE") === "AUTOMATIC" ? "text-gray-500" : "text-gray-300"}`}>
+                {(discountForm.coupon_generation || "NONE") === "AUTOMATIC" ? "Always enabled for automatic coupons" : "Restrict to first purchase"}
+              </span>
+            </label></div>
+
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Coupon Prefix</label>
+            <input type="text" maxLength={20}
+              value={discountForm.coupon_prefix || ""}
+              onChange={(e) => onFieldChange("coupon_prefix", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+              placeholder="e.g. WELCOME"
+              disabled={!["UNIQUE", "AUTOMATIC"].includes(discountForm.coupon_generation || "NONE")}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none disabled:opacity-40 uppercase tracking-wider" /></div>
+
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Coupon Validity (days)</label>
+            <input type="number" min="1" step="1"
+              value={discountForm.coupon_validity_days ?? ""}
+              onChange={(e) => onFieldChange("coupon_validity_days", e.target.value)}
+              placeholder="e.g. 7"
+              disabled={!["UNIQUE", "AUTOMATIC"].includes(discountForm.coupon_generation || "NONE")}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none disabled:opacity-40" /></div>
+
+          <div><label className="block text-sm font-semibold text-gray-300 mb-2">Total Redemption Limit</label>
+            <input type="number" min="0" step="1"
+              value={discountForm.usage_limit ?? ""}
+              onChange={(e) => onFieldChange("usage_limit", e.target.value)}
+              placeholder="Blank = unlimited"
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
               
           <div className="md:col-span-2">
