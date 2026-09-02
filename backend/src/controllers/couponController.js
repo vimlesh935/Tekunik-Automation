@@ -34,7 +34,9 @@ const toDateOrNull = (value) => {
 // ─── User Endpoints: apply / remove / mine / totals / available / validate ─
 const applyCoupon = asyncHandler(async (req, res) => {
   const { couponCode = req.body.code } = req.body || {};
-  const result = await applyCouponService({ userId: req.user.id, code: couponCode });
+  const cartItems = Array.isArray(req.body?.cartItems) ? req.body.cartItems : (Array.isArray(req.body?.items) ? req.body.items : null);
+  const cartTotal = req.body?.cartTotal !== undefined ? req.body.cartTotal : (req.body?.subtotal !== undefined ? req.body.subtotal : null);
+  const result = await applyCouponService({ userId: req.user.id, code: couponCode, items: cartItems, subtotal: cartTotal });
   return success(res, "Coupon applied successfully", result);
 });
 

@@ -1,0 +1,11 @@
+
+=== Browser E2E v6 (refresh/invalid/empty) 1788243882372 ===
+[PASS] Setup - fresh user + cart — token=true
+[PASS] TEST 1 - Coupon input visible — visible=true
+[PASS] TEST 3 - SAVE20 applied — Coupon applied successfully
+[PASS] TEST 10 - Coupon persists after refresh — Coupon applied SAVE20
+[PASS] TEST 7 - Remove coupon — rm=true
+[PASS] TEST 4 - INVALIDXYZ999 -> 'Invalid coupon code' — Invalid coupon code
+[PASS] TEST 2 - Empty input -> 'Please enter a coupon code' — Please enter a coupon code
+
+=== RESULT: 7 passed, 0 failed ===

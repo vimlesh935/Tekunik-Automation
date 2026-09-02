@@ -765,8 +765,8 @@ export const offerService = {
 };
 
 export const couponService = {
-  apply: (couponCode) =>
-    apiCall("/api/coupons/apply", { method: "POST", body: JSON.stringify({ couponCode }) }),
+  apply: (couponCode, { cartItems, cartTotal } = {}) =>
+    apiCall("/api/coupons/apply", { method: "POST", body: JSON.stringify({ couponCode, cartItems: cartItems || undefined, cartTotal: cartTotal ?? undefined }) }),
   remove: () => apiCall("/api/coupons/remove", { method: "POST" }),
   my: () => apiCall("/api/coupons/my"),
   totals: () => apiCall("/api/coupons/totals"),

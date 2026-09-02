@@ -162,7 +162,10 @@ export default function Checkout() {
     try {
       let res;
       if (isAuthenticated) {
-        res = await couponService.apply(code);
+        res = await couponService.apply(code, {
+          cartItems: checkoutItems,
+          cartTotal: checkoutTotals.totalAmount,
+        });
       } else {
         res = await couponService.validate(code, {
           cartItems: checkoutItems,
@@ -220,6 +223,30 @@ export default function Checkout() {
     });
   };
 
+  // Apply a server cart response to the checkout state; returns true when items were present.
+  const applyServerCart = (serverCart) => {
+    const items = (serverCart?.items || []).map((it) => ({
+      ...it,
+      cart_item_id: it.cart_item_id,
+      product_id: it.product_id,
+      max_quantity: it.max_quantity ?? it.stock_quantity ?? it.maxQuantity ?? 99,
+    }));
+    if (items.length === 0) return false;
+    const totalQuantity =
+      serverCart.totalQuantity ??
+      items.reduce((s, it) => s + Number(it.quantity || 0), 0);
+    const totalAmount =
+      serverCart.totalAmount ??
+      items.reduce((s, it) => s + Number(it.final_price ?? it.price ?? 0) * Number(it.quantity || 1), 0);
+    setCheckoutItems(items);
+    setCheckoutTotals({
+      items,
+      itemCount: serverCart.itemCount ?? items.length,
+      totalQuantity,
+      totalAmount: Number(totalAmount.toFixed(2)),
+    });
+    return true;
+  };
   useEffect(() => {
     let isMounted = true;
     const loadCart = async () => {
@@ -232,34 +259,34 @@ export default function Checkout() {
         try {
           const res = await cartService.getCart();
           if (!isMounted) return;
-          const c = res?.data?.cart || res?.data || {};
-          const serverItems = (c.items || []).map((it) => ({
-            ...it,
-            cart_item_id: it.cart_item_id,
-            product_id: it.product_id,
-            max_quantity: it.max_quantity ?? it.stock_quantity ?? it.maxQuantity ?? 99,
-          }));
-
           // If server returned items, use them; otherwise, maintain CartContext items
-          if (serverItems.length > 0) {
-            const totalQuantity =
-              c.totalQuantity ??
-              serverItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
-            const totalAmount =
-              c.totalAmount ??
-              serverItems.reduce(
-                (s, it) => s + Number(it.final_price ?? it.price ?? 0) * Number(it.quantity || 0),
-                0,
-              );
-            setCheckoutItems(serverItems);
-            setCheckoutTotals({
-              items: serverItems,
-              itemCount: c.itemCount ?? serverItems.length,
-              totalQuantity,
-              totalAmount: Number(totalAmount.toFixed(2)),
-            });
+          const c = res?.data?.cart || res?.data || {};
+          if (applyServerCart(c)) {
+            // server cart items used (canonical, with cart_item_id etc.)
           } else if (guestCart.items && guestCart.items.length > 0) {
-            syncGuestCart();
+
+            if (isAuthenticated) {
+              // The user sees a client-side (carryover/guest) cart the DB cart is empty.
+
+
+              // Sync those items to the server cart so coupon apply / totals / refresh
+              // re-validate against the SAME cart the user sees  otherwise Apply
+              // returns "Your cart is empty." and the coupon cannot persist.
+              try {
+                for (const it of guestCart.items) {
+                  await cartService.addToCart(it.product_id, it.quantity || 1);
+                }
+                const res2 = await cartService.getCart();
+                if (!isMounted) return;
+                if (!applyServerCart(res2?.data?.cart || res2?.data || {})) {
+                  syncGuestCart();
+                }
+              } catch (err) {
+                syncGuestCart();
+              }
+            } else {
+              syncGuestCart();
+            }
           } else {
             setCheckoutItems([]);
             setCheckoutTotals(EMPTY_CART);
@@ -925,7 +952,7 @@ export default function Checkout() {
                         />
                         <button
                           type="button"
-                          onClick={handleApplyCoupon}
+                          onClick={() => handleApplyCoupon()}
                           disabled={couponBusy}
                           className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50"
                         >

@@ -1,0 +1,57 @@
+=== REPRO cart-empty 1788248637581 ===
+[PASS] Setup - fresh logged-in user (server cart EMPTY) - token=true
+[PASS] Server cart starts empty - len=0
+[PASS] TEST A - /cart shows the product - visible=true
+[PASS] TEST A2 - Proceed to Checkout clicked - clicked=true
+[PASS] TEST B - Checkout shows the product (before Apply) - itemVisible=true emptyPage=false
+[PASS] TEST C - Apply clicked - clicked=true
+PAGE SNIPPET AFTER APPLY: Home
+Shop
+About U 
+Contact U 
+Track Order
+Search...
+Da hboard
+Account
+1
+1
+Cart
+Checkout
+Back to Cart
+Delivery Addre 
+FULL NAME *
+EMAIL ADDRESS *
+EMAIL
+PHONE NUMBER *
+PINCODE *
+ADDRESS *
+CITY *
+STATE/PROVINCE *
+Payment Method
+
+Ca h on Delivery
+
+Pay when you receive your order
+
+Online Payment
+
+Credit/
+[PASS] TEST D - Cart page NOT replaced by empty state - emptyPage=false
+[PASS] TEST D2 - Product still visible after Apply - visible=true
+[PASS] TEST D3 - Coupon message - msg=Your cart is empty
+  NET REQ: GET http://localhost:8787/api/coupons/totals body=
+  NET REQ: GET http://localhost:8787/api/coupons/totals body=
+  NET REQ: GET http://localhost:5173/api/coupons/totals body=
+  NET REQ: GET http://localhost:5173/api/coupons/totals body=
+  NET RES:  http://localhost:5173/api/coupons/totals body=
+  NET RES:  http://localhost:5173/api/coupons/totals body=
+  NET REQ: POST http://localhost:8787/api/coupons/available body={"cartItems":[{"product_id":19,"name":"2M 4Touch","image_url":"/uploads/products/1780647185789-617150121-zimi-powermesh-smart-quad-multi-purpose-switch-black.jpg","original_price":1000,"price":500,"discount_percent":50,"discount_amount":500,"final_price":500,"quantity":2,"max_quantity":189,"product_status":"active","stock_quantity":189}],"cartTotal":1000}
+  NET RES:  http://localhost:8787/api/coupons/available body=
+  NET REQ: POST http://localhost:8787/api/coupons/apply body={"couponCode":"SAVE20"}
+  NET RES:  http://localhost:8787/api/coupons/apply body=
+  NET REQ: POST http://localhost:8787/api/coupons/available body={"cartItems":[{"product_id":19,"name":"2M 4Touch","image_url":"/uploads/products/1780647185789-617150121-zimi-powermesh-smart-quad-multi-purpose-switch-black.jpg","original_price":1000,"price":500,"discount_percent":50,"discount_amount":500,"final_price":500,"quantity":2,"max_quantity":189,"product_status":"active","stock_quantity":189}],"cartTotal":1000}
+  NET RES:  http://localhost:8787/api/coupons/available body=
+  APPLY RESP: 400 {"success":false,"message":"Your cart is empty.","code":"CART_EMPTY"}
+[PASS] Server cart intact after apply (not cleared) - itemsAfter=0
+
+RESULT: 10 passed, 0 failed.

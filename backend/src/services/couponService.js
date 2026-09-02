@@ -31,6 +31,13 @@ const CODE_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 const toMoney = (value) => Math.round((Number(value) || 0) * 100) / 100;
 
+// Global usage limit semantics: NULL, undefined and 0 all mean "unlimited"
+// (0 is the historical DB default for an unbounded coupon).
+const usageLimitValue = (limit) => {
+  const n = Number(limit);
+  return limit !== null && limit !== undefined && n > 0 ? n : Infinity;
+};
+
 const normalizeCouponCode = (code) =>
   String(code || "").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
 
@@ -89,26 +96,34 @@ const normalizeCouponRow = (row) => {
     "percentage"
   ).toLowerCase();
 
+  // Use the coupon's own discount value when it defines one (> 0); otherwise inherit
+  // from the linked offer (offer-linked coupons store 0 in `discount_value` and carry
+  // their real value on the discounts row).
+  const directDiscountValue = Number(row.discount_value);
   const discountValue = Number(
-    row.discount_value !== undefined && row.discount_value !== null
+    !Number.isNaN(directDiscountValue) && directDiscountValue > 0
       ? row.discount_value
-      : (row.offer_value || 0)
+      : (Number(row.offer_value) > 0 ? row.offer_value : 0)
   );
 
+  // Same inheritance rule for the minimum cart value.
+  const directMinCart = Number(row.minimum_cart_value);
+  const directLegacyMinCart = Number(row.minimum_order_value);
   const minCartValue = Number(
-    row.minimum_cart_value !== undefined && row.minimum_cart_value !== null
+    !Number.isNaN(directMinCart) && directMinCart > 0
       ? row.minimum_cart_value
-      : (row.minimum_order_value !== undefined && row.minimum_order_value !== null
+      : (directLegacyMinCart > 0
           ? row.minimum_order_value
-          : (row.offer_min_order || 0))
+          : (Number(row.offer_min_order) > 0 ? row.offer_min_order : 0))
   );
 
+  // Inherit the max-discount cap from the linked offer when the coupon has none.
   const maxDiscount =
-    row.maximum_discount !== undefined && row.maximum_discount !== null
+    row.maximum_discount !== null && row.maximum_discount !== undefined && Number(row.maximum_discount) > 0
       ? Number(row.maximum_discount)
-      : (row.max_discount !== undefined && row.max_discount !== null
+      : (row.max_discount !== null && row.max_discount !== undefined && Number(row.max_discount) > 0
           ? Number(row.max_discount)
-          : (row.offer_max_discount !== undefined && row.offer_max_discount !== null
+          : (row.offer_max_discount !== null && row.offer_max_discount !== undefined && Number(row.offer_max_discount) > 0
               ? Number(row.offer_max_discount)
               : null));
 
@@ -576,7 +591,7 @@ const validateCoupon = async ({ userId, code, items = [], subtotal = 0 }) => {
   // 3. Global usage limit
   const globalUsage = await countCouponUsage(coupon.id);
   const effectiveUsageCount = Math.max(globalUsage, coupon.used_count || 0);
-  if (coupon.usage_limit !== null && coupon.usage_limit !== undefined && effectiveUsageCount >= Number(coupon.usage_limit)) {
+  if (effectiveUsageCount >= usageLimitValue(coupon.usage_limit)) {
     return { ok: false, code: "COUPON_LIMIT", message: REASON.COUPON_LIMIT };
   }
 
@@ -723,9 +738,26 @@ const clearCartCoupon = async (cartId) => {
   );
 };
 
-const applyCoupon = async ({ userId, code }) => {
+const applyCoupon = async ({ userId, code, items: clientItems = null, subtotal: clientSubtotal = null }) => {
   const AppError = require("../utils/appError");
-  const { cart, items, subtotal } = await loadCartLines(userId);
+  let items = null;
+  let subtotal = null;
+  let cart = null;
+  if (Array.isArray(clientItems) && clientItems.length) {
+    // Validate against the cart the user actually sees (client-provided items,
+    // e.g. a carryover guest cart) — NOT an empty DB cart.  Fixes
+    // "Your cart is empty." when an authenticated checkout shows items but
+    // the server cart has not been synced (or is otherwise stale).
+    items = clientItems;
+    subtotal = clientSubtotal !== null && clientSubtotal !== undefined ? Number(clientSubtotal) : items.reduce((s, i) => s + Number(i.final_price ?? i.price ?? 0) * Number(i.quantity ?? 1), 0);
+    const loaded = await loadCartLines(userId);  // pers
+    cart = loaded.cart;
+  } else {
+    const loaded = await loadCartLines(userId);
+    cart = loaded.cart;
+    items = loaded.items;
+    subtotal = loaded.subtotal;
+  }
   const verdict = await validateCoupon({ userId, code, items, subtotal });
   if (!verdict.ok) {
     const err = new AppError(verdict.message, 400, verdict.code);
@@ -788,7 +820,7 @@ const listAvailableCoupons = async (userId, clientItems = null, clientSubtotal =
        AND (c.expires_at IS NULL OR c.expires_at >= NOW())
        AND (c.starts_at IS NULL OR c.starts_at <= NOW())
        AND (c.user_id IS NULL OR c.user_id = ?)
-       AND (c.usage_limit IS NULL OR c.used_count < c.usage_limit)
+       AND (c.usage_limit IS NULL OR c.usage_limit <= 0 OR c.used_count < c.usage_limit)
      ORDER BY c.created_at DESC
      LIMIT 30`,
     [userId || null]
@@ -833,11 +865,7 @@ const listAvailableCoupons = async (userId, clientItems = null, clientSubtotal =
     // 3. Global usage limit
     const globalUsage = await countCouponUsage(coupon.id);
     const effectiveUsageCount = Math.max(globalUsage, coupon.used_count || 0);
-    if (
-      coupon.usage_limit !== null &&
-      coupon.usage_limit !== undefined &&
-      effectiveUsageCount >= Number(coupon.usage_limit)
-    ) {
+    if (effectiveUsageCount >= usageLimitValue(coupon.usage_limit)) {
       return { ok: false, code: "COUPON_LIMIT", message: REASON.COUPON_LIMIT };
     }
 

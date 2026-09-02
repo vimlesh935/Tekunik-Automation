@@ -272,6 +272,8 @@ const createOrder = asyncHandler(async (req, res) => {
       });
 
       totalAmount += itemPrice * parseInt(quantity, 10);
+    }
+
     const orderSubtotal = totalAmount;
     const couponService = require("../services/couponService");
     let couponSnapshot = null;
