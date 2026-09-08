@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -10,6 +10,8 @@ import {
   Package,
   ShieldCheck,
   Layers,
+  Ticket,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
@@ -23,6 +25,25 @@ export default function Cart() {
   const guestCart = useCart();
 
   const { addToast } = useToast();
+
+  // A coupon selected from the dashboard "Use Now" action is staged here and
+  // auto-applied when the user reaches the checkout page.
+  const [pendingCoupon, setPendingCoupon] = useState(() => {
+    try { return localStorage.getItem("teknode_selected_coupon") || null; } catch { return null; }
+  });
+
+  const dismissPendingCoupon = () => {
+    try { localStorage.removeItem("teknode_selected_coupon"); } catch {}
+    setPendingCoupon(null);
+  };
+
+  const checkoutWithCoupon = () => {
+    if (!currentCart || !currentCart.items || currentCart.items.length === 0) {
+      addToast("Your cart is empty. Add items before checking out.", "warning");
+      return;
+    }
+    navigate("/checkout");
+  };
 
   const currentCart = useMemo(() => ({
     items: guestCart.items,
@@ -59,6 +80,36 @@ export default function Cart() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Pending coupon banner from dashboard "Use Now" */}
+        {pendingCoupon && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4">
+            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+              <Ticket size={16} className="text-indigo-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white">Coupon {pendingCoupon} selected</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                It will be applied automatically when you proceed to checkout.
+              </p>
+              <button
+                type="button"
+                onClick={checkoutWithCoupon}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 text-xs font-bold text-white transition-all"
+              >
+                Proceed to Checkout <ArrowRight size={14} />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={dismissPendingCoupon}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Remove pending coupon"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {currentCart && currentCart.items && currentCart.items.length > 0 ? (
           /* ════ SPLIT GEOMETRIC LAYOUT BLOCK ════ */
           <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr] items-start">

@@ -15,6 +15,7 @@ const {
   removeCoupon: removeCouponService,
   calculateCartTotals,
   getUserCoupons,
+  getDashboardCoupons,
   listAvailableCoupons,
   validateCouponCode,
   COUPON_STATUS,
@@ -48,6 +49,22 @@ const removeCoupon = asyncHandler(async (req, res) => {
 const myCoupons = asyncHandler(async (req, res) => {
   const coupons = await getUserCoupons(req.user.id);
   return success(res, "My coupons fetched", { coupons });
+});
+
+/** GET /api/coupons/dashboard — all coupons + offers available to the logged-in user */
+const dashboardCoupons = asyncHandler(async (req, res) => {
+  const data = await getDashboardCoupons(req.user.id);
+  return success(res, "Dashboard coupons & offers fetched", data);
+});
+
+/** GET /api/user/offers-and-coupons — dedicated authenticated offers + coupons endpoint */
+const offersAndCoupons = asyncHandler(async (req, res) => {
+  const data = await getDashboardCoupons(req.user.id);
+  return success(res, "Offers & coupons fetched", {
+    offers: data.offers,
+    coupons: data.coupons,
+    counts: { offers: data.counts.offers, coupons: data.counts.coupons },
+  });
 });
 
 const cartTotalsWithCoupon = asyncHandler(async (req, res) => {
@@ -291,6 +308,8 @@ module.exports = {
   applyCoupon,
   removeCoupon,
   myCoupons,
+  dashboardCoupons,
+  offersAndCoupons,
   cartTotalsWithCoupon,
   availableCoupons,
   validateCoupon,

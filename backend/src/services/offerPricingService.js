@@ -26,7 +26,7 @@ const getActiveOffers = async () => {
      WHERE d.is_active = 1
        AND (d.starts_at IS NULL OR d.starts_at <= ?)
        AND (d.expires_at IS NULL OR d.expires_at >= ?)
-     ORDER BY d.created_at DESC`,
+     ORDER BY d.display_order ASC, d.created_at DESC`,
     [now, now],
   );
 

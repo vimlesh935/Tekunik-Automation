@@ -90,7 +90,8 @@ const getDiscount = asyncHandler(async (req, res) => {
 const createDiscount = asyncHandler(async (req, res) => {
   const { 
     name, title, description, type, value, apply_to, product_ids, category_ids, 
-    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active,
+    min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target,
+    display_order, starts_at, expires_at, is_active,
     audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
   } = req.body;
 
@@ -103,9 +104,14 @@ const createDiscount = asyncHandler(async (req, res) => {
     throw new AppError("Invalid discount type. Must be: percentage, fixed, or bogo", 400, "VALIDATION_ERROR");
   }
 
+  const validCtaTypes = ["product", "category", "offers", "custom"];
+  if (cta_type && !validCtaTypes.includes(cta_type)) {
+    throw new AppError("Invalid CTA type. Must be: product, category, offers, or custom", 400, "VALIDATION_ERROR");
+  }
+
   const result = await query(
-    `INSERT INTO discounts (name, title, description, type, value, apply_to, min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active, audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO discounts (name, title, description, type, value, apply_to, min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target, display_order, starts_at, expires_at, is_active, audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       name.trim(),
       title ? title.trim() : null,
@@ -116,6 +122,11 @@ const createDiscount = asyncHandler(async (req, res) => {
       min_order_value ? parseFloat(min_order_value) : null,
       maximum_discount ? parseFloat(maximum_discount) : null,
       banner_image || null,
+      alt_text ? alt_text.trim() : null,
+      cta_text ? cta_text.trim() : null,
+      cta_type || "offers",
+      cta_target || null,
+      display_order === undefined || display_order === null || display_order === "" ? 0 : Math.max(0, parseInt(display_order, 10) || 0),
       starts_at || null,
       expires_at || null,
       is_active !== undefined ? (is_active ? 1 : 0) : 1,
@@ -152,7 +163,8 @@ const updateDiscount = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { 
     name, title, description, type, value, apply_to, product_ids, category_ids, 
-    min_order_value, maximum_discount, banner_image, starts_at, expires_at, is_active,
+    min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target,
+    display_order, starts_at, expires_at, is_active,
     audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
   } = req.body;
 
@@ -166,10 +178,16 @@ const updateDiscount = asyncHandler(async (req, res) => {
     throw new AppError("Invalid discount type. Must be: percentage, fixed, or bogo", 400, "VALIDATION_ERROR");
   }
 
+  const validCtaTypes = ["product", "category", "offers", "custom"];
+  if (cta_type && !validCtaTypes.includes(cta_type)) {
+    throw new AppError("Invalid CTA type. Must be: product, category, offers, or custom", 400, "VALIDATION_ERROR");
+  }
+
   await query(
     `UPDATE discounts
      SET name = ?, title = ?, description = ?, type = ?, value = ?, apply_to = ?, min_order_value = ?,
-         maximum_discount = ?, banner_image = ?, starts_at = ?, expires_at = ?, is_active = ?,
+         maximum_discount = ?, banner_image = ?, alt_text = ?, cta_text = ?, cta_type = ?, cta_target = ?,
+         display_order = ?, starts_at = ?, expires_at = ?, is_active = ?,
          audience = ?, new_user_only = ?, coupon_generation = ?, coupon_prefix = ?, usage_limit = ?, coupon_validity_days = ?
      WHERE id = ?`,
     [
@@ -182,6 +200,11 @@ const updateDiscount = asyncHandler(async (req, res) => {
       min_order_value ? parseFloat(min_order_value) : null,
       maximum_discount ? parseFloat(maximum_discount) : null,
       banner_image || null,
+      alt_text ? alt_text.trim() : null,
+      cta_text ? cta_text.trim() : null,
+      cta_type || "offers",
+      cta_target || null,
+      display_order === undefined || display_order === null || display_order === "" ? 0 : Math.max(0, parseInt(display_order, 10) || 0),
       starts_at || null,
       expires_at || null,
       is_active !== undefined ? (is_active ? 1 : 0) : 1,
@@ -353,7 +376,7 @@ const getPublicOffers = asyncHandler(async (req, res) => {
      WHERE is_active = 1
        AND (starts_at IS NULL OR starts_at <= ?)
        AND (expires_at IS NULL OR expires_at >= ?)
-     ORDER BY created_at DESC`,
+     ORDER BY display_order ASC, created_at DESC`,
     [now, now]
   );
 

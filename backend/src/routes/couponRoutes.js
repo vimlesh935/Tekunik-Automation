@@ -4,6 +4,8 @@ const {
   applyCoupon,
   removeCoupon,
   myCoupons,
+  dashboardCoupons,
+  offersAndCoupons,
   cartTotalsWithCoupon,
   availableCoupons,
   validateCoupon,
@@ -23,8 +25,11 @@ const router = express.Router();
 router.post("/api/coupons/apply", requireAuth, applyCoupon);
 router.post("/api/coupons/remove", requireAuth, removeCoupon);
 router.get("/api/coupons/my", requireAuth, myCoupons);
+router.get("/api/coupons/dashboard", requireAuth, dashboardCoupons);
+router.get("/api/user/offers-and-coupons", requireAuth, offersAndCoupons);
 router.get("/api/coupons/totals", requireAuth, cartTotalsWithCoupon);
 router.post("/api/coupons/available", optionalAuth, availableCoupons);
+router.get("/api/coupons/available", optionalAuth, availableCoupons);
 router.post("/api/coupons/validate", optionalAuth, validateCoupon);
 
 // ── Admin coupon management (authenticated admin) ─────────────────────

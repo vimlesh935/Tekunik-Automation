@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { offerService } from "../services/api";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { formatOfferDiscount, getOfferCta } from "../components/HomeOfferCarousel.jsx";
 import { Tag, Clock, ChevronRight } from "lucide-react";
 
 export default function Offers() {
@@ -36,11 +37,7 @@ export default function Offers() {
     };
   }, []);
 
-  const formatDiscount = (offer) => {
-    if (offer.type === "percentage") return `${offer.value}% OFF`;
-    if (offer.type === "fixed") return `₹${offer.value} OFF`;
-    return "Special Offer";
-  };
+  const formatDiscount = (offer) => formatOfferDiscount(offer);
 
   const formatExpiry = (date) => {
     if (!date) return null;
@@ -94,9 +91,11 @@ export default function Offers() {
                       <Clock size={11} /> Expires {formatExpiry(offer.expires_at)}
                     </p>
                   )}
-                  <Link to="/shop" className="mt-4 flex items-center gap-1 text-cyan-400 text-xs font-semibold hover:gap-2 transition-all">
-                    Shop Now <ChevronRight size={14} />
-                  </Link>
+                  {(() => { const cta = getOfferCta(offer); return (
+                    <Link to={cta.to} className="mt-4 flex items-center gap-1 text-cyan-400 text-xs font-semibold hover:gap-2 transition-all">
+                      {offer.cta_text || cta.label} <ChevronRight size={14} />
+                    </Link>
+                  ); })()}
                 </div>
               </div>
             ))}

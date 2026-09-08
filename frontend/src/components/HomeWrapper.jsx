@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { productService, cartService, categoryService, wishlistService } from "../services/api";
 import HomeHero from "./HomeHero";
+import HomeOfferCarousel from "./HomeOfferCarousel";
 import HomeCategories from "./HomeCategories";
 import HomeProducts from "./HomeProducts";
 import HomeReviews from "./HomeReviews";
@@ -215,6 +216,9 @@ export default function HomeWrapper({ token }) {
 
       {/* Hero Section */}
       <HomeHero />
+
+      {/* Promotional Offer Carousel */}
+      <HomeOfferCarousel />
 
       {/* Featured Products Grid */}
       <HomeProducts

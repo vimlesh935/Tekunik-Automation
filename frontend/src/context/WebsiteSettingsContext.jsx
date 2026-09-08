@@ -1,13 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { frontendSettingsService } from "../services/api";
+import { getImageUrl } from "../utils/imageUrl.js";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const defaultSettings = {
+  hero_heading: "Smart Living Starts Here",
+  hero_image: "",
   company_logo: "",
   company_email: "",
   company_phone: "",
   company_address: "",
+  company_favicon: "",
+  instagram_url: "",
+  facebook_url: "",
+  linkedin_url: "",
+  youtube_url: "",
 };
 
 const WebsiteSettingsContext = createContext({
@@ -55,6 +63,17 @@ export function WebsiteSettingsProvider({ children }) {
     init();
   }, [fetchSettings, fetchMode]);
 
+  useEffect(() => {
+    if (!settings.company_favicon || typeof document === "undefined") return;
+    let icon = document.querySelector('link[rel="icon"]');
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.href = getImageUrl(settings.company_favicon);
+  }, [settings.company_favicon]);
+
   const setWebsiteMode = useCallback(async (mode) => {
     try {
       const token = localStorage.getItem("authToken");
@@ -73,7 +92,7 @@ export function WebsiteSettingsProvider({ children }) {
   }, []);
 
   const refreshSettings = useCallback(() => {
-    fetchSettings();
+    return fetchSettings();
   }, [fetchSettings]);
 
   const websiteName = settings.company_name || "Tekunik Automation";

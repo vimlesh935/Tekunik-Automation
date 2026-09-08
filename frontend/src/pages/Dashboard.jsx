@@ -39,6 +39,7 @@ import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 import RecentlyViewedSection from "../components/RecentlyViewedSection.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 
 // Animation Configurations
 const fadeInContainer = {
@@ -110,8 +111,14 @@ export default function Dashboard() {
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
   const [myCoupons, setMyCoupons] = useState([]);
+  const [myOffers, setMyOffers] = useState([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
+  const [couponsError, setCouponsError] = useState("");
   const [copiedCode, setCopiedCode] = useState("");
+  const [couponFilter, setCouponFilter] = useState("all");
+  const [couponSearch, setCouponSearch] = useState("");
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [couponReloadKey, setCouponReloadKey] = useState(0);
 
   const copyCouponCode = async (code) => {
     try {
@@ -123,17 +130,54 @@ export default function Dashboard() {
     }
   };
 
+  const useNow = (coupon) => {
+    // Save the selected coupon code in localStorage so Checkout can auto-apply it.
+    try {
+      localStorage.setItem("teknode_selected_coupon", coupon.code);
+    } catch (err) {
+      // ignore
+    }
+    // If the coupon is scoped to a specific category or product, direct the user there;
+    // otherwise (or always, since checkout is the safest target) go to the cart/checkout.
+    navigate("/cart");
+  };
+
   useEffect(() => {
     if (activeTab !== "offers-coupons") return;
     let mounted = true;
     setCouponsLoading(true);
-    couponService
-      .my()
-      .then((res) => { if (mounted) setMyCoupons(res?.data?.coupons || []); })
-      .catch(() => { if (mounted) setMyCoupons([]); })
-      .finally(() => { if (mounted) setCouponsLoading(false); });
+    setCouponsError("");
+    const loadOffersCoupons = async () => {
+      try {
+        const res = await couponService.offersAndCoupons();
+        if (!mounted) return;
+        const data = res?.data || res || {};
+        setMyCoupons(data.coupons || []);
+        setMyOffers(data.offers || []);
+      } catch (err) {
+        if (!mounted) return;
+        console.error("[Dashboard] Offers & Coupons load failed:", err?.message || err);
+        // Fallback to the alternate dashboard endpoint before giving up.
+        try {
+          const res = await couponService.dashboard();
+          if (!mounted) return;
+          const data = res?.data || res || {};
+          setMyCoupons(data.coupons || []);
+          setMyOffers(data.offers || []);
+        } catch (err2) {
+          if (!mounted) return;
+          console.error("[Dashboard] Offers & Coupons (fallback) failed:", err2?.message || err2);
+          setCouponsError("Unable to load offers right now.");
+          setMyCoupons([]);
+          setMyOffers([]);
+        }
+      } finally {
+        if (mounted) setCouponsLoading(false);
+      }
+    };
+    loadOffersCoupons();
     return () => { mounted = false; };
-  }, [activeTab]);
+  }, [activeTab, couponReloadKey]);
 
 useEffect(() => {
     loadDashboardData();
@@ -1066,7 +1110,7 @@ useEffect(() => {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                       {wishlist.map((item) => (
                         <div key={item.id || item.product_id} className="relative rounded-lg bg-slate-950 border border-slate-800 p-4 flex flex-col group hover:border-slate-700 transition-colors">
-                          <Link to={`/product/${item.product_id}`} className="block flex-shrink-0 mb-3 w-full h-32 relative rounded-md overflow-hidden bg-slate-900 border border-slate-800/60 flex items-center justify-center">
+                          <Link to={`/product/${item.product_id}`} className="flex flex-shrink-0 mb-3 w-full h-32 relative rounded-md overflow-hidden bg-slate-900 border border-slate-800/60 items-center justify-center">
                             {item.image_url ? (
                               <SafeImage src={item.image_url} alt={item.name} className="w-full h-full object-contain p-2" />
                             ) : (
@@ -1184,7 +1228,7 @@ useEffect(() => {
                 />
               )}
               {activeTab === "offers-coupons" && (
-                <motion.div key="offers-coupons-tab" variants={tabContentVariants} initial="hidden" animate="show" className="space-y-6">
+                <motion.div key="offers-coupons-tab" variants={tabContentVariants} initial="hidden" animate="visible" className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-2">
                       <Ticket size={20} className="text-cyan-400" /> My Offers & Coupons
@@ -1195,57 +1239,307 @@ useEffect(() => {
                   </div>
 
                   {couponsLoading ? (
-                    <div className="flex items-center justify-center py-16">
-                      <Loader size={20} className="animate-spin text-cyan-400" />
-                    </div>
-                  ) : myCoupons.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
-                      <Ticket size={28} className="mx-auto text-slate-600" />
-                      <p className="mt-3 text-slate-400 text-sm">You have no active coupons right now.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {[1, 2, 3, 4].map((item) => (
+                        <div key={item} className="animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+                          <div className="flex justify-between gap-4"><div className="h-5 w-24 rounded bg-slate-800" /><div className="h-4 w-20 rounded bg-slate-800" /></div>
+                          <div className="flex items-center gap-4"><div className="h-16 w-16 rounded-xl bg-slate-800" /><div className="space-y-2"><div className="h-5 w-28 rounded bg-slate-800" /><div className="h-3 w-40 rounded bg-slate-800" /></div></div>
+                          <div className="h-3 w-3/4 rounded bg-slate-800" />
+                          <div className="h-9 w-full rounded-lg bg-slate-800" />
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div className="grid gap-4">
-                      {myCoupons.map((c) => {
-                        const daysLeft = c.expiresAt ? Math.max(1, Math.ceil((new Date(c.expiresAt) - new Date()) / 86400000)) : null;
-                        const isPct = c.offerType === "percentage" || c.offerType === "percent";
-                        const valueLabel = isPct ? `${c.offerValue}% OFF` : `₹${Number(c.offerValue || 0).toLocaleString("en-IN")} OFF`;
-                        return (
-                          <div key={c.id} className="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 to-slate-900/60 p-5 space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Welcome Offer</span>
-                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                                {daysLeft ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}` : "No expiry"}
-                              </span>
-                            </div>
-                            <div>
-                              <h3 className="text-lg font-bold text-white">{c.offerName || "Offer"}</h3>
-                              <p className="text-sm text-slate-400">{c.offerDescription || valueLabel}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                              <span>{valueLabel}</span>
-                              {Number(c.minOrder || 0) > 0 && <span>Min order ₹{Number(c.minOrder).toLocaleString("en-IN")}</span>}
-                              {Number(c.maxDiscount || 0) > 0 && <span>Max savings ₹{Number(c.maxDiscount).toLocaleString("en-IN")}</span>}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <code className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 text-sm font-mono text-cyan-300 tracking-wide">
-                                {c.code}
-                              </code>
-                              <button
-                                type="button"
-                                onClick={() => copyCouponCode(c.code)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-cyan-500/50 hover:text-cyan-300 transition-colors"
-                              >
-                                {copiedCode === c.code ? <CheckCircle size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                                {copiedCode === c.code ? "Copied" : "Copy Code"}
-                              </button>
-                              <Link to="/shop" className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 px-4 py-1.5 text-xs font-bold text-white hover:from-cyan-500 hover:to-indigo-500">
-                                Shop Now
+                    <>
+                      {/* ── OFFERS SECTION (separate from coupon codes) ── */}
+                      {myOffers.length > 0 && (
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Sparkles size={16} className="text-cyan-400" />
+                            <h3 className="text-base font-bold text-white">Active Offers</h3>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {myOffers.map((offer) => {
+                              const discountLabel =
+                                offer.type === "percentage"
+                                  ? `${Math.round(Number(offer.value))}% OFF`
+                                  : offer.type === "fixed"
+                                    ? `₹${Number(offer.value).toLocaleString("en-IN")} OFF`
+                                    : "Special Offer";
+                              const appliedTo =
+                                offer.applyTo === "all"
+                                  ? "All products"
+                                  : offer.applyTo === "selected_products"
+                                    ? "Selected products"
+                                    : offer.applyTo === "selected_category"
+                                      ? "Selected category"
+                                      : offer.applyTo === "selected_product"
+                                        ? "Selected product"
+                                        : "All products";
+                              return (
+                                <div key={offer.id} className="rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/5 to-slate-900/60 p-4 flex flex-col group hover:border-indigo-400/40 transition-colors">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="text-xs font-black uppercase tracking-widest text-indigo-400">{discountLabel}</span>
+                                    {offer.bannerImage && (
+                                      <SafeImage src={getImageUrl(offer.bannerImage)} alt={offer.title} className="w-10 h-10 rounded-lg object-cover" />
+                                    )}
+                                  </div>
+                                  <h4 className="mt-2 text-sm font-bold text-white">{offer.title}</h4>
+                                  {offer.description && (
+                                    <p className="mt-1 text-xs text-slate-400 line-clamp-2">{offer.description}</p>
+                                  )}
+                                  <div className="mt-auto pt-3 space-y-1 text-[10px] text-slate-500">
+                                    {Number(offer.minOrderValue) > 0 && (
+                                      <p>Min. order: ₹{Number(offer.minOrderValue).toLocaleString("en-IN")}</p>
+                                    )}
+                                    {Number(offer.maximumDiscount) > 0 && (
+                                      <p>Max. savings: ₹{Number(offer.maximumDiscount).toLocaleString("en-IN")}</p>
+                                    )}
+                                    <p>Applies to: {appliedTo}</p>
+                                    {offer.expiryDate && (
+                                      <p className="flex items-center gap-1 text-amber-400/80">
+                                        <Clock size={10} /> Valid till {new Date(offer.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                      </p>
+                                    )}
+                                    {offer.couponCode && (
+                                      <p className="pt-1 text-xs text-cyan-300">
+                                        Coupon: <span className="font-mono font-bold">{offer.couponCode}</span>
+                                      </p>
+                                    )}
+                                  </div>
+                                  {offer.couponCode ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => useNow({ code: offer.couponCode })}
+                                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-bold text-cyan-300 hover:bg-cyan-500/20 transition-colors"
+                                    >
+                                      Apply Coupon <ChevronRight size={12} />
+                                    </button>
+                                  ) : (
+                                    <Link to="/shop" className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-bold text-indigo-300 hover:bg-indigo-500/20 transition-colors">
+                                      Shop Now <ChevronRight size={12} />
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── FILTERS + SEARCH ── */}
+                      <div className="flex items-end justify-between gap-4">
+                        <div>
+                          <h3 className="text-base font-bold text-white">My Coupons</h3>
+                          <p className="mt-1 text-xs text-slate-500">Coupons available to your account, including redemption history.</p>
+                        </div>
+                        <span className="hidden rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-500 sm:inline-flex">{myCoupons.length} total</span>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { key: "all", label: "All" },
+                            { key: "available", label: "Available" },
+                            { key: "expiring", label: "Expiring Soon" },
+                            { key: "used", label: "Used" },
+                            { key: "expired", label: "Expired" },
+                          ].map((f) => (
+                            <button
+                              key={f.key}
+                              type="button"
+                              onClick={() => setCouponFilter(f.key)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                                couponFilter === f.key
+                                  ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10"
+                                  : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={couponSearch}
+                          onChange={(e) => setCouponSearch(e.target.value.toUpperCase())}
+                          placeholder="Search coupon code…"
+                          className="sm:w-60 rounded-lg border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all"
+                        />
+                      </div>
+
+                      {/* ── COUPON CARDS ── */}
+                      {(() => {
+                        const filtered = myCoupons.filter((c) => {
+                          const matchesSearch = !couponSearch || (c.code || "").toUpperCase().includes(couponSearch);
+                          const matchesFilter =
+                            couponFilter === "all" ||
+                            (couponFilter === "available" && c.userStatus === "available") ||
+                            (couponFilter === "expiring" && c.userStatus === "expiring") ||
+                            (couponFilter === "used" && c.userStatus === "used") ||
+                            (couponFilter === "expired" && c.userStatus === "expired");
+                          return matchesSearch && matchesFilter;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="rounded-2xl border border-dashed border-slate-800 p-12 text-center">
+                              <Ticket size={32} className="mx-auto text-slate-600" />
+                              <p className="mt-4 text-slate-300 text-sm font-semibold">No coupons available right now.</p>
+                              <p className="mt-1 text-slate-500 text-sm">Check back soon for new offers.</p>
+                              <Link to="/shop" className="inline-flex items-center gap-1.5 mt-6 rounded-lg bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white transition-colors">
+                                Continue Shopping
                               </Link>
                             </div>
+                          );
+                        }
+
+                        return (
+                          <div className="grid gap-4">
+                            {filtered.map((c) => {
+                              const isPct = c.discountType === "percentage";
+                              const valueLabel = isPct
+                                ? `${Math.round(Number(c.discountValue))}% OFF`
+                                : `₹${Number(c.discountValue || 0).toLocaleString("en-IN")} OFF`;
+                              const daysLeft = c.expiryDate ? Math.ceil((new Date(c.expiryDate) - new Date()) / 86400000) : null;
+                              const statusStyles = {
+                                available: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                                expiring: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+                                expired: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+                                used: "bg-slate-500/10 text-slate-400 border-slate-500/30",
+                              };
+                              const statusIcon = {
+                                available: <CheckCircle size={11} />,
+                                expiring: <Clock size={11} />,
+                                expired: <XCircle size={11} />,
+                                used: <CheckCircle size={11} />,
+                              };
+                              return (
+                                <div
+                                  key={c.id}
+                                  onClick={() => setSelectedCoupon(c)}
+                                  className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-slate-900/60 transition-all hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-600/5 ${
+                                    statusStyles[c.userStatus] ? "border-slate-800" : ""
+                                  }`}
+                                >
+                                  {/* Ticket notch styling */}
+                                  <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/0 via-cyan-500/40 to-cyan-500/0" />
+                                  <div className="p-5 space-y-3">
+                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${statusStyles[c.userStatus] || "bg-slate-500/10 text-slate-400"}`}>
+                                        {statusIcon[c.userStatus]}
+                                        {c.statusLabel}
+                                      </span>
+                                      <span className="text-[11px] font-semibold text-slate-500">
+                                        {daysLeft && c.userStatus !== "expired" && c.userStatus !== "used"
+                                          ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}`
+                                          : c.userStatus === "expired"
+                                            ? "Expired"
+                                            : "No expiry"}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4">
+                                      <div
+                                        className={`w-16 h-16 rounded-xl flex items-center justify-center text-lg font-black border ${
+                                          isPct ? "bg-indigo-500/10 text-indigo-300 border-indigo-500/20" : "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                                        }`}
+                                      >
+                                        {isPct ? `${Math.round(Number(c.discountValue))}%` : `₹${Number(c.discountValue || 0).toLocaleString("en-IN")}`}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h3 className="text-lg font-bold text-white">{valueLabel}</h3>
+                                        <p className="text-xs text-slate-400 line-clamp-1">{c.description || c.code}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                                      {Number(c.minOrder) > 0 && (
+                                        <span>Minimum order <span className="text-slate-200 font-semibold">₹{Number(c.minOrder).toLocaleString("en-IN")}</span></span>
+                                      )}
+                                      {Number(c.maxDiscount) > 0 && (
+                                        <span>Max. discount <span className="text-slate-200 font-semibold">₹{Number(c.maxDiscount).toLocaleString("en-IN")}</span></span>
+                                      )}
+                                      {c.expiryDate && (
+                                        <span className="flex items-center gap-1">
+                                          <Clock size={11} /> Valid till {new Date(c.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                        </span>
+                                      )}
+                                      <span>
+                                        Applies to {c.applicableProducts?.length ? `${c.applicableProducts.length} product${c.applicableProducts.length > 1 ? "s" : ""}` : c.applicableCategories?.length ? `${c.applicableCategories.length} categor${c.applicableCategories.length > 1 ? "ies" : "y"}` : "all products"}
+                                      </span>
+                                      <span>
+                                        Used {Number(c.userUsedCount || 0)}{c.perUserLimit > 0 ? ` / ${c.perUserLimit}` : ""} time{Number(c.userUsedCount || 0) === 1 ? "" : "s"}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                      <code className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-3 py-2 text-sm font-mono text-cyan-300 tracking-wide">
+                                        {c.code}
+                                      </code>
+                                      <div className="flex items-center gap-2 flex-1 flex-wrap justify-end">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); copyCouponCode(c.code); }}
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-cyan-500/50 hover:text-cyan-300 transition-colors"
+                                        >
+                                          {copiedCode === c.code ? <CheckCircle size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                          {copiedCode === c.code ? "Copied" : "Copy Code"}
+                                        </button>
+                                        {c.userStatus === "available" || c.userStatus === "expiring" ? (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); useNow(c); }}
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 px-4 py-2 text-xs font-bold text-white hover:from-cyan-500 hover:to-indigo-500 transition-colors"
+                                          >
+                                            Use Now <ChevronRight size={12} />
+                                          </button>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed">
+                                            Use Now
+                                          </span>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); setSelectedCoupon(c); }}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
+                                        >
+                                          Details
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         );
-                      })}
-                    </div>
+                      })()}
+
+                      {/* ── ERROR STATE ── */}
+                      {couponsError && (
+                        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-6 text-center">
+                          <XCircle size={28} className="mx-auto text-rose-400" />
+                          <p className="mt-3 text-sm font-semibold text-rose-300">{couponsError}</p>
+                          <button
+                            type="button"
+                            onClick={() => setCouponReloadKey((key) => key + 1)}
+                            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
+
+                      {/* ── EMPTY STATE (only when backend truly returns nothing) ── */}
+                      {!couponsError && myOffers.length === 0 && myCoupons.length === 0 && (
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-10 text-center">
+                          <Ticket size={30} className="mx-auto text-slate-600" />
+                          <p className="mt-3 text-sm font-semibold text-slate-300">No active offers right now</p>
+                          <p className="mt-1 text-xs text-slate-500">Check back soon for new discounts and special offers.</p>
+                          <Link to="/shop" className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-cyan-500">
+                            Continue Shopping <ChevronRight size={14} />
+                          </Link>
+                        </div>
+                      )}
+                    </>
                   )}
                 </motion.div>
               )}
@@ -1430,6 +1724,163 @@ useEffect(() => {
         order={cancelSuccessOrder}
         onClose={() => setCancelSuccessOrder(null)}
       />
+
+      {/* COUPON DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedCoupon && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setSelectedCoupon(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-lg rounded-[20px] border border-slate-800 bg-slate-900 p-6 shadow-2xl sm:p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                    <Ticket size={18} className="text-cyan-400" /> Coupon Details
+                  </h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">Review coupon terms and eligibility.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCoupon(null)}
+                  className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-cyan-500/5 to-slate-900/60 p-5 text-center">
+                  <code className="inline-block rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-4 py-2 text-lg font-mono text-cyan-300 tracking-widest">
+                    {selectedCoupon.code}
+                  </code>
+                  <p className="mt-2 text-lg font-black text-white">
+                    {(() => {
+                      const isPct = selectedCoupon.discountType === "percentage";
+                      return isPct
+                        ? `${Math.round(Number(selectedCoupon.discountValue))}% OFF`
+                        : `₹${Number(selectedCoupon.discountValue || 0).toLocaleString("en-IN")} OFF`;
+                    })()}
+                  </p>
+                  {selectedCoupon.description && (
+                    <p className="mt-1 text-sm text-slate-400">{selectedCoupon.description}</p>
+                  )}
+                  <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold border bg-slate-500/10 text-slate-300 border-slate-600/40`}>
+                    {selectedCoupon.statusLabel}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Minimum Cart</p>
+                    <p className="text-sm font-semibold text-white mt-0.5">
+                      {Number(selectedCoupon.minOrder) > 0 ? `₹${Number(selectedCoupon.minOrder).toLocaleString("en-IN")}` : "No minimum"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Maximum Discount</p>
+                    <p className="text-sm font-semibold text-white mt-0.5">
+                      {Number(selectedCoupon.maxDiscount) > 0 ? `₹${Number(selectedCoupon.maxDiscount).toLocaleString("en-IN")}` : "No limit"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Valid From</p>
+                    <p className="text-sm font-semibold text-white mt-0.5">
+                      {selectedCoupon.startDate ? new Date(selectedCoupon.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Immediately"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Expiry Date</p>
+                    <p className="text-sm font-semibold text-white mt-0.5">
+                      {selectedCoupon.expiryDate ? new Date(selectedCoupon.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "No expiry"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Eligible Categories</p>
+                    <p className="text-sm text-slate-300 mt-0.5">
+                      {selectedCoupon.applicableCategories && selectedCoupon.applicableCategories.length > 0
+                        ? selectedCoupon.applicableCategories.join(", ")
+                        : "All categories"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Eligible Products</p>
+                    <p className="text-sm text-slate-300 mt-0.5">
+                      {selectedCoupon.applicableProducts && selectedCoupon.applicableProducts.length > 0
+                        ? selectedCoupon.applicableProducts.join(", ")
+                        : "All products"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">User Eligibility</p>
+                    <p className="text-sm text-slate-300 mt-0.5">
+                      {selectedCoupon.userUsedCount > 0 ? `Used ${selectedCoupon.userUsedCount} time(s)` : "Available for you"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Usage Limit</p>
+                    <p className="text-sm text-slate-300 mt-0.5">
+                      {selectedCoupon.usageLimit
+                        ? `${Math.max(0, Number(selectedCoupon.usageLimit) - (selectedCoupon.userUsedCount || 0))} left of ${selectedCoupon.usageLimit} per user`
+                        : `${selectedCoupon.perUserLimit || 1} use(s) per user · unlimited total`}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Terms &amp; Conditions</p>
+                    <ul className="mt-1 space-y-1 text-xs leading-relaxed text-slate-400">
+                      {selectedCoupon.minOrder > 0 && (
+                        <li>This coupon is valid only on orders above ₹{Number(selectedCoupon.minOrder).toLocaleString("en-IN")}.</li>
+                      )}
+                      {selectedCoupon.discountType === "percentage" && Number(selectedCoupon.maxDiscount) > 0 && (
+                        <li>Maximum discount applicable is ₹{Number(selectedCoupon.maxDiscount).toLocaleString("en-IN")}.</li>
+                      )}
+                      {selectedCoupon.stackWithOffer === false || selectedCoupon.stackWithOffer === 0 ? (
+                        <li>Cannot be combined with another coupon or offer.</li>
+                      ) : (
+                        <li>Can be combined with eligible product offers.</li>
+                      )}
+                      <li>Subject to availability and complete eligibility at checkout.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => copyCouponCode(selectedCoupon.code)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[12px] border border-slate-700 bg-slate-800 py-3 text-sm font-bold text-slate-200 transition hover:bg-slate-700"
+                  >
+                    {copiedCode === selectedCoupon.code ? <CheckCircle size={15} className="text-emerald-400" /> : <Copy size={15} />}
+                    {copiedCode === selectedCoupon.code ? "Copied!" : "Copy Code"}
+                  </button>
+                  {(selectedCoupon.userStatus === "available" || selectedCoupon.userStatus === "expiring") && (
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedCoupon(null); useNow(selectedCoupon); }}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-r from-cyan-600 to-indigo-600 py-3 text-sm font-bold text-white transition-all hover:from-cyan-500 hover:to-indigo-500"
+                    >
+                      Use Now <ChevronRight size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

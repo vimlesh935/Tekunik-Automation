@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -138,6 +138,7 @@ export default function Checkout() {
           code: totals.couponCode,
           offerName: totals.couponOfferName || totals.coupon?.description || "Coupon Discount",
           discount: Number(totals.discount || 0),
+          grandTotal: Number(totals.grandTotal ?? totals.totalAmount ?? 0),
         });
       } else {
         setAppliedCoupon(null);
@@ -175,9 +176,21 @@ export default function Checkout() {
       addToast(res?.message || "Coupon applied successfully! 🎉", "success");
       const d = res?.data || {};
       setAppliedCoupon({
-        code: d.coupon?.code || code,
-        offerName: d.coupon?.offerName || d.couponOfferName || d.coupon?.description || "Coupon Discount",
-        discount: Number(d.coupon?.discount || d.discount || 0),
+        code: d.coupon?.code || d.couponCode || code,
+        offerName:
+          d.coupon?.offerName ||
+          d.couponOfferName ||
+          d.totals?.couponOfferName ||
+          d.coupon?.description ||
+          "Coupon Discount",
+        discount: Number(d.coupon?.discount || d.discount || d.discountAmount || d.totals?.discount || 0),
+        grandTotal: Number(
+          d.grandTotal ??
+            d.total ??
+            d.totals?.grandTotal ??
+            d.totals?.totalAmount ??
+            (checkoutTotals.totalAmount - Number(d.coupon?.discount || d.discount || d.discountAmount || d.totals?.discount || 0)),
+        ),
       });
       setCouponInput("");
       setCouponMessage({ type: "success", text: "Coupon applied successfully" });
@@ -246,6 +259,17 @@ export default function Checkout() {
       totalAmount: Number(totalAmount.toFixed(2)),
     });
     return true;
+  };
+
+  // Pending coupon from the "Use Now" dashboard action — auto-apply once.
+  const applyPendingCoupon = async () => {
+    if (!isAuthenticated) return;
+    let pendingCode = null;
+    try { pendingCode = localStorage.getItem("teknode_selected_coupon"); } catch {}
+    if (!pendingCode) return;
+    try { localStorage.removeItem("teknode_selected_coupon"); } catch {}
+    if (!checkoutItems || checkoutItems.length === 0) return;
+    await handleApplyCoupon(pendingCode);
   };
   useEffect(() => {
     let isMounted = true;
@@ -340,11 +364,20 @@ export default function Checkout() {
   // computed against the real cart instead of an empty/loading one. Re-evaluates
   // whenever the checkout cart changes. (Bug fix: coupon list not showing.)
   useEffect(() => {
-    if (!isAuthenticated) return;
     if (loading) return;
     loadAvailableCoupons();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, loading, checkoutItems, checkoutTotals.totalAmount]);
+
+  // Auto-apply a coupon selected from the dashboard "Use Now" flow once the
+  // cart is ready. Runs a single time after loading settles.
+  const didAutoApply = useRef(false);
+  useEffect(() => {
+    if (loading || didAutoApply.current) return;
+    didAutoApply.current = true;
+    applyPendingCoupon();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const validate = () => {
     const emailEntered = form.email;
@@ -461,6 +494,7 @@ export default function Checkout() {
     console.log("[Checkout] Submit attempt with email:", form.email);
     if (!validate()) return;
     setSaving(true);
+    let order = null;
     try {
       const normalizedEmail = String(form.email || "").trim().toLowerCase();
       const payload = {
@@ -486,7 +520,7 @@ export default function Checkout() {
         ? await cartService.checkout(payload)
         : await guestOrderService.createOrder(payload);
       console.log("[Checkout] API response:", JSON.stringify(response));
-      const order = response?.data?.order;
+      order = response?.data?.order;
       if (!order) throw new Error("Order could not be created.");
 
       if (form.payment_method === "online") {
@@ -504,6 +538,20 @@ export default function Checkout() {
       navigate("/order-confirmation", { state: { order } });
     } catch (err) {
       console.error("[Checkout] Error:", err);
+      // If an online payment failed/cancelled, mark it on the backend so any
+      // consumed coupon is restored and the user can apply it again.
+      if (
+        form.payment_method === "online" &&
+        !order?.payment_status?.toString().toLowerCase().startsWith("paid")
+      ) {
+        try {
+          if (isAuthenticated && order?.id) {
+            await orderService.markPaymentFailed(order.id);
+          }
+        } catch (markErr) {
+          console.warn("[Checkout] Failed to mark payment failed:", markErr?.message);
+        }
+      }
       addToast(err?.message || "Unable to complete checkout.", "error");
     } finally {
       setSaving(false);
@@ -845,68 +893,108 @@ export default function Checkout() {
               {/* Items List */}
               <div className="divide-y divide-slate-800/60 max-h-[280px] overflow-y-auto">
                 <AnimatePresence initial={false}>
-                  {checkoutItems.map((item) => (
-                    <motion.div
-                      key={item.cart_item_id || item.product_id}
-                      className="flex items-center gap-3 px-6 py-4 hover:bg-slate-800/20 transition-colors duration-150"
-                    >
-                      <div className="h-12 w-12 overflow-hidden rounded-xl bg-slate-950 border border-slate-800 flex-shrink-0 flex items-center justify-center">
-                        {item.image_url ? (
-                          <SafeImage
-                            src={item.image_url}
-                            alt={item.name}
-                            className="h-full w-full object-contain"
-                            fallback={
-                              <div className="flex h-full items-center justify-center text-slate-600">
-                                <Package size={14} />
-                              </div>
-                            }
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-slate-600">
-                            <Package size={14} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">
-                          {item.name}
-                        </p>
-                        {hasDiscount(item) ? (
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-slate-400 line-through">
-                              {formatCurrency(item.original_price || item.price)}
-                            </span>
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                              {Math.round(item.discount_percent)}% OFF
-                            </span>
-                            <span className="text-xs text-slate-400">
-                              × {formatCurrency(item.final_price)}
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            × {formatCurrency(item.price || 0)}
+                  {checkoutItems.map((item) => {
+                    const mrp = parseFloat(item.original_price || item.price || 0);
+                    const finalUnit = parseFloat(item.final_price || item.price || 0);
+                    const qty = Number(item.quantity || 1);
+                    const lineTotal = finalUnit * qty;
+                    return (
+                      <motion.div
+                        key={item.cart_item_id || item.product_id}
+                        className="flex items-center gap-3 px-6 py-4 hover:bg-slate-800/20 transition-colors duration-150"
+                      >
+                        <div className="h-12 w-12 overflow-hidden rounded-xl bg-slate-950 border border-slate-800 flex-shrink-0 flex items-center justify-center">
+                          {item.image_url ? (
+                            <SafeImage
+                              src={item.image_url}
+                              alt={item.name}
+                              className="h-full w-full object-contain"
+                              fallback={
+                                <div className="flex h-full items-center justify-center text-slate-600">
+                                  <Package size={14} />
+                                </div>
+                              }
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-slate-600">
+                              <Package size={14} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">
+                            {item.name}
                           </p>
-                        )}
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Qty {item.quantity}
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {hasDiscount(item) && mrp > finalUnit ? (
+                              <>
+                                <span className="text-xs text-slate-500 line-through">
+                                  {formatCurrency(mrp)}
+                                </span>
+                                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                  {Math.round(Number(item.discount_percent) || 0)}% OFF
+                                </span>
+                              </>
+                            ) : null}
+                            <span className="text-xs font-semibold text-white">
+                              {formatCurrency(finalUnit)}
+                            </span>
+                            <span className="text-xs text-slate-500">× {qty}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Item total:{" "}
+                            <span className="text-slate-300 font-medium">
+                              {formatCurrency(lineTotal)}
+                            </span>
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-white flex-shrink-0 min-w-[70px] text-right">
+                          {formatCurrency(lineTotal)}
                         </p>
-                      </div>
-                      <p className="text-sm font-bold text-indigo-400 flex-shrink-0">
-                        {formatCurrency(
-                          parseFloat(item.final_price || item.price || 0) *
-                            Number(item.quantity || 0),
-                        )}
-                      </p>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
 
+              {/* Items Subtotal (combined price of all items) */}
+              <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/30 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-300">
+                  Items Total ({checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"})
+                </span>
+                <span className="text-base font-bold text-white font-mono">
+                  {formatCurrency(checkoutTotals.totalAmount)}
+                </span>
+              </div>
+
+              {/* Place Order Button */}
+              <div className="px-6 pb-2 pt-4">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={saving || loading}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-indigo-500/20 active:scale-[0.97] disabled:shadow-none"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-xs text-slate-500 font-medium mt-3 flex items-center justify-center gap-1">
+                  <ShieldCheck size={14} className="text-indigo-400" />
+                  Secure checkout with SSL encryption
+                </p>
+              </div>
+
               {/* Coupon Section */}
-              {isAuthenticated && (
-                <div className="px-6 py-5 border-t border-slate-800 space-y-3">
+              <div className="px-6 py-5 border-t border-slate-800 space-y-3">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                     Have a promo code?
                   </p>
@@ -985,20 +1073,19 @@ export default function Checkout() {
                     onApply={handleApplyCoupon}
                     onPrefill={setCouponInput}
                   />
-                </div>
-              )}
+              </div>
 
               {/* Price Breakdown */}
               <div className="px-6 py-5 border-t border-slate-800 bg-slate-950/30 space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Subtotal (Original)</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-slate-400">MRP Total (Gross)</span>
+                  <span className="font-semibold text-slate-300">
                     {formatCurrency(subtotal)}
                   </span>
                 </div>
                 {totalSavings > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-emerald-400">You Save</span>
+                    <span className="text-emerald-400">Item Discounts (Offers)</span>
                     <span className="font-semibold text-emerald-400">
                       -{formatCurrency(totalSavings)}
                     </span>
@@ -1022,7 +1109,13 @@ export default function Checkout() {
                 <div className="flex items-center justify-between text-sm border-t border-slate-800 pt-3">
                   <span className="font-bold text-white">Total Amount</span>
                   <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-mono tracking-tight">
-                    {formatCurrency(Math.max(0, checkoutTotals.totalAmount - (Number(appliedCoupon?.discount) || 0)))}
+                    {formatCurrency(
+                      Math.max(
+                        0,
+                        Number(appliedCoupon?.grandTotal) ||
+                          (checkoutTotals.totalAmount - (Number(appliedCoupon?.discount) || 0)),
+                      ),
+                    )}
                   </span>
                 </div>
               </div>
@@ -1035,31 +1128,6 @@ export default function Checkout() {
                 </p>
               </div>
 
-              {/* Place Order Button */}
-              <div className="px-6 pb-6">
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={saving || loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-indigo-500/20 active:scale-[0.97] disabled:shadow-none"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Proceed to Checkout
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
-                <p className="text-center text-xs text-slate-500 font-medium mt-3 flex items-center justify-center gap-1">
-                  <ShieldCheck size={14} className="text-indigo-400" />
-                  Secure checkout with SSL encryption
-                </p>
-              </div>
             </div>
           </aside>
         </div>

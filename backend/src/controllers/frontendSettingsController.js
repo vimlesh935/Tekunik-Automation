@@ -16,7 +16,7 @@ const getFrontendSettings = async (req, res, next) => {
 const updateFrontendSettings = async (req, res, next) => {
   try {
     const allowedFields = [
-      "company_name", "company_tagline", "company_description", "company_logo", "company_favicon",
+      "company_name", "hero_heading", "hero_image", "company_tagline", "company_description", "company_logo", "company_favicon",
       "company_email", "company_phone", "company_whatsapp", "company_address", "city", "state",
       "country", "postal_code", "google_maps_url", "google_maps_link", "support_email",
       "sales_email", "website_url", "facebook_url", "instagram_url", "linkedin_url", "youtube_url",
@@ -29,7 +29,7 @@ const updateFrontendSettings = async (req, res, next) => {
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         updates.push(`${field} = ?`);
-        values.push(req.body[field]);
+        values.push(field === "hero_heading" ? String(req.body[field]).trim() : req.body[field]);
       }
     }
 

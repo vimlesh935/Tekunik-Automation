@@ -8,16 +8,21 @@ import {
   Mail,
   Phone,
   MapPin,
+  Clock,
   Shield,
   Settings,
   ArrowRight,
   ArrowUpRight,
-  Globe,
-  Camera,
-  Video,
   MessageCircle,
-  ExternalLink,
 } from "lucide-react";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaLinkedinIn,
+  FaWhatsapp,
+  FaXTwitter,
+  FaYoutube,
+} from "react-icons/fa6";
 import { motion } from "framer-motion";
 
 const containerVariants = {
@@ -37,6 +42,17 @@ const itemVariants = {
   },
 };
 
+const safeExternalUrl = (value) => {
+  const url = String(value || "").trim();
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+};
+
 export default function Footer() {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -49,12 +65,21 @@ export default function Footer() {
     : "/assest/logo.png";
 
   const socialLinks = [
-    { url: settings.facebook_url, icon: Globe, label: "Facebook" },
-    { url: settings.instagram_url, icon: Camera, label: "Instagram" },
-    { url: settings.linkedin_url, icon: ExternalLink, label: "LinkedIn" },
-    { url: settings.youtube_url, icon: Video, label: "YouTube" },
-    { url: settings.twitter_url, icon: MessageCircle, label: "Twitter" },
-  ].filter(s => s.url);
+    { url: settings.instagram_url, icon: FaInstagram, label: "Instagram" },
+    { url: settings.facebook_url, icon: FaFacebookF, label: "Facebook" },
+    { url: settings.youtube_url, icon: FaYoutube, label: "YouTube" },
+    { url: settings.linkedin_url, icon: FaLinkedinIn, label: "LinkedIn" },
+    { url: settings.twitter_url, icon: FaXTwitter, label: "X / Twitter" },
+    {
+      url: settings.company_whatsapp
+        ? `https://wa.me/${String(settings.company_whatsapp).replace(/[^0-9]/g, "")}`
+        : "",
+      icon: FaWhatsapp,
+      label: "WhatsApp",
+    },
+  ]
+    .map((social) => ({ ...social, url: safeExternalUrl(social.url) }))
+    .filter((social) => social.url);
 
   return (
     <footer className="relative mt-auto border-t border-slate-900 bg-slate-950 text-slate-400 overflow-hidden">
@@ -150,15 +175,15 @@ export default function Footer() {
               Contact
             </h4>
             <ul className="space-y-4">
-              {(settings.company_email || settings.support_email) && (
+              {settings.company_email && (
                 <li className="flex items-start gap-3 text-sm">
                   <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-800 mt-0.5">
                     <Mail size={13} className="text-indigo-400" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Email</p>
-                    <a href={`mailto:${settings.support_email || settings.company_email}`} className="text-slate-300 hover:text-indigo-400 transition-colors break-all">
-                      {settings.support_email || settings.company_email}
+                    <a href={`mailto:${settings.company_email}`} className="text-slate-300 hover:text-indigo-400 transition-colors break-all">
+                      {settings.company_email}
                     </a>
                   </div>
                 </li>
@@ -174,7 +199,7 @@ export default function Footer() {
                       {settings.company_phone}
                     </a>
                     {settings.company_whatsapp && (
-                      <a href={`https://wa.me/${settings.company_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="block text-emerald-400 hover:text-emerald-300 transition-colors text-xs mt-0.5 flex items-center gap-1">
+                      <a href={`https://wa.me/${settings.company_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-xs mt-0.5">
                         <MessageCircle size={11} />
                         WhatsApp
                       </a>

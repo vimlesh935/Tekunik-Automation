@@ -464,6 +464,8 @@ export const orderService = {
   getOrder: (orderId) => apiCall(`/api/user/orders/${orderId}`),
   cancelOrder: (orderId) =>
     apiCall(`/api/user/orders/${orderId}/cancel`, { method: "POST" }),
+  markPaymentFailed: (orderId) =>
+    apiCall(`/api/user/orders/${orderId}/payment-failed`, { method: "POST" }),
   downloadUserInvoice: (orderId) =>
     fetch(getApiUrl(`/api/user/orders/${orderId}/download-invoice`), {
       headers: {
@@ -731,7 +733,6 @@ export const adminActivityService = {
   unreadCount: () => apiCall("/api/admin/activity/unread-count"),
   dashboardSummary: () => apiCall("/api/admin/activity/dashboard-summary"),
   needsAttention: () => apiCall("/api/admin/activity/needs-attention"),
-  priceDropAnalytics: (days = 30) => apiCall(`/api/admin/activity/price-drop-analytics?days=${days}`),
   markRead: (id) => apiCall(`/api/admin/activity/${id}/read`, { method: "PATCH" }),
   markAllRead: () => apiCall("/api/admin/activity/read-all", { method: "PATCH" }),
   remove: (id) => apiCall(`/api/admin/activity/${id}`, { method: "DELETE" }),
@@ -769,6 +770,8 @@ export const couponService = {
     apiCall("/api/coupons/apply", { method: "POST", body: JSON.stringify({ couponCode, cartItems: cartItems || undefined, cartTotal: cartTotal ?? undefined }) }),
   remove: () => apiCall("/api/coupons/remove", { method: "POST" }),
   my: () => apiCall("/api/coupons/my"),
+  dashboard: () => apiCall("/api/coupons/dashboard"),
+  offersAndCoupons: () => apiCall("/api/user/offers-and-coupons"),
   totals: () => apiCall("/api/coupons/totals"),
   available: ({ cartItems, cartTotal } = {}) =>
     apiCall("/api/coupons/available", {

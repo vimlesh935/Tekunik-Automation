@@ -12,6 +12,7 @@
 
 const crypto = require("node:crypto");
 const { query } = require("../config/db");
+const { getActiveOffers, calculateOfferPrice } = require("./offerPricingService");
 
 // ─── Constants ────────────────────────────────────────────────────────
 const COUPON_STATUS = Object.freeze({
@@ -505,6 +506,33 @@ const calculateDiscountAmount = ({ coupon, eligibleSubtotal }) => {
   return toMoney(Math.max(0, Math.min(discount, subtotal)));
 };
 
+const computeCouponDiscountForItems = ({ offer, items = [], orderSubtotal = 0 }) => {
+  const scope = offer?.apply_to || "all";
+  const productIds = new Set((offer?.product_ids || offer?.product_ids_json || []).map(Number));
+  const categoryIds = new Set((offer?.category_ids || offer?.category_ids_json || []).map(Number));
+  const eligibleSubtotal = items.reduce((total, item) => {
+    const productId = Number(item.product_id || item.id);
+    const categoryId = Number(item.category_id);
+    const eligible =
+      scope === "all" ||
+      (scope === "selected_products" && productIds.has(productId)) ||
+      (scope === "selected_product" && Number(offer?.product_id) === productId) ||
+      (scope === "selected_category" && categoryIds.has(categoryId));
+    if (!eligible) return total;
+    return total + Number(item.final_price ?? item.price ?? 0) * Number(item.quantity ?? 1);
+  }, 0);
+
+  const discount = calculateDiscountAmount({
+    coupon: {
+      discount_type: offer?.type,
+      discount_value: offer?.value,
+      maximum_discount: offer?.maximum_discount,
+    },
+    eligibleSubtotal: eligibleSubtotal || orderSubtotal,
+  });
+  return { discount, eligibleSubtotal: toMoney(eligibleSubtotal || orderSubtotal) };
+};
+
 // ─── Cart Lines Loading ───────────────────────────────────────────────
 const findOrCreateCart = async (userId) => {
   const [existing] = await query("SELECT * FROM carts WHERE user_id = ?", [userId]);
@@ -528,11 +556,34 @@ const loadCartLines = async (userId) => {
      WHERE ci.cart_id = ?`,
     [cart.id]
   );
+
+  // Apply the SAME active-offer pricing the cart display and order creation use
+  // (calculateOfferPrice). This keeps the coupon's discount basis consistent with
+  // the price the customer actually sees and what the order finalizes at — it is
+  // the coupon computed against the offer-reduced price, not the pre-offer MRP.
+  const activeOffers = await getActiveOffers();
+  const baseSubtotal = items.reduce(
+    (sum, it) => sum + (Number(it.sale_price || it.price) || 0) * Number(it.quantity || 0),
+    0
+  );
   let subtotal = 0;
   for (const it of items) {
-    // Use sale_price when available (effective/discounted price); fall back to MRP
-    const itemPrice = Number(it.sale_price || it.price) || 0;
-    subtotal += itemPrice * Number(it.quantity || 0);
+    const effectiveMrp = Number(it.sale_price || it.price) || 0;
+    const offerPrice = calculateOfferPrice(
+      { id: Number(it.product_id), price: effectiveMrp, category_id: it.category_id },
+      activeOffers,
+      baseSubtotal
+    );
+    const finalPrice = offerPrice.final_price;
+    subtotal += finalPrice * Number(it.quantity || 0);
+    // Enrich item with offer-aware pricing so validateCoupon's discount basis and
+    // stacking rule match a cart that already carries an active offer.
+    it.original_price = effectiveMrp;
+    it.final_price = finalPrice;
+    it.price = finalPrice;
+    it.discount_percent = offerPrice.discount_percent;
+    it.discount_amount = offerPrice.discount_amount;
+    it.offer_id = offerPrice.offer_id;
   }
   return { cart, items, subtotal: toMoney(subtotal) };
 };
@@ -1037,6 +1088,7 @@ const validateCouponCode = async ({ userId, code, items: clientItems, cartTotal 
     couponCode: verdict.coupon.code,
     discountType: (verdict.coupon.discount_type || "PERCENTAGE").toUpperCase(),
     discountAmount: verdict.discount,
+    discount: verdict.discount,
     message: "Coupon applied successfully",
     coupon: {
       id: verdict.coupon.id,
@@ -1052,6 +1104,161 @@ const validateCouponCode = async ({ userId, code, items: clientItems, cartTotal 
       couponOfferName: verdict.coupon.description || verdict.coupon.code,
     }),
   };
+};
+
+// ─── Dashboard: All coupons & offers for the logged-in user ──────────
+const getDashboardCoupons = async (userId) => {
+  const now = new Date();
+
+  // 1. Fetch all coupons the user should see (shared + personal + welcome)
+  const rows = await query(
+    `SELECT c.*, ${OFFER_FIELDS}
+     FROM coupons c
+     LEFT JOIN discounts d ON d.id = c.offer_id
+     WHERE c.status IN ('ACTIVE','USED','EXPIRED','DISABLED')
+       AND (c.user_id IS NULL OR c.user_id = ?)
+       AND (c.coupon_type IN ('shared','personal','welcome'))
+     ORDER BY c.created_at DESC
+     LIMIT 50`,
+    [userId || null]
+  );
+
+  const offerIds = [...new Set((rows || []).map((row) => Number(row.offer_id)).filter(Boolean))];
+  const offerProductRows = offerIds.length
+    ? await query(`SELECT offer_id, product_id FROM offer_products WHERE offer_id IN (${offerIds.map(() => "?").join(",")})`, offerIds)
+    : [];
+  const offerCategoryRows = offerIds.length
+    ? await query(`SELECT offer_id, category_id FROM offer_categories WHERE offer_id IN (${offerIds.map(() => "?").join(",")})`, offerIds)
+    : [];
+
+  const coupons = [];
+  for (const row of rows || []) {
+    const c = normalizeCouponRow(row);
+
+    // Skip expired coupons
+    if (c.expires_at && new Date(c.expires_at) < now) {
+      // Still show them but mark as expired
+    }
+
+    // Per-user usage count
+    const userUsedCount = userId ? await countCouponUsageForUser(c.id, userId) : 0;
+    const perUserLimit = Number(c.per_user_limit || 1);
+    const isUsedByUser = userUsedCount >= perUserLimit;
+
+    // Determine user-specific status
+    let userStatus = "available";
+    let statusLabel = "Available";
+
+    if (!c.is_active || c.status === "DISABLED") {
+      userStatus = "expired";
+      statusLabel = "Unavailable";
+    } else if (isUsedByUser) {
+      userStatus = "used";
+      statusLabel = "Already Used";
+    } else if (c.expires_at && new Date(c.expires_at) < now) {
+      userStatus = "expired";
+      statusLabel = "Expired";
+    } else if (c.expires_at) {
+      const daysLeft = Math.ceil((new Date(c.expires_at) - now) / 86400000);
+      if (daysLeft <= 7) {
+        userStatus = "expiring";
+        statusLabel = `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}`;
+      }
+    }
+
+    // Global usage limit check
+    const globalUsage = await countCouponUsage(c.id);
+    const effectiveGlobalUsage = Math.max(globalUsage, c.used_count || 0);
+    if (c.usage_limit !== null && c.usage_limit !== undefined && c.usage_limit > 0 && effectiveGlobalUsage >= c.usage_limit) {
+      if (userStatus === "available") {
+        userStatus = "expired";
+        statusLabel = "Usage limit reached";
+      }
+    }
+
+    coupons.push({
+      id: c.id,
+      code: c.code,
+      description: c.description || "",
+      couponType: c.coupon_type,
+      discountType: c.discount_type,
+      discountValue: c.discount_value,
+      maxDiscount: c.maximum_discount,
+      minOrder: c.minimum_cart_value,
+      startDate: c.starts_at,
+      expiryDate: c.expires_at,
+      usageLimit: c.usage_limit,
+      perUserLimit: perUserLimit,
+      userUsedCount,
+      stackWithOffer: c.stack_with_offer,
+      applicableProducts: c.applicable_products,
+      applicableCategories: c.applicable_categories,
+      userStatus,
+      statusLabel,
+      offerId: c.offer_id,
+      offerName: c.offer_name || null,
+      offerTitle: c.offer_title || null,
+      offerDescription: c.offer_description || null,
+      offerType: c.offer_type || null,
+      offerValue: c.offer_value || null,
+      usageCount: effectiveGlobalUsage,
+      applicableProducts: c.applicable_products?.length
+        ? c.applicable_products
+        : offerProductRows.filter((item) => Number(item.offer_id) === Number(c.offer_id)).map((item) => Number(item.product_id)),
+      applicableCategories: c.applicable_categories?.length
+        ? c.applicable_categories
+        : offerCategoryRows.filter((item) => Number(item.offer_id) === Number(c.offer_id)).map((item) => Number(item.category_id)),
+    });
+  }
+
+  // 2. Fetch active offers/discounts
+  const activeOffers = await query(
+    `SELECT d.*
+     FROM discounts d
+     WHERE d.is_active = 1
+       AND (d.starts_at IS NULL OR d.starts_at <= NOW())
+       AND (d.expires_at IS NULL OR d.expires_at >= NOW())
+       AND (d.usage_limit IS NULL OR d.usage_limit <= 0 OR d.used_count < d.usage_limit)
+     ORDER BY d.created_at DESC
+     LIMIT 20`
+  );
+
+  const offers = activeOffers.map((o) => ({
+    ...(() => {
+      const linkedCoupons = coupons.filter(
+        (coupon) =>
+          Number(coupon.offerId) === Number(o.id) &&
+          (coupon.userStatus === "available" || coupon.userStatus === "expiring")
+      );
+      return {
+        couponCode: linkedCoupons[0]?.code || null,
+        couponId: linkedCoupons[0]?.id || null,
+        couponCodes: linkedCoupons.map((coupon) => coupon.code),
+      };
+    })(),
+    id: o.id,
+    title: o.title || o.name,
+    name: o.name,
+    description: o.description || "",
+    type: o.type,
+    value: Number(o.value) || 0,
+    maximumDiscount: o.maximum_discount !== null ? Number(o.maximum_discount) : null,
+    minOrderValue: o.min_order_value !== null ? Number(o.min_order_value) : null,
+    applyTo: o.apply_to || "all",
+    productId: o.product_id !== null && o.product_id !== undefined ? Number(o.product_id) : null,
+    applicableProducts: parseJsonSafe(o.product_ids, []),
+    applicableCategories: parseJsonSafe(o.category_ids, []),
+    bannerImage: o.banner_image || null,
+    startDate: o.starts_at,
+    expiryDate: o.expires_at,
+    isActive: Number(o.is_active) === 1,
+    audience: o.audience || "ALL",
+    newUserOnly: Number(o.new_user_only) || 0,
+    usageLimit: o.usage_limit !== null ? Number(o.usage_limit) : null,
+    usedCount: Number(o.used_count) || 0,
+  }));
+
+  return { coupons, offers, counts: { offers: offers.length, coupons: coupons.length } };
 };
 
 // ─── Welcome Coupons ──────────────────────────────────────────────────
@@ -1119,6 +1326,58 @@ const notifyCouponsNearExpiry = async ({ windowHours = 48 } = {}) => {
   return created;
 };
 
+/**
+ * restoreCouponOnOrderFailure
+ * Roll back coupon consumption for an order whose payment did NOT complete
+ * (online payment failed/cancelled before success, or an unpaid order is
+ * cancelled). Returns the number of restored rows (0 = nothing to restore
+ * because the order was already paid or used no coupon).
+ */
+const restoreCouponOnOrderFailure = async (orderId) => {
+  const [order] = await query(
+    `SELECT id, user_id, coupon_coupon_id, coupon_offer_id, coupon_code, coupon_discount
+     FROM orders WHERE id = ?`,
+    [orderId]
+  );
+  if (!order || !order.coupon_coupon_id) return 0;
+
+  const couponId = Number(order.coupon_coupon_id);
+  const offerId = order.coupon_offer_id ? Number(order.coupon_offer_id) : null;
+
+  // Only remove the usage row for THIS order; never a paid order's usage.
+  const usageResult = await query(
+    "DELETE FROM coupon_usage WHERE coupon_id = ? AND order_id = ?",
+    [couponId, orderId]
+  );
+  if (!usageResult.affectedRows) return 0;
+
+  // Decrement counters (never go below 0).
+  if (offerId) {
+    await query(
+      "UPDATE discounts SET used_count = GREATEST(used_count - 1, 0) WHERE id = ?",
+      [offerId]
+    );
+  }
+  await query(
+    "UPDATE coupons SET used_count = GREATEST(used_count - 1, 0) WHERE id = ?",
+    [couponId]
+  );
+
+  // One-shot personal/welcome coupons revert to ACTIVE so they remain usable.
+  const [coupon] = await query(
+    "SELECT user_id, status FROM coupons WHERE id = ?",
+    [couponId]
+  );
+  if (coupon && coupon.user_id) {
+    await query(
+      "UPDATE coupons SET status = ?, used_at = NULL, created_order_id = NULL WHERE id = ? AND created_order_id = ?",
+      [COUPON_STATUS.ACTIVE, couponId, orderId]
+    );
+  }
+
+  return usageResult.affectedRows;
+};
+
 module.exports = {
   COUPON_STATUS,
   COUPON_TYPES,
@@ -1136,15 +1395,18 @@ module.exports = {
   deleteCoupon,
   validateCoupon,
   calculateDiscountAmount,
+  computeCouponDiscountForItems,
   getOfferScope,
   calculateCartTotals,
   applyCoupon,
   removeCoupon,
   getUserCoupons,
+  getDashboardCoupons,
   listAvailableCoupons,
   validateCouponCode,
   generateWelcomeCoupon,
   notifyCouponsNearExpiry,
+  restoreCouponOnOrderFailure,
   findOrCreateCart,
   loadCartLines,
   clearCartCoupon,

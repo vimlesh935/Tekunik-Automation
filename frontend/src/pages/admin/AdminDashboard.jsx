@@ -5,7 +5,6 @@ import {
   LiveActivityWidget,
   TodaySummaryWidget,
   NeedsAttentionWidget,
-  PriceDropAnalyticsWidget,
 } from "../../admin/components/dashboard/ActivityWidgets.jsx";
 
 export default function AdminDashboard() {
@@ -15,10 +14,7 @@ export default function AdminDashboard() {
         <LiveActivityWidget refreshInterval={20000} />
         <TodaySummaryWidget />
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <PriceDropAnalyticsWidget />
-        <NeedsAttentionWidget />
-      </div>
+      <NeedsAttentionWidget />
       <DashboardAnalytics refreshInterval={30000} />
       <RecentProposals />
     </div>

@@ -460,6 +460,8 @@ const ensureWebsiteFrontendInformationTable = async () => {
         CREATE TABLE website_frontend_information (
           id INT AUTO_INCREMENT PRIMARY KEY,
           company_name VARCHAR(200) DEFAULT 'Tekunik Automation',
+          hero_heading VARCHAR(500) DEFAULT 'Smart Living Starts Here',
+          hero_image VARCHAR(500) DEFAULT '',
           company_tagline VARCHAR(500) DEFAULT '',
           company_description TEXT DEFAULT '',
           company_logo VARCHAR(500) DEFAULT '',
@@ -514,6 +516,8 @@ const ensureWebsiteFrontendInformationTable = async () => {
       // Add any missing columns
       const missingCols = [];
       const checks = [
+        { name: "hero_heading", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS hero_heading VARCHAR(500) DEFAULT 'Smart Living Starts Here' AFTER company_name" },
+        { name: "hero_image", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) DEFAULT '' AFTER hero_heading" },
         { name: "company_tagline", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_tagline VARCHAR(500) DEFAULT '' AFTER company_name" },
         { name: "company_description", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_description TEXT DEFAULT '' AFTER company_tagline" },
         { name: "company_logo", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_logo VARCHAR(500) DEFAULT '' AFTER company_description" },
@@ -601,7 +605,12 @@ const ensureOffersTable = async () => {
       { name: "min_order_value", sql: "ALTER TABLE discounts ADD COLUMN min_order_value DECIMAL(10,2) NULL AFTER product_id" },
       { name: "maximum_discount", sql: "ALTER TABLE discounts ADD COLUMN maximum_discount DECIMAL(10,2) NULL AFTER min_order_value" },
       { name: "banner_image", sql: "ALTER TABLE discounts ADD COLUMN banner_image VARCHAR(500) NULL AFTER maximum_discount" },
-      { name: "is_active", sql: "ALTER TABLE discounts ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER banner_image" },
+      { name: "alt_text", sql: "ALTER TABLE discounts ADD COLUMN alt_text VARCHAR(255) NULL AFTER banner_image" },
+      { name: "cta_text", sql: "ALTER TABLE discounts ADD COLUMN cta_text VARCHAR(100) NULL AFTER alt_text" },
+      { name: "cta_type", sql: "ALTER TABLE discounts ADD COLUMN cta_type ENUM('product','category','offers','custom') NOT NULL DEFAULT 'offers' AFTER cta_text" },
+      { name: "cta_target", sql: "ALTER TABLE discounts ADD COLUMN cta_target VARCHAR(500) NULL AFTER cta_type" },
+      { name: "display_order", sql: "ALTER TABLE discounts ADD COLUMN display_order INT NOT NULL DEFAULT 0 AFTER cta_target" },
+      { name: "is_active", sql: "ALTER TABLE discounts ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER display_order" },
       { name: "starts_at", sql: "ALTER TABLE discounts ADD COLUMN starts_at DATETIME NULL AFTER is_active" },
       { name: "expires_at", sql: "ALTER TABLE discounts ADD COLUMN expires_at DATETIME NULL AFTER starts_at" },
       { name: "created_at", sql: "ALTER TABLE discounts ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER expires_at" },

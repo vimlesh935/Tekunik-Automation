@@ -32,14 +32,19 @@ export default function useRecentlyViewed() {
 
   const loadGuestProducts = useCallback(async () => {
     const history = readGuestHistory();
-    const loaded = await Promise.all(history.map(async ({ productId }) => {
+    const results = await Promise.all(history.map(async ({ productId }) => {
       try {
         const product = productFromResponse(await productService.getProductById(productId));
-        return product?.id ? product : null;
+        return { productId, product: product?.id ? product : null };
       } catch {
-        return null;
+        return { productId, product: null };
       }
     }));
+    const validIds = new Set(results.filter((result) => result.product).map((result) => result.productId));
+    if (validIds.size !== history.length) {
+      writeGuestHistory(history.filter((item) => validIds.has(item.productId)));
+    }
+    const loaded = results.map((result) => result.product).filter(Boolean);
     setProducts(loaded.filter(Boolean));
   }, []);
 

@@ -502,8 +502,8 @@ const getProduct = asyncHandler(async (req, res) => {
       product: { ...enrichProductWithOffers(withNormalizedImageUrl(product), activeOffers), ...extras },
     });
   } catch (error) {
-    console.error("[GET PRODUCT ERROR]", error);
     if (error.statusCode) throw error;
+    console.error("[GET PRODUCT ERROR]", error);
     throw new AppError(
       error.message || "Failed to fetch product",
       500,

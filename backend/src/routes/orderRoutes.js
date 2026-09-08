@@ -15,6 +15,7 @@ const {
   downloadGuestInvoice,
   getOrderStats,
   cancelOrder,
+  markPaymentFailedOrder,
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -32,6 +33,7 @@ router.get("/api/user/orders", requireAuth, getUserOrders);
 router.get("/api/user/orders/:id", requireAuth, getUserOrder);
 router.get("/api/user/orders/:id/download-invoice", requireAuth, downloadUserInvoice);
 router.post("/api/user/orders/:id/cancel", requireAuth, cancelOrder);
+router.post("/api/user/orders/:id/payment-failed", requireAuth, markPaymentFailedOrder);
 
 /** Admin routes */
 router.get("/api/admin/orders", requireAdmin, listOrders);

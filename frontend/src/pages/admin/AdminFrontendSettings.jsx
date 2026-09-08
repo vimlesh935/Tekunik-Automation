@@ -1,18 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
   Building2,
   CheckCircle,
-  FileText,
   Globe,
-  MapPin,
-  Phone,
   RefreshCw,
   Save,
   Share2,
-  ToggleLeft,
-  ToggleRight,
   Upload,
   X,
 } from "lucide-react";
@@ -24,61 +19,26 @@ import Toast from "../../admin/components/common/Toast.jsx";
 
 const SECTION_GROUPS = [
   {
-    id: "website-information",
-    title: "Website Information",
+    id: "company-information",
+    title: "Company Information",
     icon: Building2,
-    accent: "bg-cyan-400",
-    iconText: "text-cyan-400",
-    description:
-      "Branding and general details shown across the site.",
-    images: [
-      { key: "company_logo", label: "Company Logo" },
-      { key: "company_favicon", label: "Favicon" },
-    ],
-    labels: [
-      { key: "company_name", label: "Company Name" },
-      { key: "company_tagline", label: "Tagline" },
-      { key: "website_url", label: "Website URL", type: "url" },
-      { key: "copyright_text", label: "Copyright Text" },
-    ],
-    textareas: [
-      { key: "company_description", label: "Company Description" },
-      { key: "footer_about", label: "Footer About" },
-    ],
-  },
-  {
-    id: "contact-information",
-    title: "Contact Information",
-    icon: Phone,
     accent: "bg-emerald-400",
     iconText: "text-emerald-400",
-    description: "Email addresses and phone numbers used across the site.",
+    description: "Contact details shown in the website footer.",
+    images: [
+      { key: "hero_image", label: "Hero Background Image" },
+    ],
     labels: [
+      { key: "hero_heading", label: "Hero Heading" },
       { key: "company_email", label: "Company Email", type: "email" },
-      { key: "support_email", label: "Support Email", type: "email" },
-      { key: "sales_email", label: "Sales Email", type: "email" },
-      { key: "company_phone", label: "Phone" },
-      { key: "company_whatsapp", label: "WhatsApp" },
+      { key: "company_phone", label: "Company Phone Number", type: "tel" },
+      { key: "company_whatsapp", label: "WhatsApp Number", type: "tel" },
       { key: "business_hours", label: "Business Hours" },
     ],
-    textareas: [],
-  },
-  {
-    id: "address",
-    title: "Address",
-    icon: MapPin,
-    accent: "bg-amber-400",
-    iconText: "text-amber-400",
-    description: "Location details and map links for visitors.",
-    labels: [
-      { key: "city", label: "City" },
-      { key: "state", label: "State" },
-      { key: "country", label: "Country" },
-      { key: "postal_code", label: "Postal Code" },
-      { key: "google_maps_url", label: "Google Maps URL", type: "url" },
-      { key: "google_maps_link", label: "Google Maps Link", type: "url" },
+    textareas: [
+      { key: "company_address", label: "Company Address" },
+      { key: "footer_about", label: "Footer Description" },
     ],
-    textareas: [{ key: "company_address", label: "Company Address" }],
   },
   {
     id: "social-media",
@@ -86,29 +46,28 @@ const SECTION_GROUPS = [
     icon: Share2,
     accent: "bg-violet-400",
     iconText: "text-violet-400",
-    description: "Links to your profiles on social platforms.",
+    description: "Links displayed in the website footer.",
     labels: [
-      { key: "facebook_url", label: "Facebook URL", type: "url" },
       { key: "instagram_url", label: "Instagram URL", type: "url" },
+      { key: "facebook_url", label: "Facebook URL", type: "url" },
       { key: "linkedin_url", label: "LinkedIn URL", type: "url" },
       { key: "youtube_url", label: "YouTube URL", type: "url" },
-      { key: "twitter_url", label: "Twitter URL", type: "url" },
+      { key: "twitter_url", label: "X / Twitter URL", type: "url" },
     ],
     textareas: [],
   },
   {
-    id: "policies",
-    title: "Policy Links",
-    icon: FileText,
-    accent: "bg-sky-400",
-    iconText: "text-sky-400",
-    description: "Links to your site's legal and policy pages.",
-    labels: [
-      { key: "privacy_policy_url", label: "Privacy Policy URL", type: "url" },
-      { key: "terms_conditions_url", label: "Terms & Conditions URL", type: "url" },
-      { key: "refund_policy_url", label: "Refund Policy URL", type: "url" },
-      { key: "shipping_policy_url", label: "Shipping Policy URL", type: "url" },
+    id: "branding",
+    title: "Branding",
+    icon: BadgeCheck,
+    accent: "bg-cyan-400",
+    iconText: "text-cyan-400",
+    description: "Logo and favicon used across the website.",
+    images: [
+      { key: "company_logo", label: "Company Logo" },
+      { key: "company_favicon", label: "Favicon" },
     ],
+    labels: [],
     textareas: [],
   },
 ];
@@ -169,32 +128,41 @@ function SectionCard({ id, icon: Icon, title, accent, iconText, description, chi
 }
 
 export default function AdminFrontendSettings() {
-  const { settings: currentSettings, refreshSettings, websiteMode, setWebsiteMode } = useWebsiteSettings();
+  const { settings: currentSettings, refreshSettings } = useWebsiteSettings();
   const [frontendSettings, setFrontendSettings] = useState({});
   const [saving, setSaving] = useState(false);
-  const [savingMode, setSavingMode] = useState(false);
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState(null);
+  const adminLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (currentSettings) {
+    let mounted = true;
+    const loadAdminSettings = async () => {
+      try {
+        const res = await frontendSettingsService.adminGet();
+        if (mounted && res.data) {
+          setFrontendSettings(res.data);
+          adminLoadedRef.current = true;
+        }
+      } catch {
+        if (mounted && currentSettings) {
+          setFrontendSettings(currentSettings);
+          adminLoadedRef.current = true;
+        }
+      }
+    };
+    loadAdminSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!adminLoadedRef.current && currentSettings) {
       setFrontendSettings((prev) =>
         Object.keys(prev).length === 0 ? { ...currentSettings } : prev,
       );
     }
-  }, [currentSettings]);
-
-  useEffect(() => {
-    const loadAdminSettings = async () => {
-      try {
-        const res = await frontendSettingsService.adminGet();
-        if (res.data) setFrontendSettings(res.data);
-      } catch {
-        if (currentSettings) setFrontendSettings(currentSettings);
-      }
-    };
-    loadAdminSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSettings]);
 
   useEffect(() => {
@@ -212,11 +180,15 @@ export default function AdminFrontendSettings() {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await frontendSettingsService.update(frontendSettings);
+      const payload = {
+        ...frontendSettings,
+        hero_heading: String(frontendSettings.hero_heading || "").trim(),
+      };
+      const res = await frontendSettingsService.update(payload);
       if (res.success) {
-        setFrontendSettings(res.data || frontendSettings);
+        setFrontendSettings(res.data || payload);
         setSaved(true);
-        refreshSettings();
+        await refreshSettings();
         showToast("Website information saved successfully.");
         setTimeout(() => setSaved(false), 3000);
       }
@@ -226,24 +198,6 @@ export default function AdminFrontendSettings() {
       setSaving(false);
     }
   };
-
-  const handleToggleMode = async (mode) => {
-    if (mode === websiteMode) return;
-    setSavingMode(true);
-    try {
-      await setWebsiteMode(mode);
-      showToast(`Website mode switched to "${mode === "live" ? "Live" : "Coming Soon"}".`);
-    } catch (err) {
-      showToast(err.message || "Failed to update website mode", "error");
-    } finally {
-      setSavingMode(false);
-    }
-  };
-
-  const modeBadge =
-    websiteMode === "live"
-      ? { label: "Live", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" }
-      : { label: "Coming Soon", cls: "bg-amber-500/10 text-amber-400 border-amber-500/30" };
 
   return (
     <div className="space-y-6">
@@ -266,39 +220,6 @@ export default function AdminFrontendSettings() {
           Website information, contact details, social links and site availability in one place.
         </p>
       </div>
-
-      <SectionCard
-        id="general"
-        icon={BadgeCheck}
-        title="General"
-        accent="bg-emerald-400"
-        iconText="text-emerald-400"
-        description="Quick overview of your store identity and current site status."
-      >
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="w-24 h-24 rounded-xl border border-gray-800 bg-black/50 flex items-center justify-center overflow-hidden shrink-0">
-            {frontendSettings.company_logo ? (
-              <img src={getImageUrl(frontendSettings.company_logo)} alt="Logo" className="w-full h-full object-contain p-2" />
-            ) : (
-              <Building2 size={28} className="text-gray-600" />
-            )}
-          </div>
-          <div className="space-y-1.5 min-w-0">
-            <p className="text-lg font-bold text-white truncate">
-              {frontendSettings.company_name || "Tekunik Automation"}
-            </p>
-            <p className="text-gray-400 text-sm truncate">
-              {frontendSettings.company_tagline || "No tagline set yet"}
-            </p>
-            {frontendSettings.website_url && (
-              <p className="text-cyan-400 text-xs truncate">{frontendSettings.website_url}</p>
-            )}
-            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold border ${modeBadge.cls}`}>
-              Site status: {modeBadge.label}
-            </span>
-          </div>
-        </div>
-      </SectionCard>
 
       <form onSubmit={saveSettings} className="space-y-6">
         {saved && (
@@ -385,45 +306,6 @@ export default function AdminFrontendSettings() {
         </div>
       </form>
 
-      <div className="bg-black/40 border border-gray-800 rounded-2xl p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Website Mode</h3>
-            <p className="text-gray-400 text-sm mt-1">
-              {websiteMode === "live"
-                ? "Your website is currently live and visible to all visitors."
-                : "Your website is currently in maintenance mode. Visitors will see the Coming Soon page."}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => handleToggleMode("live")}
-              disabled={savingMode || websiteMode === "live"}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition border ${
-                websiteMode === "live"
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-default"
-                  : "bg-gray-800/50 text-gray-300 border-gray-700 hover:bg-gray-700/50"
-              }`}
-            >
-              <ToggleRight size={18} /> Live
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleMode("coming_soon")}
-              disabled={savingMode || websiteMode === "coming_soon"}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition border ${
-                websiteMode === "coming_soon"
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30 cursor-default"
-                  : "bg-gray-800/50 text-gray-300 border-gray-700 hover:bg-gray-700/50"
-              }`}
-            >
-              <ToggleLeft size={18} /> Maintenance Mode
-            </button>
-          </div>
-        </div>
-        {savingMode && <p className="text-gray-500 text-xs mt-4">Saving...</p>}
-      </div>
     </div>
   );
 }

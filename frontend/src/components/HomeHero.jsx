@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Play, X, Sun, Moon, Shield, Lightbulb, Thermometer, Camera, Zap } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { getImageUrl } from "../utils/imageUrl.js";
 
 const DEMO_VIDEO_SRC = "/videos/finalvid.mp4";
 const DEMO_VIDEO_POSTER = "/videos/demo-poster.jpg";
@@ -289,8 +291,11 @@ function AutomateButton() {
 /* ------------------------------------------------------------------ */
 export default function HeroSection() {
   const { theme, toggleTheme } = useTheme();
+  const { settings } = useWebsiteSettings();
   const isDark = theme === "dark";
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const heroHeading = String(settings?.hero_heading || "Smart Living Starts Here").trim() || "Smart Living Starts Here";
+  const heroImageUrl = getImageUrl(settings?.hero_image) || "/assest/hero-dashboard.png";
 
   const openVideo = useCallback(() => setIsVideoOpen(true), []);
   const closeVideo = useCallback(() => setIsVideoOpen(false), []);
@@ -362,10 +367,7 @@ export default function HeroSection() {
           </motion.div>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight">
-            Smart Living <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-highlight">
-              Starts Here
-            </span>
+            {heroHeading}
           </h1>
 
           <p
@@ -408,7 +410,7 @@ export default function HeroSection() {
             }`}
           >
             <img
-              src="/assest/hero-dashboard.png"
+              src={heroImageUrl}
               alt="Automate Dashboard Mockup"
               className="absolute inset-0 w-full h-full object-cover"
               loading="eager"

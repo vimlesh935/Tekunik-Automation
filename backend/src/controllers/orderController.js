@@ -1045,6 +1045,20 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     await notifyOrderStatus(updatedForNotification, status);
   }
 
+  // Restore coupon when an online order's payment is marked failed.
+  if (
+    payment_status === "failed" &&
+    existing[0].payment_status !== "paid" &&
+    existing[0].coupon_coupon_id
+  ) {
+    try {
+      const { restoreCouponOnOrderFailure } = require("../services/couponService");
+      await restoreCouponOnOrderFailure(id);
+    } catch (error) {
+      console.warn("[ORDER] Coupon restore on payment failure failed:", error.message);
+    }
+  }
+
   const [updated] = await query("SELECT * FROM orders WHERE id = ?", [id]);
   return success(res, "Order updated", { order: updated });
 });
@@ -1291,8 +1305,57 @@ const cancelOrder = asyncHandler(async (req, res) => {
     }
   }
 
+  // Restore coupon if the cancelled order consumed one (unpaid failure).
+  try {
+    const { restoreCouponOnOrderFailure } = require("../services/couponService");
+    await restoreCouponOnOrderFailure(orderId);
+  } catch (error) {
+    console.warn("[ORDER] Coupon restore on cancel failed:", error.message);
+  }
+
   const [updated] = await query("SELECT * FROM orders WHERE id = ?", [orderId]);
   return success(res, "Order cancelled", { order: updated });
+});
+
+/**
+ * POST /api/user/orders/:id/payment-failed
+ * Called by checkout when a Razorpay payment is FAILED/CANCELLED before success.
+ * Marks the online order's payment as failed and restores any consumed coupon so
+ * the user can apply it again on their next attempt.
+ */
+const markPaymentFailedOrder = asyncHandler(async (req, res) => {
+  const orderId = req.params.id;
+
+  const [order] = await query(
+    "SELECT * FROM orders WHERE id = ? AND user_id = ? LIMIT 1",
+    [orderId, req.user.id],
+  );
+
+  if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+
+  if (order.payment_status === "paid") {
+    return success(res, "Order already paid", { order });
+  }
+
+  // If it's already failed, there's nothing more to restore.
+  const alreadyFailed = order.payment_status === "failed";
+
+  await query(
+    "UPDATE orders SET payment_status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [orderId],
+  );
+
+  if (!alreadyFailed) {
+    try {
+      const { restoreCouponOnOrderFailure } = require("../services/couponService");
+      await restoreCouponOnOrderFailure(orderId);
+    } catch (error) {
+      console.warn("[ORDER] Coupon restore on payment failed:", error.message);
+    }
+  }
+
+  const [updated] = await query("SELECT * FROM orders WHERE id = ?", [orderId]);
+  return success(res, "Payment marked failed; coupon restored", { order: updated });
 });
 
 module.exports = {
@@ -1309,4 +1372,5 @@ module.exports = {
   downloadGuestInvoice,
   getOrderStats,
   cancelOrder,
+  markPaymentFailedOrder,
 };

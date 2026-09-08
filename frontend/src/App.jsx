@@ -1,8 +1,7 @@
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useParams } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
-import HomeTopOffers from "./components/HomeTopOffers.jsx";
 import LoadingSpinner from "./components/LoadingSpinner.jsx";
 import WebsiteModeGuard from "./components/WebsiteModeGuard.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
@@ -11,6 +10,7 @@ import { ComparisonProvider } from "./context/ComparisonContext.jsx";
 import { ToastProvider } from "./components/Toast.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { WebsiteSettingsProvider } from "./context/WebsiteSettingsContext.jsx";
+import FaviconUpdater from "./components/FaviconUpdater.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import ComparisonBar from "./components/ComparisonBar.jsx";
 
@@ -81,13 +81,9 @@ function ProtectedRoute({ children }) {
  * Used only for storefront routes (inside the WebsiteModeGuard).
  */
 function SiteLayout() {
-  const location = useLocation();
-  const showHomeTopOffers = location.pathname === "/" || location.pathname === "/home";
-
   return (
     <div className="flex flex-col min-h-screen bg-page text-primary transition-colors duration-300">
       <Navbar />
-      {showHomeTopOffers && <HomeTopOffers />}
       <main className="flex-1">
         <Suspense fallback={<LoadingSpinner type="page" />}>
           <Outlet />
@@ -106,6 +102,7 @@ function App() {
         <ComparisonProvider>
           <ToastProvider>
           <WebsiteSettingsProvider>
+            <FaviconUpdater />
             <AppContent />
           </WebsiteSettingsProvider>
           </ToastProvider>
