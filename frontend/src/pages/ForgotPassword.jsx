@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getApiUrl } from "../services/api";
 import AuthInput from "../components/AuthInput.jsx";
 
@@ -198,6 +199,7 @@ function StepDots({ step }) {
 /* ── Main component ── */
 export default function ForgotPassword() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
@@ -216,7 +218,7 @@ export default function ForgotPassword() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return setError("Please enter your email.");
+    if (!email.trim()) return setError(t("auth.pleaseEnterEmail"));
     setLoading(true); setError("");
     try {
       const res = await fetch(getApiUrl("/api/forgot/send-otp"), {
@@ -225,13 +227,13 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+      if (!res.ok) throw new Error(data.message || t("auth.failedToSendOtp"));
       setMaskedEmail(data.data?.email || email);
       setStep("otp");
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err) {
       setError(err.message === "Failed to fetch"
-        ? "Cannot connect to server. Make sure the backend is running."
+        ? t("auth.cannotConnect")
         : err.message);
     } finally { setLoading(false); }
   };
@@ -251,7 +253,7 @@ export default function ForgotPassword() {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const otpCode = otp.join("");
-    if (otpCode.length !== 6) return setError("Please enter all 6 digits.");
+    if (otpCode.length !== 6) return setError(t("auth.enterAllDigits"));
     setLoading(true); setError("");
     try {
       const res = await fetch(getApiUrl("/api/forgot/verify-otp"), {
@@ -260,8 +262,8 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim(), otp: otpCode }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Invalid OTP");
-      if (!data.data?.resetToken) throw new Error("No reset token received");
+      if (!res.ok) throw new Error(data.message || t("auth.invalidOtp"));
+      if (!data.data?.resetToken) throw new Error(t("auth.noResetToken"));
       setResetToken(data.data.resetToken);
       setStep("reset");
     } catch (err) {
@@ -271,8 +273,8 @@ export default function ForgotPassword() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (newPassword.length < 8) return setError("Password must be at least 8 characters.");
-    if (newPassword !== confirmPassword) return setError("Passwords do not match.");
+    if (newPassword.length < 8) return setError(t("auth.passwordMin8"));
+    if (newPassword !== confirmPassword) return setError(t("auth.passwordsNoMatch"));
     setLoading(true); setError("");
     try {
       const res = await fetch(getApiUrl("/api/forgot/reset-password"), {
@@ -286,7 +288,7 @@ export default function ForgotPassword() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to reset password");
+      if (!res.ok) throw new Error(data.message || t("auth.failedToReset"));
       setSuccess(true);
       setTimeout(() => navigate("/login"), 1800);
     } catch (err) {
@@ -303,7 +305,7 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to resend OTP");
+      if (!res.ok) throw new Error(data.message || t("auth.failedToResend"));
       setOtp(["", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
     } catch (err) {
@@ -311,12 +313,12 @@ export default function ForgotPassword() {
     } finally { setLoading(false); }
   };
 
-  const stepEyebrow = { email: "Account Recovery", otp: "Verification", reset: "New Credentials" }[step];
-  const stepTitle = { email: "Forgot password?", otp: "Check your inbox.", reset: "Set a new password." }[step];
+  const stepEyebrow = { email: t("auth.accountRecovery"), otp: t("auth.verification"), reset: t("auth.newCredentials") }[step];
+  const stepTitle = { email: t("auth.forgotPasswordTitle"), otp: t("auth.checkInbox"), reset: t("auth.setNewPassword") }[step];
   const stepSubtitle = {
-    email: "Enter your registered email and we'll send you a one-time code.",
-    otp: "Enter the 6-digit code we just sent you.",
-    reset: "Create a new secure password for your account.",
+    email: t("auth.enterRegisteredEmail"),
+    otp: t("auth.enterOtp"),
+    reset: t("auth.createNewPassword"),
   }[step];
 
   return (
@@ -379,7 +381,7 @@ export default function ForgotPassword() {
               <div style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.25em",
                 textTransform: "uppercase", color: VL, marginBottom: 16,
-              }}>Automation Studio · v2.0</div>
+              }}>{t("auth.automationStudio")}</div>
             </Appear>
             <Appear delay={550}>
               <h2 style={{
@@ -387,22 +389,25 @@ export default function ForgotPassword() {
                 fontSize: "clamp(1.6rem,3vw,2.4rem)", lineHeight: 1.15,
                 letterSpacing: "-0.03em", color: "#fff", marginBottom: 16,
               }}>
-                Your account,<br />
                 <span style={{
                   background: `linear-gradient(135deg,${VL},${CL},${VL})`,
                   backgroundSize: "200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   animation: "shimmer 5s linear infinite",
-                }}>securely recovered.</span>
+                }}>{t("auth.yourAccountSecurely")}</span>
               </h2>
             </Appear>
             <Appear delay={700}>
               <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, maxWidth: 320, marginBottom: 32 }}>
-                We'll verify it's really you with a one-time code, then get you straight back into your automation dashboard.
+                {t("auth.forgotDescription")}
               </p>
             </Appear>
             <Appear delay={850}>
               <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
-                {[["256-bit","Encryption"],["<60s","Recovery"],["24/7","Support"]].map(([v, l]) => (
+                {[
+                  ["256-bit", t("auth.encryption")],
+                  ["<60s", t("auth.recovery")],
+                  ["24/7", t("auth.support")],
+                ].map(([v, l]) => (
                   <div key={l}>
                     <div style={{
                       fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
@@ -449,7 +454,7 @@ export default function ForgotPassword() {
                   style={{ transform: backHover ? "translateX(-3px)" : "none", transition: "transform 0.2s" }}>
                   <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back
+                {t("common.back")}
               </button>
             </Appear>
             <Appear delay={150} style={{ marginBottom: 24 }}>
@@ -469,17 +474,17 @@ export default function ForgotPassword() {
                     width: 24, height: 1, background: `linear-gradient(90deg,${V},${C})`,
                     display: "inline-block",
                   }} />
-                  {success ? "All Set" : stepEyebrow}
+                  {success ? t("auth.allSet") : stepEyebrow}
                 </div>
                 <h1 style={{
                   fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
                   fontSize: "clamp(1.8rem,4vw,2.4rem)", letterSpacing: "-0.03em",
                   lineHeight: 1.1, color: "#fff", marginBottom: 8,
                 }}>
-                  {success ? "Password reset." : stepTitle}
+                  {success ? t("auth.passwordResetSuccess") : stepTitle}
                 </h1>
                 <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-                  {success ? "You can now sign in with your new password." : stepSubtitle}
+                  {success ? t("auth.passwordResetMessage") : stepSubtitle}
                 </p>
               </div>
             </Appear>
@@ -500,12 +505,12 @@ export default function ForgotPassword() {
                   <div style={{
                     fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
                     color: SUCCESS, marginBottom: 6,
-                  }}>Password reset successfully!</div>
+                  }}>{t("auth.passwordResetSuccess")}</div>
                   <div style={{
                     fontFamily: "'DM Mono', monospace", fontSize: 12,
                     color: "rgba(52,211,153,0.6)", letterSpacing: "0.05em",
                   }}>
-                    Redirecting to sign in
+                    {t("auth.redirectingToSignIn")}
                     <span style={{ animation: "dotBlink 1s ease-in-out infinite" }}>…</span>
                   </div>
                 </div>
@@ -515,7 +520,7 @@ export default function ForgotPassword() {
                 {step === "email" && (
                   <form onSubmit={handleSendOtp}>
                     <Appear delay={320} style={{ marginBottom: 8 }}>
-                      <Field label="Registered email" name="email" type="email" value={email}
+                      <Field label={t("auth.emailAddress")} name="email" type="email" value={email}
                         onChange={(e) => { setEmail(e.target.value); setError(""); }}
                         placeholder="you@example.com" icon={MailIcon} autoFocus />
                     </Appear>
@@ -526,10 +531,10 @@ export default function ForgotPassword() {
                     )}
                     <Appear delay={420} style={{ marginTop: 24 }}>
                       <SubmitButton loading={loading} hover={btnHover} setHover={setBtnHover}
-                        label="Send code" loadingLabel="Sending code…" />
+                        label={t("auth.sendCode")} loadingLabel={t("auth.sendingCode")} />
                     </Appear>
                     <Appear delay={500}>
-                      <FooterLink text="Remember your password?" cta="Sign in →" onClick={() => navigate("/login")} />
+                      <FooterLink text={t("auth.rememberPassword")} cta={t("auth.signInLink")} onClick={() => navigate("/login")} />
                     </Appear>
                   </form>
                 )}
@@ -545,7 +550,7 @@ export default function ForgotPassword() {
                           border: `1px solid rgba(124,58,237,0.2)`,
                           borderRadius: 12, padding: "12px 16px",
                         }}>
-                          Code sent to {maskedEmail}
+                          {t("auth.codeSentTo", { email: maskedEmail })}
                         </div>
                       </Appear>
                     )}
@@ -568,7 +573,7 @@ export default function ForgotPassword() {
                     )}
                     <Appear delay={420} style={{ marginTop: 24 }}>
                       <SubmitButton loading={loading} hover={btnHover} setHover={setBtnHover}
-                        label="Verify code" loadingLabel="Verifying…" />
+                        label={t("auth.verifyCode")} loadingLabel={t("auth.verifying")} />
                     </Appear>
                     <Appear delay={480}>
                       <div style={{
@@ -577,13 +582,13 @@ export default function ForgotPassword() {
                       }}>
                         <button type="button" onClick={handleResendOtp} disabled={loading}
                           style={{ background: "none", border: "none", cursor: loading ? "not-allowed" : "pointer", color: VL, opacity: loading ? 0.4 : 1 }}>
-                          Resend code
+                          {t("auth.resendCode")}
                         </button>
                         <span style={{ color: BORDER }}>|</span>
                         <button type="button"
                           onClick={() => { setStep("email"); setError(""); setOtp(["", "", "", "", "", ""]); }}
                           style={{ background: "none", border: "none", cursor: "pointer", color: MUTED }}>
-                          Change email
+                          {t("auth.changeEmail")}
                         </button>
                       </div>
                     </Appear>
@@ -593,14 +598,14 @@ export default function ForgotPassword() {
                 {step === "reset" && (
                   <form onSubmit={handleResetPassword}>
                     <Appear delay={320} style={{ marginBottom: 16 }}>
-                      <Field label="New password" name="new_password"
+                      <Field label={t("auth.newPassword")} name="new_password"
                         type={showPassword ? "text" : "password"} value={newPassword}
                         onChange={(e) => { setNewPassword(e.target.value); setError(""); }}
                         placeholder="Min 8 characters" icon={LockIcon} autoFocus
                         right={<EyeIcon open={showPassword} onClick={() => setShowPassword((p) => !p)} />} />
                     </Appear>
                     <Appear delay={380} style={{ marginBottom: 8 }}>
-                      <Field label="Confirm new password" name="confirm_password"
+                      <Field label={t("auth.confirmNewPassword")} name="confirm_password"
                         type={showConfirmPassword ? "text" : "password"} value={confirmPassword}
                         onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
                         placeholder="Re-enter password" icon={LockIcon}
@@ -613,7 +618,7 @@ export default function ForgotPassword() {
                     )}
                     <Appear delay={440} style={{ marginTop: 24 }}>
                       <SubmitButton loading={loading} hover={btnHover} setHover={setBtnHover}
-                        label="Reset password" loadingLabel="Resetting…" />
+                        label={t("auth.resetPassword")} loadingLabel={t("auth.resetting")} />
                     </Appear>
                   </form>
                 )}
@@ -630,7 +635,7 @@ export default function ForgotPassword() {
                   width: 6, height: 6, borderRadius: "50%", background: SUCCESS, boxShadow: `0 0 6px ${SUCCESS}`,
                   display: "inline-block", flexShrink: 0, animation: "dotBlink 2s ease-in-out infinite",
                 }} />
-                © {new Date().getFullYear()} Tek Node · Secure Core Architecture
+                © {new Date().getFullYear()} Tek Node · {t("auth.secureCoreArchitecture")}
               </div>
             </Appear>
           </div>

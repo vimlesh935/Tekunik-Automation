@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Sunrise, MoonStar, Plane, Film, Play, Check, Zap } from "lucide-react";
 
 const scenes = [
@@ -185,6 +186,7 @@ function NodeNetwork({ accent }) {
 
 
 export default function ScenesSection() {
+  const { t } = useTranslation();
   const [activeIdx, setActiveIdx] = useState(1); // "Good Night" active by default
   const active = scenes[activeIdx];
 
@@ -215,9 +217,9 @@ export default function ScenesSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-14"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Automation Scenes</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{t('home.scenes')}</h2>
           <p className="text-text-secondary text-sm sm:text-base max-w-2xl mx-auto px-2">
-            Create custom scenes to trigger multiple actions with a single tap or voice command.
+            {t('home.scenesDesc')}
           </p>
 
           {/* Live active-scene readout */}
@@ -355,11 +357,11 @@ export default function ScenesSection() {
                 >
                   {isActive ? (
                     <>
-                      <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Running
+                      <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {t('home.running')}
                     </>
                   ) : (
                     <>
-                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Activate
+                      <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {t('home.activate')}
                     </>
                   )}
                 </button>

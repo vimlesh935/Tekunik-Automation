@@ -1,6 +1,7 @@
 const env = require("../config/env");
 const AppError = require("../utils/appError");
 const { verifyToken } = require("../utils/jwt");
+const { query } = require("../config/db");
 
 const getTokenFromRequest = (req) => {
   // Primary: httpOnly cookie (set on login/register)
@@ -11,7 +12,7 @@ const getTokenFromRequest = (req) => {
   return null;
 };
 
-const requireAuth = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
   try {
     const token = getTokenFromRequest(req);
     if (!token) throw new AppError("Authentication required", 401, "AUTH_REQUIRED");
@@ -20,6 +21,22 @@ const requireAuth = (req, res, next) => {
     if (!decoded || !decoded.id) {
       throw new AppError("Invalid token payload", 401, "INVALID_TOKEN");
     }
+
+    // 🔐 Revocation check: every successful password change bumps the user's
+    // token_version. Tokens signed before that bump carry an older version and
+    // are rejected here, so changed-password sessions are invalidated.
+    const rows = await query(
+      "SELECT token_version FROM users WHERE id = ? LIMIT 1",
+      [decoded.id]
+    );
+    if (!rows.length) throw new AppError("User not found", 401, "INVALID_SESSION");
+
+    const currentVersion = Number(rows[0].token_version || 0);
+    const tokenVersion = Number(decoded.token_version ?? decoded.tv ?? 0);
+    if (tokenVersion !== currentVersion) {
+      throw new AppError("Session expired. Please login again.", 401, "INVALID_SESSION");
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

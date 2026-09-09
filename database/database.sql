@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(100) NULL UNIQUE,
   role VARCHAR(20) NOT NULL DEFAULT 'user',
   is_verified BOOLEAN DEFAULT FALSE,
+  -- Incremented on every successful password change; embeds in JWTs so old
+  -- sessions/tokens are rejected by requireAuth after a password change.
+  token_version INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

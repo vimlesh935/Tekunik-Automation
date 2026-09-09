@@ -205,6 +205,32 @@ export const authService = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// PASSWORD SERVICES (Change Password — Profile / Settings)
+// Method 1: current password          → changeWithCurrentPassword
+// Method 2: email OTP                 → sendOtp → verifyOtp → resetAfterOtp
+// ─────────────────────────────────────────────────────────────
+
+export const passwordService = {
+  changeWithCurrentPassword: (currentPassword, newPassword, confirmPassword) =>
+    apiCall("/api/user/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    }),
+  sendOtp: () =>
+    apiCall("/api/user/change-password/send-otp", { method: "POST" }),
+  verifyOtp: (otp) =>
+    apiCall("/api/user/change-password/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+    }),
+  resetAfterOtp: (stepUpToken, newPassword, confirmPassword) =>
+    apiCall("/api/user/change-password/reset", {
+      method: "POST",
+      body: JSON.stringify({ stepUpToken, newPassword, confirmPassword }),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
 // CATEGORY SERVICES
 // ─────────────────────────────────────────────────────────────
 

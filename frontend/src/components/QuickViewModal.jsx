@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Heart, Shield, CheckCircle, Loader2, ArrowRight, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { productService, cartService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -24,6 +25,7 @@ export default function QuickViewModal({
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [refundLoading, setRefundLoading] = useState(false);
   const modalRef = useRef(null);
@@ -87,7 +89,7 @@ export default function QuickViewModal({
       await fetchWishlist();
     } catch (error) {
       console.warn("toggleWishlist error:", error);
-      addToast("Failed to update wishlist", "error");
+      addToast(t('compare.unableToUpdateWishlist'), "error");
     } finally {
       setAddingToWishlist((prev) => {
         const next = new Map(prev);
@@ -124,22 +126,22 @@ export default function QuickViewModal({
 
   const handleAddToCart = async (productId, quantity = 1) => {
     if (product.stock_quantity <= 0) {
-      addToast(`${product.name} is out of stock`, "warning");
+      addToast(`${product.name} ${t('product.outOfStock')}`, "warning");
       return;
     }
 
     if (!isAuthenticated) {
       addToCart(productId, quantity);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(`${product.name} ${t('compare.addedToCart', { name: '' })}`, "success");
       return;
     }
 
     setLoading(true);
     try {
       await cartService.addToCart(productId, quantity);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(`${product.name} ${t('compare.addedToCart', { name: '' })}`, "success");
     } catch (error) {
-      addToast(error.message || "Unable to add to cart", "error");
+      addToast(error.message || t('compare.unableToAddToCart'), "error");
     } finally {
       setLoading(false);
     }
@@ -204,7 +206,7 @@ export default function QuickViewModal({
                     className="w-full h-64 sm:h-[400px] bg-slate-800 rounded-xl flex items-center justify-center mb-4"
                   >
                     <Loader2 size={32} className="text-slate-700 animate-pulse" />
-                    <span className="text-[10px] text-slate-500">No Image</span>
+                    <span className="text-[10px] text-slate-500">{t('searchResults.noImage')}</span>
                   </div>
                 )}
 
@@ -252,7 +254,7 @@ export default function QuickViewModal({
                         : "0.0 / 5"}
                     </span>
                     <span className="text-xs text-slate-500 font-medium">
-                      {product.totalReviews > 0 ? `${product.totalReviews} Review${product.totalReviews > 1 ? "s" : ""}` : "No Reviews Yet"}
+                      {product.totalReviews > 0 ? `${product.totalReviews} Review${product.totalReviews > 1 ? "s" : ""}` : t('product.noReviews')}
                     </span>
                   </div>
                 </div>
@@ -281,10 +283,10 @@ export default function QuickViewModal({
                   {/* Stock status */}
                   <p className="text-sm mt-2">
                     {product.stock_quantity === 0
-                      ? "❌ Out of Stock"
+                      ? `❌ ${t('product.outOfStock')}`
                       : product.stock_quantity < product.low_stock_limit
                         ? "⚠ Low Stock"
-                        : `✅ ${product.stock_quantity} units available`}
+                        : `✅ ${product.stock_quantity} ${t('common.units')}`}
                   </p>
                 </div>
 
@@ -310,10 +312,10 @@ export default function QuickViewModal({
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={15} className="animate-spin mr-2" />Deploying Node...
+                        <Loader2 size={15} className="animate-spin mr-2" />{t('compare.loadingProducts')}
                       ) : (
                       <>
-                        <ShoppingCart size={14} /> Add to Cart
+                        <ShoppingCart size={14} /> {t('product.addToCart')}
                       )}
                     </button>
 

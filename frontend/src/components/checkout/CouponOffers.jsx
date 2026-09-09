@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { BadgePercent, Check, ChevronDown, Copy, Loader2, Ticket, Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { formatCurrency } from "../../utils/currency.js";
 const headline = (c) =>
   c.discountType === "percentage"
@@ -15,6 +16,7 @@ export default function CouponOffers({
   onApply,
   onPrefill,
 }) {
+  const { t } = useTranslation();
   const [copiedCode, setCopiedCode] = useState(null);
   const [expandedItems, setExpandedItems] = useState([]);
   const visible = useMemo(() => coupons.filter((c) => c.code !== appliedCode), [coupons, appliedCode]);
@@ -45,14 +47,14 @@ export default function CouponOffers({
         <div className="flex items-center gap-2">
           <Ticket size={14} className="text-indigo-400" />
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Available Offers
+            {t('offers.title')}
           </p>
         </div>
         {loading && <Loader2 size={13} className="animate-spin text-slate-500" />}
       </div>
 
       {!loading && visible.length === 0 && (
-        <p className="text-xs text-slate-500">No coupons available right now.</p>
+        <p className="text-xs text-slate-500">{t('dashboard.noCouponsAvailable')}</p>
       )}
 {visible.map((c) => {
         const locked = !!c.locked;
@@ -146,11 +148,11 @@ export default function CouponOffers({
                 >
                   {busyCode === c.code ? (
                     <>
-                      <Loader2 size={12} className="animate-spin" /> Applying...
+                      <Loader2 size={12} className="animate-spin" /> {t('common.submitting')}
                     </>
                   ) : (
                     <>
-                      <Check size={12} /> Apply
+                      <Check size={12} /> {t('common.apply')}
                     </>
                   )}
                 </button>
@@ -163,11 +165,11 @@ export default function CouponOffers({
               >
                 {copiedCode === c.code ? (
                   <>
-                    <Check size={12} className="text-emerald-400" /> Copied
+                    <Check size={12} className="text-emerald-400" /> {t('common.copied')}
                   </>
                 ) : (
                   <>
-                    <Copy size={12} /> Copy
+                    <Copy size={12} /> {t('common.copy')}
                   </>
                 )}
               </button>

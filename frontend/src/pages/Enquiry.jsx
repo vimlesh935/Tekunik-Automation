@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle, Loader2, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { demoEnquiryService } from "../services/api";
 
 const initialFormData = {
@@ -15,6 +16,7 @@ const initialFormData = {
 
 export default function Enquiry() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
@@ -33,23 +35,23 @@ export default function Enquiry() {
     const nextErrors = {};
 
     if (!formData.full_name.trim()) {
-      nextErrors.full_name = "Full Name is required";
+      nextErrors.full_name = t('enquiry.fullNameRequired');
     }
 
     if (!formData.email.trim()) {
-      nextErrors.email = "Email is required";
+      nextErrors.email = t('enquiry.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(formData.email.trim())) {
-      nextErrors.email = "Invalid email format";
+      nextErrors.email = t('enquiry.invalidEmail');
     }
 
     if (!formData.phone.trim()) {
-      nextErrors.phone = "Phone is required";
+      nextErrors.phone = t('enquiry.phoneRequired');
     } else if (formData.phone.replace(/\D/g, "").length < 10) {
-      nextErrors.phone = "Phone must be at least 10 digits";
+      nextErrors.phone = t('enquiry.phoneMinDigits');
     }
 
     if (!formData.preferred_date) {
-      nextErrors.preferred_date = "Preferred Date is required";
+      nextErrors.preferred_date = t('enquiry.preferredDateRequired');
     }
 
     setErrors(nextErrors);
@@ -81,13 +83,13 @@ export default function Enquiry() {
 
       setServerError({
         code: response.code || "SUBMISSION_FAILED",
-        message: response.message || "Submission failed. Please try again.",
+        message: response.message || t('enquiry.submissionFailed'),
         errors: response.errors || response.details?.errors || [],
       });
     } catch (error) {
       setServerError({
         code: error.code || "SUBMISSION_FAILED",
-        message: error.message || "Unable to submit your enquiry. Please try again.",
+        message: error.message || t('enquiry.unableToSubmit'),
         errors: error.details?.errors || [],
       });
     } finally {
@@ -108,7 +110,7 @@ export default function Enquiry() {
           className="inline-flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          {t('enquiry.backHome')}
         </Link>
 
         <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-start">
@@ -119,17 +121,17 @@ export default function Enquiry() {
             className="pt-4 lg:pt-12"
           >
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-cyan-300 mb-5">
-              Free Consultation
+              {t('enquiry.freeConsultation')}
             </p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
-              Book Free Demo
+              {t('enquiry.bookFreeDemo')}
             </h1>
             <p className="text-lg text-gray-300 leading-8 max-w-xl">
-              Fill in your details and our team will contact you to schedule a smart home demo.
+              {t('enquiry.fillDetails')}
             </p>
 
             <div className="mt-10 space-y-4">
-              {["Saved in MySQL", "Email sent to the team", "Quick follow-up from Tekunik"].map((item) => (
+              {[t('enquiry.savedInMySQL'), t('enquiry.emailSentToTeam'), t('enquiry.quickFollowup')].map((item) => (
                 <div key={item} className="flex items-center gap-3 text-gray-200">
                   <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   <span className="font-medium">{item}</span>
@@ -163,7 +165,7 @@ export default function Enquiry() {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Full Name <span className="text-red-400">*</span>
+                {t('enquiry.fullNameLabel')} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -181,7 +183,7 @@ export default function Enquiry() {
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email <span className="text-red-400">*</span>
+                  {t('enquiry.emailLabel')} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"

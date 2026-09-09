@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { userService, orderService, reviewService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "react-i18next";
 import OrderReviewSection from "../components/OrderReviewSection.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
 import {
@@ -24,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function OrderHistory() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ export default function OrderHistory() {
         setPagination(data.pagination || null);
       }
     } catch (error) {
-      addToast(error?.message || "Failed to load orders", "error");
+      addToast(error?.message || t("orders.noOrders"), "error");
       setOrders([]);
     } finally {
       setLoading(false);
@@ -98,6 +100,22 @@ export default function OrderHistory() {
   const isCancellable = (status) => {
     const cancellable = ["pending", "confirmed", "processing"];
     return cancellable.includes(status);
+  };
+
+  const statusLabel = (statusValue) => {
+    const map = {
+      pending: "orders.pending",
+      confirmed: "orders.confirmed",
+      processing: "orders.processing",
+      packed: "orders.packed",
+      shipped: "orders.shipped",
+      out_for_delivery: "orders.outForDelivery",
+      delivered: "orders.delivered",
+      cancelled: "orders.cancelled",
+      refunded: "orders.refunded",
+      partially_refunded: "orders.partiallyRefunded",
+    };
+    return map[statusValue] ? t(map[statusValue]) : statusValue;
   };
 
   const formatDate = (dateStr) => {
@@ -132,9 +150,9 @@ export default function OrderHistory() {
       );
       setCancelledOrders((prev) => new Set(prev).add(cancelTarget.id));
       setCancelSuccessOrder(updatedOrder || { id: cancelTarget.id, order_number: cancelTarget.number, payment_method: orders.find(o => o.id === cancelTarget.id)?.payment_method });
-      addToast("Order cancelled successfully", "success");
+      addToast(t("dashboard.orderCancelled"), "success");
     } catch (error) {
-      addToast(error?.message || "Failed to cancel order", "error");
+      addToast(error?.message || t("dashboard.failedToCancel"), "error");
     } finally {
       setCancellingOrderId(null);
       setCancelTarget({ id: null, number: null });
@@ -174,13 +192,13 @@ export default function OrderHistory() {
       });
       setReviewSuccess(true);
       setReviewedProducts((prev) => new Map(prev).set(`${reviewOrder.id}-${selectedProduct}`, true));
-      addToast("Review submitted successfully!", "success");
+      addToast(t("dashboard.reviewSubmitted"), "success");
       setTimeout(() => {
         setShowReviewModal(false);
         setReviewSuccess(false);
       }, 1200);
     } catch (error) {
-      addToast(error?.message || "Failed to submit review", "error");
+      addToast(error?.message || t("toasts.error"), "error");
     } finally {
       setSubmittingReview(false);
     }
@@ -195,7 +213,7 @@ export default function OrderHistory() {
       <div className="min-h-screen bg-page text-primary flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 size={40} className="animate-spin text-cyan-400" />
-          <p className="text-gray-400">Loading your orders...</p>
+          <p className="text-gray-400">{t("common.loadingDots")}</p>
         </div>
       </div>
     );
@@ -205,8 +223,8 @@ export default function OrderHistory() {
     <div className="min-h-screen bg-page text-primary transition-colors duration-300 py-14">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white">My Orders</h1>
-          <p className="mt-2 text-gray-400">View and track all your orders</p>
+          <h1 className="text-4xl font-bold text-white">{t("orders.myOrders")}</h1>
+          <p className="mt-2 text-gray-400">{t("dashboard.trackOrderStatus")}</p>
         </div>
 
         {orders.length === 0 ? (
@@ -214,17 +232,16 @@ export default function OrderHistory() {
             <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-cyan-500/10 mb-6">
               <ShoppingBag size={36} className="text-cyan-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white">No orders yet</h2>
+            <h2 className="text-2xl font-bold text-white">{t("dashboard.noOrdersYet")}</h2>
             <p className="mt-3 text-gray-400 max-w-md mx-auto">
-              You haven't placed any orders yet. Start shopping to see your
-              order history here.
+              {t("dashboard.noOrdersMessage")}
             </p>
             <button
               type="button"
               onClick={() => navigate("/shop")}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 text-sm font-semibold text-black hover:shadow-xl hover:shadow-cyan-500/30 transition"
             >
-              Start Shopping
+              {t("orders.startShopping")}
             </button>
           </div>
         ) : (
@@ -241,19 +258,21 @@ export default function OrderHistory() {
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border ${getStatusColor(order.status)}`}
                       >
                         <Package size={12} />
-                        {order.status?.charAt(0).toUpperCase() +
-                          order.status?.slice(1).replace(/_/g, " ")}
+                        {statusLabel(order.status)}
                       </span>
                       {order.item_count && (
                         <span className="text-xs text-gray-500">
-                          {order.item_count} item
-                          {order.item_count > 1 ? "s" : ""}
+                          {order.item_count}{" "}
+                          {order.item_count > 1
+                            ? t("common.items")
+                            : t("common.item")}
                         </span>
                       )}
                       <span className="text-xs text-gray-400">
-                        {order.total_products || order.items?.length || 0} Product{(order.total_products || order.items?.length || 0) !== 1 ? "s" : ""}
+                        {order.total_products || order.items?.length || 0}{" "}
+                        {(order.total_products || order.items?.length || 0) !== 1 ? "Products" : "Product"}
                         {" "}·{" "}
-                        {order.total_quantity || (order.items || []).reduce((s, i) => s + (parseInt(i.quantity) || 0), 0)} Items
+                        {order.total_quantity || (order.items || []).reduce((s, i) => s + (parseInt(i.quantity) || 0), 0)} {t("dashboard.items")}
                       </span>
                     </div>
                     <h3 className="text-lg font-semibold text-white font-mono truncate">
@@ -266,7 +285,7 @@ export default function OrderHistory() {
                       </span>
                       <span className="flex items-center gap-1.5">
                         <MapPin size={14} className="text-cyan-400" />
-                        {order.guest_city || "N/A"}
+                        {order.guest_city || t("common.na")}
                       </span>
                     </div>
                   </div>
@@ -278,14 +297,14 @@ export default function OrderHistory() {
                       <p
                         className={`text-xs mt-1 ${order.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"}`}
                       >
-                        {order.payment_status || "pending"}
+                        {order.payment_status || t("orders.pending")}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <Link
                         to={`/orders/${order.id}`}
                         className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 group-hover:bg-cyan-500/10 transition"
-                        title="View details"
+                        title={t("orders.orderDetails")}
                       >
                         <Eye
                           size={18}
@@ -302,12 +321,12 @@ export default function OrderHistory() {
                           className="w-full sm:w-auto sm:min-w-[140px] inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-800 disabled:to-red-800 disabled:cursor-not-allowed text-white text-xs font-bold rounded-[12px] py-2.5 px-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(220,38,38,0.25)] active:scale-[0.98]"
                         >
                           <X size={14} />
-                          Cancel Order
+                          {t("orders.cancelOrder")}
                         </button>
                       ) : cancelledOrders.has(order.id) ? (
                         <span className="inline-flex items-center justify-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold rounded-[10px] py-2.5 px-4">
                           <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                          Order Cancelled
+                          {t("orders.orderCancelled")}
                         </span>
                       ) : null}
                       {order.status === "delivered" && (
@@ -317,7 +336,7 @@ export default function OrderHistory() {
                           className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-[10px] py-2.5 px-4 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
                         >
                           <Star size={13} />
-                          Write Review
+                          {t("dashboard.writeReview")}
                         </button>
                       )}
                     </div>
@@ -366,17 +385,12 @@ export default function OrderHistory() {
               <AlertTriangle size={28} className="text-red-400" />
             </div>
             <h3 className="text-xl font-black text-white text-center tracking-tight">
-              Cancel Order
+              {t("orders.cancelOrder")}
             </h3>
             <p className="mt-3 text-sm text-slate-400 text-center leading-relaxed">
-              Are you sure you want to cancel order{" "}
-              <span className="font-mono text-slate-200 font-bold">
-                #{cancelTarget.number}
-              </span>
-              ?<br />
-              <span className="text-xs text-slate-500">
-                This action cannot be undone.
-              </span>
+              {t("dashboard.confirmCancelOrder", {
+                orderNumber: `#${cancelTarget.number}`,
+              })}
             </p>
             <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3">
               <button
@@ -395,10 +409,10 @@ export default function OrderHistory() {
                 {cancellingOrderId === cancelTarget.id ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Cancelling...
+                    {t("dashboard.cancelling")}
                   </>
                 ) : (
-                  <>Cancel Order</>
+                  <>{t("orders.cancelOrder")}</>
                 )}
               </button>
             </div>
@@ -426,7 +440,7 @@ export default function OrderHistory() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-white tracking-tight">
-                Rate Your Experience
+                {t("product.writeReview")}
               </h3>
               <button
                 type="button"
@@ -458,7 +472,7 @@ export default function OrderHistory() {
 
             <div className="mb-5">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Rating
+                {t("product.rating")}
               </label>
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -485,7 +499,7 @@ export default function OrderHistory() {
 
             <div className="mb-4">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Review Title
+                {t("product.title")}
               </label>
               <input
                 type="text"
@@ -498,7 +512,7 @@ export default function OrderHistory() {
 
             <div className="mb-6">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Review Message
+                {t("product.yourReview")}
               </label>
               <textarea
                 value={reviewMessage}
@@ -515,7 +529,7 @@ export default function OrderHistory() {
                 onClick={() => setShowReviewModal(false)}
                 className="flex-1 inline-flex items-center justify-center rounded-[12px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm py-3 transition-all duration-200 border border-slate-700"
               >
-                Cancel
+                <span>{t("common.cancel")}</span>
               </button>
               <button
                 type="button"
@@ -528,17 +542,17 @@ export default function OrderHistory() {
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-current">
                       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </span>
-                    <span>Review Submitted Successfully</span>
+                    <span>{t("product.reviewPending")}</span>
                   </>
                 ) : submittingReview ? (
                   <>
                     <span className="inline-flex h-5 w-5 animate-spin rounded-full border-[2px] border-current border-t-transparent" />
-                    <span className="tabular-nums tracking-wide">Submitting Review...</span>
+                    <span className="tabular-nums tracking-wide">{t("common.loadingDots")}</span>
                   </>
                 ) : (
                   <>
                     <Star size={15} className="fill-white/90" />
-                    <span>Submit Review</span>
+                    <span>{t("product.submitReview")}</span>
                   </>
                 )}
               </button>

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lightbulb, Lock, Unlock, Video, VideoOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Signature concept
@@ -51,6 +52,7 @@ export default function AppDownloadSection() {
   const [pulse, setPulse] = useState(null);
   const toastTimeoutRef = useRef(null);
   const pulseTimeoutRef = useRef(null);
+  const { t } = useTranslation();
 
   const toggle = (control) => {
     setState((prev) => {
@@ -104,10 +106,10 @@ export default function AppDownloadSection() {
         >
           <span className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-text-secondary/70">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Try it live
+            {t('home.tryLive')}
           </span>
           <h2 className="mb-5 text-3xl font-bold sm:mb-6 sm:text-4xl md:text-5xl">
-            Your Home In Your Pocket
+            {t('home.yourHomePocket')}
           </h2>
          
           <p className="max-w-lg font-mono text-xs uppercase tracking-wide text-text-secondary/60">
@@ -161,7 +163,7 @@ export default function AppDownloadSection() {
             <div className="flex-1 bg-gradient-to-b from-background to-background-secondary p-4 pt-10 sm:p-6 sm:pt-12">
               <div className="mb-6 flex items-center justify-between sm:mb-8">
                 <div>
-                  <p className="text-[10px] text-text-secondary sm:text-xs">Welcome home,</p>
+                  <p className="text-[10px] text-text-secondary sm:text-xs">{t('home.welcomeHome')}</p>
                   <p className="text-sm font-bold sm:text-base">Sarah</p>
                 </div>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 sm:h-10 sm:w-10">

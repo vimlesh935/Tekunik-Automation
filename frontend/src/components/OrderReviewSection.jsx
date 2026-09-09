@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { reviewService } from "../services/api";
 
 export default function OrderReviewSection({ order, onReviewSubmit }) {
+  const { t } = useTranslation();
   const [openProductId, setOpenProductId] = useState(null);
   const [reviewForm, setReviewForm] = useState({
     rating: 0,
@@ -71,7 +73,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
 
   const handleSubmit = async (e, productId) => {
     e.preventDefault();
-    if (!reviewForm.rating) return alert("Please select a rating.");
+    if (!reviewForm.rating) return alert(t('common.invalidInput'));
 
     setSubmitting(true);
     setSubmitted(false);
@@ -103,7 +105,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
       setImageFile(null);
       if (onReviewSubmit) onReviewSubmit();
     } catch (err) {
-      alert(err.message || "Failed to submit review");
+      alert(err.message || t('product.submitReview'));
     } finally {
       setSubmitting(false);
     }
@@ -117,33 +119,33 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
           onClick={() => toggleForm(productId)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-md text-xs font-semibold hover:bg-cyan-500/20 transition"
         >
-          ⭐ Write Review
+          ⭐ {t('product.writeReview')}
         </button>
       );
     }
     if (status.status === "pending") {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-md text-xs font-semibold">
-          ⏳ Review Pending Approval
+          ⏳ {t('product.reviewPending')}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-md text-xs font-semibold">
-        ✅ Review Published
+          ✅ {t('product.reviewPending')}
       </span>
     );
   };
 
   return (
     <div className="mt-6 space-y-3">
-      <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Product Reviews</h3>
+      <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">{t('product.reviews')}</h3>
       {eligibleItems.map((item) => (
         <div key={item.product_id} className="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{item.product_name || `Product #${item.product_id}`}</p>
-              <p className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('common.qty')}: {item.quantity}</p>
             </div>
             {renderStatusBadge(item.product_id)}
           </div>
@@ -151,7 +153,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
           {openProductId === item.product_id && (!reviewStatus[item.product_id] || reviewStatus[item.product_id]?.status === "none") && (
             <form onSubmit={(e) => handleSubmit(e, item.product_id)} className="mt-4 space-y-3 border-t border-gray-800 pt-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Rating *</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('product.rating')} *</label>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button key={star} type="button" onClick={() => setReviewForm((prev) => ({ ...prev, rating: star }))}>
@@ -161,7 +163,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Review Title</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('product.title')}</label>
                 <input
                   type="text"
                   value={reviewForm.review_title}
@@ -171,17 +173,17 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Review Message</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('product.reviewMessage')}</label>
                 <textarea
                   value={reviewForm.review_message}
                   onChange={(e) => setReviewForm((prev) => ({ ...prev, review_message: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:border-cyan-500 outline-none"
-                  placeholder="What did you like or dislike?"
+                  placeholder={t('product.reviewPlaceholder')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Product Images (Optional)</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('common.update')}</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -201,7 +203,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                   onClick={() => setOpenProductId(null)}
                   className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -213,17 +215,17 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                       <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border-2 border-current">
                         <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                       </span>
-                      <span>Review Submitted Successfully</span>
+                      <span>{t('dashboard.reviewSubmitted')}</span>
                     </>
                   ) : submitting ? (
                     <>
                       <span className="inline-flex h-4 w-4 animate-spin rounded-full border-[2px] border-current border-t-transparent" />
-                      <span>Submitting...</span>
+                      <span>{t('common.submitting')}</span>
                     </>
                   ) : (
                     <>
                       <Star size={14} className="fill-white/90" />
-                      <span>Submit Review</span>
+                      <span>{t('product.submitReview')}</span>
                     </>
                   )}
                 </button>

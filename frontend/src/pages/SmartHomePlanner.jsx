@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { smartHomeStepService } from "../services/api";
 import {
   ArrowLeft,
@@ -112,6 +113,51 @@ const ROOM_COLORS = [
   "from-green-500/20 to-emerald-500/20 border-green-500/30",
 ];
 
+const STEP_LABEL_KEYS = [
+  'planner.stepPersonal',
+  'planner.stepHomeType',
+  'planner.stepRooms',
+  'planner.stepDevices',
+  'planner.stepReview',
+];
+
+const HOME_TYPE_LABEL_MAP = {
+  '1-rk': 'planner.home1rk',
+  '1-bhk': 'planner.home1bhk',
+  '2-bhk': 'planner.home2bhk',
+  '3-bhk': 'planner.home3bhk',
+  '4-bhk': 'planner.home4bhk',
+  'villa': 'planner.homeVilla',
+  'office': 'planner.homeOffice',
+  'custom': 'planner.homeCustom',
+};
+
+const HOME_TYPE_DESC_MAP = {
+  '1-rk': 'planner.home1rkDesc',
+  '1-bhk': 'planner.home1bhkDesc',
+  '2-bhk': 'planner.home2bhkDesc',
+  '3-bhk': 'planner.home3bhkDesc',
+  '4-bhk': 'planner.home4bhkDesc',
+  'villa': 'planner.homeVillaDesc',
+  'office': 'planner.homeOfficeDesc',
+  'custom': 'planner.homeCustomDesc',
+};
+
+const DEVICE_LABEL_MAP = {
+  'Lights': 'planner.devLights',
+  'Fans': 'planner.devFans',
+  'Curtains': 'planner.devCurtains',
+  'AC': 'planner.devAc',
+  'TV': 'planner.devTv',
+  'Smart Plug': 'planner.devSmartPlug',
+  'Door Lock': 'planner.devDoorLock',
+  'Door Bell': 'planner.devDoorBell',
+  'Motion Sensor': 'planner.devMotionSensor',
+  'Smoke Sensor': 'planner.devSmokeSensor',
+  'Camera': 'planner.devCamera',
+  'Wi-Fi AP': 'planner.devWifiAp',
+};
+
 let roomIdCounter = 1000;
 function nextRoomId() {
   roomIdCounter += 1;
@@ -144,6 +190,7 @@ function createDefaultDeviceConfig() {
 /* ================================================================== */
 export default function SmartHomePlanner() {
   const navigate = useNavigate();
+  const { t } = useTranslation('planner');
   const [currentStep, setCurrentStep] = useState(0);
   const [sessionId, setSessionId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -273,7 +320,7 @@ export default function SmartHomePlanner() {
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
       console.error("Failed to save step:", err);
-      setSaveError(err?.message || "Failed to save progress. Please try again.");
+      setSaveError(err?.message || t('planner.failedToSave'));
       throw err;
     } finally {
       setSaving(false);
@@ -415,12 +462,12 @@ export default function SmartHomePlanner() {
           <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-10 h-10 text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-bold mb-3">Your Smart Home Plan is Submitted!</h2>
+          <h2 className="text-3xl font-bold mb-3">{t('submittedTitle')}</h2>
           <p className="text-slate-400 mb-8">
-            Thank you! Our team will review your requirements and get back to you within 24 hours with a personalised quote.
+            {t('submittedDesc')}
           </p>
           <button onClick={() => { localStorage.removeItem("shp_sessionId"); navigate("/home"); }} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all cursor-pointer">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
+            <ArrowLeft className="w-4 h-4" /> {t('common.backHome')}
           </button>
         </div>
       </div>
@@ -435,7 +482,7 @@ export default function SmartHomePlanner() {
           <div className="flex items-center justify-between h-16">
             <button onClick={handleBackToHome} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Back to Home</span>
+              <span className="text-sm font-medium">{t('common.backHome')}</span>
             </button>
             <div className="flex items-center gap-3">
               {/* Step indicator dots */}
@@ -449,7 +496,7 @@ export default function SmartHomePlanner() {
                   />
                 ))}
               </div>
-              <span className="text-xs text-slate-500 font-medium">Step {currentStep + 1} of {totalSteps}</span>
+              <span className="text-xs text-slate-500 font-medium">{t('planner.stepOf', { current: currentStep + 1, total: totalSteps })}</span>
             </div>
           </div>
         </div>
@@ -476,9 +523,9 @@ export default function SmartHomePlanner() {
           </div>
           <div>
             <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
-              Step {currentStep + 1}
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold mt-1">{STEP_LABELS[currentStep]?.label}</h2>
+               {t('planner.step', { current: currentStep + 1 })}
+             </span>
+             <h2 className="text-2xl sm:text-3xl font-bold mt-1">{t(STEP_LABEL_KEYS[currentStep])}</h2>
           </div>
         </div>
 
@@ -496,7 +543,7 @@ export default function SmartHomePlanner() {
             {currentStep === 0 && (
               <>
                 <p className="text-slate-400 text-sm sm:text-base ml-16 mb-8">
-                  Tell us about yourself so we can reach out with your personalised smart home plan.
+                  {t('planner.introStep1')}
                 </p>
 
                 {/* Resume prompt — shown when no session is loaded */}
@@ -508,7 +555,7 @@ export default function SmartHomePlanner() {
                       className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors cursor-pointer"
                     >
                       <Save className="w-4 h-4" />
-                      {showResume ? "Hide" : "Already started? Resume your plan"}
+                      {showResume ? t('planner.hide') : t('planner.resumePlan')}
                     </button>
                     {showResume && (
                       <div className="mt-3 flex gap-2">
@@ -516,7 +563,7 @@ export default function SmartHomePlanner() {
                           type="email"
                           value={resumeEmail}
                           onChange={(e) => { setResumeEmail(e.target.value); setResumeError(""); }}
-                          placeholder="Enter your email to resume"
+                          placeholder={t('planner.resumePlaceholder')}
                           className="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50 placeholder-slate-600"
                         />
                         <button
@@ -546,10 +593,10 @@ export default function SmartHomePlanner() {
                                 }
                                 setShowResume(false);
                               } else {
-                                setResumeError("No saved plan found for this email.");
+                                setResumeError(t('planner.noPlanFound'));
                               }
                             } catch (err) {
-                              setResumeError("Failed to find plan. Please check your email.");
+                              setResumeError(t('planner.findFailed'));
                             } finally {
                               setResuming(false);
                             }
@@ -557,7 +604,7 @@ export default function SmartHomePlanner() {
                           disabled={resuming || !resumeEmail.trim()}
                           className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition cursor-pointer flex items-center gap-2"
                         >
-                          {resuming ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding...</> : "Resume"}
+                          {resuming ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('planner.finding')}</> : t('planner.resume')}
                         </button>
                       </div>
                     )}
@@ -567,7 +614,7 @@ export default function SmartHomePlanner() {
 
                 <div className="ml-16 space-y-4 mb-12">
                   <div>
-                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">Full Name *</label>
+                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">{t('planner.fullName')}</label>
                     <input
                       type="text"
                       value={personal.fullName}
@@ -577,7 +624,7 @@ export default function SmartHomePlanner() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">Email Address *</label>
+                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">{t('planner.emailAddress')}</label>
                     <input
                       type="email"
                       value={personal.email}
@@ -587,7 +634,7 @@ export default function SmartHomePlanner() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">Phone Number *</label>
+                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">{t('planner.phoneNumber')}</label>
                     <input
                       type="tel"
                       value={personal.phone}
@@ -597,7 +644,7 @@ export default function SmartHomePlanner() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">City</label>
+                    <label className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mb-1.5">{t('planner.city')}</label>
                     <input
                       type="text"
                       value={personal.city}
@@ -616,7 +663,7 @@ export default function SmartHomePlanner() {
             {currentStep === 1 && (
               <>
                 <p className="text-slate-400 text-sm sm:text-base ml-16 mb-8">
-                  Select the type of home or space you'd like to set up with smart automation.
+                  {t('planner.introStep2')}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12 ml-16">
                   {HOME_TYPES.map((type) => {
@@ -640,8 +687,8 @@ export default function SmartHomePlanner() {
                             <TypeIcon className="w-5 h-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className={`font-semibold text-sm block ${isSelected ? "text-white" : "text-slate-200"}`}>{type.label}</span>
-                            <span className="text-xs text-slate-500 mt-0.5 block leading-snug">{type.description}</span>
+<span className={`font-semibold text-sm block ${isSelected ? "text-white" : "text-slate-200"}`}>{t(HOME_TYPE_LABEL_MAP[type.id])}</span>
+                             <span className="text-xs text-slate-500 mt-0.5 block leading-snug">{t(HOME_TYPE_DESC_MAP[type.id])}</span>
                           </div>
                           <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? "border-indigo-500" : "border-slate-700"}`}>
                             {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />}
@@ -659,9 +706,9 @@ export default function SmartHomePlanner() {
             {/* ========================================================= */}
             {currentStep === 2 && (
               <>
-                <p className="text-slate-400 text-sm sm:text-base ml-16 mb-6">Customise your rooms — add, rename, or remove as needed.</p>
+                <p className="text-slate-400 text-sm sm:text-base ml-16 mb-6">{t('planner.introStep3')}</p>
                 <div className="flex items-center justify-between mb-6 ml-16">
-                  <span className="text-sm text-slate-500">{rooms.length} {rooms.length === 1 ? "room" : "rooms"}</span>
+                  <span className="text-sm text-slate-500">{rooms.length} {rooms.length === 1 ? t('planner.room_singular') : t('planner.room_plural')}</span>
                   <motion.button
                     type="button"
                     onClick={addRoom}
@@ -669,7 +716,7 @@ export default function SmartHomePlanner() {
                     whileTap={{ scale: 0.96 }}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/30 text-sm font-medium transition-all duration-200 cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" /> Add Room
+                    <Plus className="w-4 h-4" /> {t('planner.addRoom')}
                   </motion.button>
                 </div>
                 {rooms.length > 0 ? (
@@ -696,7 +743,7 @@ export default function SmartHomePlanner() {
                                 value={room.name}
                                 onChange={(e) => renameRoom(room.id, e.target.value)}
                                 className="w-full bg-transparent border-b border-transparent hover:border-slate-600 focus:border-indigo-500 text-sm font-semibold text-white placeholder-slate-500 outline-none transition-colors py-0.5"
-                                placeholder="Room name"
+                                placeholder={t('planner.roomNamePlaceholder')}
                               />
                             </div>
                             <motion.button
@@ -705,7 +752,7 @@ export default function SmartHomePlanner() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all flex-shrink-0 cursor-pointer"
-                              title="Delete room"
+                              title={t('planner.deleteRoom')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </motion.button>
@@ -717,7 +764,7 @@ export default function SmartHomePlanner() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 mb-12 ml-16 rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/30">
                     <DoorOpen className="w-12 h-12 text-slate-600 mb-4" />
-                    <p className="text-slate-500 text-sm font-medium">No rooms yet. Click "Add Room" to get started.</p>
+                    <p className="text-slate-500 text-sm font-medium">{t('planner.noRoomsYet')}</p>
                   </div>
                 )}
               </>
@@ -729,22 +776,22 @@ export default function SmartHomePlanner() {
             {currentStep === 3 && (
               <>
                 <p className="text-slate-400 text-sm sm:text-base ml-16 mb-6">
-                  Enable the smart devices you need for each room. Click a room to expand and configure.
+                  {t('planner.introStep4')}
                 </p>
 
                 {/* Summary bar */}
                 <div className="ml-16 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 text-center">
                     <span className="text-lg font-bold text-indigo-400">{rooms.length}</span>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Rooms</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">{t('planner.rooms')}</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 text-center">
                     <span className="text-lg font-bold text-indigo-400">{deviceSummaryItems.length}</span>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Devices Selected</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">{t('planner.devicesSelected')}</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 text-center">
                     <span className="text-lg font-bold text-indigo-400">{totalDeviceUnits}</span>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Total Units</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">{t('planner.totalUnits')}</p>
                   </div>
                 </div>
 
@@ -824,9 +871,9 @@ export default function SmartHomePlanner() {
                                           }`}>
                                             <DeviceIcon className="w-3.5 h-3.5" />
                                           </div>
-                                          <span className={`text-xs font-medium flex-1 ${config.enabled ? "text-white" : "text-slate-400"}`}>
-                                            {device.label}
-                                          </span>
+<span className={`text-xs font-medium flex-1 ${config.enabled ? "text-white" : "text-slate-400"}`}>
+                                             {t(DEVICE_LABEL_MAP[device.label]) || device.label}
+                                           </span>
                                           {config.enabled && (
                                             <div className="flex items-center gap-1">
                                               <button

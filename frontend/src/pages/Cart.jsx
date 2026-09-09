@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ShoppingCart,
   Trash2,
@@ -21,6 +22,7 @@ import { formatCurrency } from "../utils/currency.js";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 
 export default function Cart() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const guestCart = useCart();
 
@@ -39,7 +41,7 @@ export default function Cart() {
 
   const checkoutWithCoupon = () => {
     if (!currentCart || !currentCart.items || currentCart.items.length === 0) {
-      addToast("Your cart is empty. Add items before checking out.", "warning");
+      addToast(t("cart.cartEmpty"), "warning");
       return;
     }
     navigate("/checkout");
@@ -59,12 +61,12 @@ export default function Cart() {
 
   const removeItem = (itemId) => {
     guestCart.removeItem(itemId);
-    addToast("Item removed from cart", "success");
+    addToast(t("cart.itemRemoved"), "success");
   };
 
   const handleCheckout = () => {
     if (!currentCart || !currentCart.items || currentCart.items.length === 0) {
-      addToast("Your cart is empty. Add items before checking out.", "warning");
+      addToast(t("cart.cartEmpty"), "warning");
       return;
     }
     navigate("/checkout");
@@ -87,16 +89,16 @@ export default function Cart() {
               <Ticket size={16} className="text-indigo-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">Coupon {pendingCoupon} selected</p>
+              <p className="text-sm font-bold text-white">{t("cart.couponSelected", { code: pendingCoupon })}</p>
               <p className="text-xs text-slate-400 mt-0.5">
-                It will be applied automatically when you proceed to checkout.
+                {t("cart.couponAutoApplied")}
               </p>
               <button
                 type="button"
                 onClick={checkoutWithCoupon}
                 className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-2 text-xs font-bold text-white transition-all"
               >
-                Proceed to Checkout <ArrowRight size={14} />
+                {t("cart.proceedToCheckout")} <ArrowRight size={14} />
               </button>
             </div>
             <button
@@ -117,7 +119,7 @@ export default function Cart() {
             <div className="space-y-4 lg:max-h-[82vh] lg:overflow-y-auto lg:pr-2 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
               <div className="flex items-center gap-4 mb-1">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-500 font-mono">
-                  Selected Products ({currentCart.itemCount})
+                  {t("cart.selectedProducts")} ({currentCart.itemCount})
                 </p>
                 <span className="h-px flex-grow bg-slate-800" />
               </div>
@@ -167,8 +169,8 @@ export default function Cart() {
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
                               {item.product_status === "active"
-                                ? "In Stock"
-                                : "Unavailable"}
+                                ? t("cart.inStock")
+                                : t("cart.unavailable")}
                             </p>
                           </div>
                           {/* Dynamic Price Display with Discount */}
@@ -188,7 +190,7 @@ export default function Cart() {
                             ) : (
                               <span>{formatPrice(item.price)}</span>
                             )}
-                            <span className="text-[10px] text-slate-600 font-sans font-medium"> / unit</span>
+                            <span className="text-[10px] text-slate-600 font-sans font-medium">{t("common.perUnit")}</span>
                           </div>
                         </div>
                       </div>
@@ -229,7 +231,7 @@ export default function Cart() {
                             </button>
                           </div>
                           <p className="text-[9px] text-slate-600 font-bold uppercase tracking-wider font-mono sm:mr-1">
-                            Limit {item.max_quantity}
+                            {t("cart.limit", { count: item.max_quantity })}
                           </p>
                         </div>
 
@@ -238,7 +240,7 @@ export default function Cart() {
                           onClick={() => removeItem(itemId)}
                           className="inline-flex items-center gap-1.5 border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-rose-400 transition-all duration-200 active:scale-95"
                         >
-                          <Trash2 size={12} /> Remove
+                          <Trash2 size={12} /> {t("cart.remove")}
                         </button>
                       </div>
                     </motion.div>
@@ -256,17 +258,14 @@ export default function Cart() {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="h-px w-6 bg-indigo-500" />
                   <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 font-mono">
-                    Invoice Calculations
+                    {t("cart.invoiceCalculations")}
                   </p>
                 </div>
                 <h1 className="text-2xl font-black text-white tracking-tight">
-                  Order{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                    Summary
-                  </span>
+                  {t("cart.orderSummary")}
                 </h1>
                 <p className="text-xs text-slate-500 mt-1">
-                  Review your order before proceeding to payment.
+                  {t("cart.reviewOrder")}
                 </p>
               </div>
 
@@ -274,31 +273,30 @@ export default function Cart() {
               <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-3.5 shadow-inner">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="flex items-center gap-2">
-                    <Layers size={13} className="text-slate-600" /> Active
-                    Configurations
+                    <Layers size={13} className="text-slate-600" /> {t("cart.activeConfigurations")}
                   </span>
                   <span className="font-mono font-bold text-slate-200">
-                    {currentCart.itemCount} units
+                    {currentCart.itemCount} {t("common.units")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-900 pb-3">
-                  <span>Total Unit Items</span>
+                  <span>{t("cart.totalUnitItems")}</span>
                   <span className="font-mono font-bold text-slate-200">
-                    {currentCart.totalQuantity} qty
+                    {currentCart.totalQuantity} {t("common.qty")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Subtotal</span>
+                  <span className="text-slate-400">{t("common.subtotal")}</span>
                   <span className="font-semibold text-white">
                     {formatCurrency(currentCart.totalAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Shipping</span>
-                  <span className="font-semibold text-green-400">FREE</span>
+                  <span className="text-slate-400">{t("common.shipping")}</span>
+                  <span className="font-semibold text-green-400">{t("common.free")}</span>
                 </div>
                 <div className="flex items-end justify-between text-sm font-bold pt-2 border-t border-slate-800">
-                  <span className="text-white">Total Amount</span>
+                  <span className="text-white">{t("cart.totalAmount")}</span>
                   <span className="text-2xl font-black text-white font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">
                     {formatCurrency(currentCart.totalAmount)}
                   </span>
@@ -308,11 +306,10 @@ export default function Cart() {
               {/* Secure Checkout */}
               <div className="bg-slate-950 border border-slate-800/60 rounded-2xl p-4 space-y-2">
                 <p className="font-bold text-xs text-indigo-400 flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-indigo-400" /> Secure
-                  Checkout
+                  <ShieldCheck size={14} className="text-indigo-400" /> {t("cart.secureCheckout")}
                 </p>
                 <p className="text-slate-500 text-[11px] leading-relaxed">
-                  Your payment information is encrypted and secure.
+                  {t("cart.paymentEncrypted")}
                 </p>
               </div>
 
@@ -323,7 +320,7 @@ export default function Cart() {
                   onClick={handleCheckout}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider rounded-xl py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_25px_rgba(99,102,241,0.15)] active:scale-[0.97]"
                 >
-                  Proceed to Checkout{" "}
+                  {t("cart.proceedToCheckout")}{" "}
                   <ArrowRight size={14} />
                 </button>
 
@@ -332,7 +329,7 @@ export default function Cart() {
                   onClick={() => navigate("/shop")}
                   className="w-full bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition shadow-md flex items-center justify-center gap-2 active:scale-95"
                 >
-                  Continue Shopping
+                  {t("cart.continueShopping")}
                 </button>
               </div>
             </aside>
@@ -348,18 +345,17 @@ export default function Cart() {
               <ShoppingCart size={26} className="text-indigo-500" />
             </div>
             <p className="text-base font-bold text-slate-200 tracking-tight">
-              Cart Allocation Vacant
+              {t("cart.empty")}
             </p>
             <p className="mt-2 text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-              No technical modules compiled in the staging pipeline block.
-              Deploy units via the active catalog interface.
+              {t("cart.emptyMessage")}
             </p>
             <button
               type="button"
               onClick={() => navigate("/shop")}
               className="mt-6 inline-flex items-center gap-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-500 text-slate-300 hover:text-white font-black text-xs uppercase tracking-wider rounded-xl px-5 py-3 transition-all duration-300 active:scale-95 shadow-lg"
             >
-              Continue Shopping
+              {t("cart.continueShopping")}
             </button>
           </motion.div>
         )}

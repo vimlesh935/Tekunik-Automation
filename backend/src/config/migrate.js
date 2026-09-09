@@ -83,6 +83,61 @@ const ensureUsersOtpColumns = async () => {
   }
 };
 
+/**
+ * Add a `token_version` column to the users table (if missing).
+ * Every successful password change increments this counter and embeds it in
+ * newly-issued JWTs, so previously-issued tokens can be rejected by
+ * requireAuth. Existing tokens (no claim -> 0) stay valid until the first
+ * password change, which prevents breaking current logged-in sessions.
+ */
+const ensureUsersTokenVersionColumn = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'users'");
+    if (!tables.length) {
+      console.warn("⚠️ [MIGRATE] users table not found");
+      return;
+    }
+
+    const [column] = await query("SHOW COLUMNS FROM users LIKE 'token_version'");
+    if (!column) {
+      await query(
+        "ALTER TABLE users ADD COLUMN token_version INT NOT NULL DEFAULT 0 AFTER is_verified"
+      );
+      console.log("✅ [MIGRATE] Added token_version column to users table");
+    } else {
+      console.log("✅ [MIGRATE] users.token_version column verified");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure users token_version column:", error.message);
+  }
+};
+
+/**
+ * Add a `language_preference` column to the users table (if missing).
+ * Stores the user's selected interface language (e.g. 'en', 'hi', 'mr').
+ */
+const ensureUsersLanguagePreference = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'users'");
+    if (!tables.length) {
+      console.warn("⚠️ [MIGRATE] users table not found");
+      return;
+    }
+
+    const [column] = await query("SHOW COLUMNS FROM users LIKE 'language_preference'");
+    if (!column) {
+      await query(
+        "ALTER TABLE users ADD COLUMN language_preference VARCHAR(10) DEFAULT 'en' AFTER is_verified"
+      );
+      console.log("✅ [MIGRATE] Added language_preference column to users table");
+    } else {
+      console.log("✅ [MIGRATE] users.language_preference column verified");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure users language_preference column:", error.message);
+  }
+};
+
 const ensureUserProfileColumns = async () => {
   try {
     const tables = await query("SHOW TABLES LIKE 'user_profiles'");
@@ -1039,6 +1094,8 @@ module.exports = {
   ensureGuestOrderColumns,
   ensureProductsColumns,
   ensureUsersOtpColumns,
+  ensureUsersTokenVersionColumn,
+  ensureUsersLanguagePreference,
   ensureUserProfileColumns,
   ensureReviewsTable,
   ensureAdminsTable,

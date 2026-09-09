@@ -22,7 +22,29 @@ const errorHandler = (error, req, res, next) => {
   console.error(`[${timestamp}]`, error.message);
   if (statusCode >= 500) {
     console.error("Request URL:", req.method, req.originalUrl);
-    console.error("Request Body:", JSON.stringify(req.body, null, 2));
+    // 🔐 Never persist passwords / OTPs in logs: redact sensitive request
+    // fields before they reach stdout or the error log.
+    const SENSITIVE_FIELDS = new Set([
+      "password",
+      "currentPassword",
+      "newPassword",
+      "confirmPassword",
+      "otp",
+      "resetToken",
+      "token",
+    ]);
+    const redact = (value) => {
+      if (Array.isArray(value)) return value.map(redact);
+      if (value && typeof value === "object") {
+        const out = {};
+        for (const [key, item] of Object.entries(value)) {
+          out[key] = SENSITIVE_FIELDS.has(key) ? "[REDACTED]" : redact(item);
+        }
+        return out;
+      }
+      return value;
+    };
+    console.error("Request Body:", JSON.stringify(redact(req.body), null, 2));
     console.error(error.stack);
   }
 

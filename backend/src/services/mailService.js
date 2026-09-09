@@ -600,7 +600,7 @@ const buildOtpTemplate = (otp, name = "User") => `
     <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
       <h2 style="margin:0 0 12px;color:#111827;">Password Reset OTP</h2>
       <p style="color:#374151;font-size:15px;">Hi ${name},</p>
-      <p style="color:#374151;font-size:15px;">Use this 6-digit OTP to reset your password. It is valid for 10 minutes.</p>
+      <p style="color:#374151;font-size:15px;">Use this 6-digit OTP to reset your password. It is valid for 5 minutes.</p>
       <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#111827;background:#f3f4f6;border-radius:10px;padding:16px;text-align:center;margin:24px 0;">
         ${otp}
       </div>
@@ -651,7 +651,7 @@ const sendOtpEmail = async ({ to, otp, name }) => {
       from: currentSmtp?.from || normalizeSmtpUser(currentSmtp?.user),
       to: recipient,
       subject: "Password Reset OTP",
-      text: `Your OTP is: ${otp}\n\nThis OTP expires in 10 minutes.\n\nIf you did not request a password reset, ignore this email.`,
+      text: `Your OTP is: ${otp}\n\nThis OTP expires in 5 minutes.\n\nIf you did not request a password reset, ignore this email.`,
       html: buildOtpTemplate(otp, name),
     };
 

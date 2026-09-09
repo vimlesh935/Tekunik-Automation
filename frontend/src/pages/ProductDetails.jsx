@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ShoppingCart,
   ArrowLeft,
@@ -31,6 +32,7 @@ import CompareButton from "../components/CompareButton.jsx";
 import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 
 export default function ProductDetails({ token }) {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
@@ -263,14 +265,14 @@ export default function ProductDetails({ token }) {
 
     if (!token) {
       addToCart(product, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t('dashboard.addedToCart', { name: product.name }), "success");
       return;
     }
 
     setAddingToCart(true);
     try {
       await cartService.addToCart(product.id, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t('dashboard.addedToCart', { name: product.name }), "success");
     } catch (error) {
       console.warn("addToCart error:", error);
       addToast(error?.message || "Unable to add item to cart.", "error");
@@ -310,12 +312,12 @@ export default function ProductDetails({ token }) {
     try {
       await backInStockService.subscribe(product.id);
       setNotifyState("success");
-      addToast("We'll notify you when this product is back in stock! 🔔", "success");
+      addToast(t('dashboard.notifyBackInStock'), "success");
     } catch (error) {
       if (error?.code === "ALREADY_IN_STOCK") {
-        addToast("Good news — this product is back in stock!", "success");
+        addToast(t('dashboard.backInStock'), "success");
       } else {
-        addToast(error?.message || "Could not register your notification.", "error");
+        addToast(error?.message || t('dashboard.failedNotify'), "error");
       }
       setNotifyState("idle");
     }
@@ -341,17 +343,17 @@ export default function ProductDetails({ token }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Navigation Action Header */}
         <div className="mb-10 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="group inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-98"
-          >
-            <ArrowLeft
-              size={16}
-              className="group-hover:-translate-x-0.5 transition-transform"
-            />{" "}
-            Back to Shop
-          </button>
+<button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="group inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-700 transition-all active:scale-98"
+            >
+              <ArrowLeft
+                size={16}
+                className="group-hover:-translate-x-0.5 transition-transform"
+              />{" "}
+              {t('common.back')}
+            </button>
 
           <div className="text-xs font-mono text-slate-500 hidden sm:block">
             SYSTEM INDEX // SKU-{id?.padStart(4, "0")}
@@ -363,7 +365,7 @@ export default function ProductDetails({ token }) {
           <div className="flex min-h-[500px] flex-col items-center justify-center rounded-3xl border border-slate-900 bg-slate-900/40 backdrop-blur-md shadow-2xl">
             <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
             <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">
-              Synchronizing Component Data Matrix...
+              {t('common.loadingDots')}
             </span>
           </div>
         ) : product ? (
@@ -472,7 +474,7 @@ export default function ProductDetails({ token }) {
               <div className="space-y-4 text-left">
                 <div className="inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold px-3.5 py-1 rounded-full text-xs uppercase tracking-widest backdrop-blur-sm">
                   <Layers size={12} />{" "}
-                  {product.category_name || "IoT Component Array"}
+                  {product.category_name || t('product.category')}
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
@@ -494,7 +496,7 @@ export default function ProductDetails({ token }) {
                     {reviewStats.averageRating > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5` : "0.0 / 5"}
                   </span>
                   <span className="text-xs text-slate-500 font-medium">
-                    {reviewStats.totalReviews > 0 ? `${reviewStats.totalReviews} REVIEW${reviewStats.totalReviews > 1 ? "S" : ""}` : "NO REVIEWS YET"}
+                    {reviewStats.totalReviews > 0 ? `${reviewStats.totalReviews} REVIEW${reviewStats.totalReviews > 1 ? "S" : ""}` : t('product.noReviews').toUpperCase()}
                   </span>
                 </div>
 
@@ -541,26 +543,26 @@ export default function ProductDetails({ token }) {
                   <div className="rounded-xl bg-slate-950/80 border border-slate-900 p-4 text-left flex flex-col justify-between">
                     <div>
                       <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                        Node Status
+                        {t('product.availability')}
                       </p>
                       <div className="mt-2 flex items-center gap-2 text-sm font-bold">
                         {product.stock_quantity === 0 ? (
                           <span className="inline-flex items-center gap-1.5 rounded-md bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-xs text-rose-400">
-                            <AlertCircle size={12} /> Out of Stock
+                            <AlertCircle size={12} /> {t('product.outOfStock')}
                           </span>
                         ) : product.stock_quantity < product.low_stock_limit ? (
                           <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-xs text-amber-400">
-                            <AlertCircle size={12} /> Low Stock
+                            <AlertCircle size={12} /> {t('product.lowStock')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">
-                            <CheckCircle size={12} /> Available
+                            <CheckCircle size={12} /> {t('product.inStock')}
                           </span>
                         )}
                       </div>
                     </div>
                     <p className="mt-2 text-xs font-mono text-slate-400">
-                      {product.stock_quantity} units ready in hub
+                      {product.stock_quantity} {t('product.stock')}
                     </p>
                   </div>
                 </div>
@@ -569,7 +571,7 @@ export default function ProductDetails({ token }) {
                 {product.colors && product.colors.length > 0 && (
                   <div className="rounded-xl bg-slate-950/80 border border-slate-900 p-4 text-left">
                     <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-3">
-                      Color Variants
+                      {t('product.colorVariants')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {product.colors.map((color) => {
@@ -640,7 +642,7 @@ export default function ProductDetails({ token }) {
                       ) : (
                         <ShoppingCart size={15} />
                       )}
-                      {addingToCart ? "Deploying Node..." : " Add to Cart"}
+                      {addingToCart ? "Deploying Node..." : t('product.addToCart')}
                     </button>
                   )}
 
@@ -712,7 +714,7 @@ export default function ProductDetails({ token }) {
                   fontFamily: "'Space Grotesk', sans-serif",
                 }}
               >
-                Customer Reviews
+                {t('product.reviews')}
               </h2>
               <p
                 style={{
@@ -887,7 +889,7 @@ export default function ProductDetails({ token }) {
                         border: "1px solid rgba(52, 211, 153, 0.3)",
                       }}
                     >
-                      ✅ Verified Buyer
+                      ✅ {t('home.verifiedBuyer')}
                     </span>
                     <span
                       style={{
@@ -944,7 +946,7 @@ export default function ProductDetails({ token }) {
           ) : (
             <div style={{ textAlign: "center", padding: "32px 0" }}>
               <p style={{ color: MUTED, fontSize: "14px", margin: 0 }}>
-                No reviews yet. Be the first to review this product!
+                {t('product.noReviews')}. {t('product.beFirstToReview')}!
               </p>
             </div>
           )}

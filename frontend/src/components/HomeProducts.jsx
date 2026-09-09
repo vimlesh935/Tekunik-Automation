@@ -2,12 +2,14 @@ import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Cpu, Layers, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import CompareButton from "./CompareButton.jsx";
 import SafeImage from "./SafeImage.jsx";
 import WishlistHeart from "./WishlistHeart.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
 
 export default function HomeProducts({ featuredProducts, loading, handleAddToCart, wishlist = [], onToggleWishlist }) {
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
 
   return (
@@ -22,10 +24,10 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
         >
           <div className="text-left">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-2">
-              Today's Deals
+              {t('home.todaysDeals')}
             </span>
             <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">
-              Featured Products
+              {t('home.featuredProducts')}
             </h2>
           </div>
           <div className="flex gap-4 items-center">
@@ -33,7 +35,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
               to="/offers"
               className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors duration-300 mr-2"
             >
-              See All Offers
+              {t('home.seeAllOffers')}
             </Link>
             <button
               onClick={() => scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" })}
@@ -57,7 +59,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
           <div className="flex flex-col items-center justify-center py-24 gap-4 bg-slate-950 border border-slate-900 rounded-2xl shadow-xl">
             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-              Compiling Device Matrix...
+              {t('home.compilingMatrix')}
             </span>
           </div>
         </div>
@@ -98,7 +100,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                 {product.stock_quantity <= 0 && (
                   <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center backdrop-blur-sm z-10">
                     <span className="bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-xs px-4 py-1.5 rounded-full uppercase tracking-widest">
-                      Out of Stock
+                      {t('product.outOfStock')}
                     </span>
                   </div>
                 )}
@@ -109,7 +111,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                 {/* Card text content */}
                 <div className="absolute inset-0 p-6 flex flex-col justify-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 z-10 text-left">
                   <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">
-                    {product.category_name || "IoT Component"}
+                    {product.category_name || t('common.na')}
                   </span>
 
                   <h3 className="text-xl font-bold text-slate-100 hover:text-indigo-400 transition-colors duration-150 line-clamp-1 mb-1">
@@ -124,14 +126,14 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                           {product.reviews.averageRating.toFixed(1)}{" "}
                           <Star size={9} className="fill-amber-400 text-transparent" />
                         </div>
-                        <span className="text-[11px] text-slate-500 font-medium">
-                          ({product.reviews.totalReviews} Review{product.reviews.totalReviews > 1 ? "s" : ""})
-                        </span>
+<span className="text-[11px] text-slate-500 font-medium">
+                        ({product.reviews.totalReviews} {t('common.review', { count: product.reviews.totalReviews })})
+                      </span>
                       </>
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <Star size={12} className="text-slate-600" />
-                        <span className="text-[11px] text-slate-500 font-medium">No Reviews Yet</span>
+                        <span className="text-[11px] text-slate-500 font-medium">{t('product.noReviews')}</span>
                       </div>
                     )}
                   </div>
@@ -171,7 +173,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                       className="w-full bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-800 disabled:pointer-events-none active:scale-95 shadow-lg shadow-indigo-600/10 cursor-pointer"
                     >
                       <ShoppingCart size={14} />
-                      Add to Cart
+                      {t('product.addToCart')}
                     </button>
                   </div>
                 </div>
@@ -197,9 +199,9 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
         <div className="max-w-7xl mx-auto px-6">
           <div className="border border-slate-800 bg-slate-950 rounded-2xl p-16 text-center max-w-md mx-auto shadow-xl">
             <Layers size={36} className="mx-auto text-slate-700 mb-4" />
-            <p className="text-base font-bold text-slate-300">No active promotions logged</p>
+            <p className="text-base font-bold text-slate-300">{t('home.noPromotionsLogged')}</p>
             <p className="text-xs text-slate-500 mt-1">
-              Our team is setting up fresh catalog inventories. Check back soon!
+              {t('home.settingUpCatalog')}
             </p>
           </div>
         </div>

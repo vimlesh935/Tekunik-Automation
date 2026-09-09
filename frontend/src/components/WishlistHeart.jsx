@@ -1,4 +1,5 @@
 import { Heart } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * WishlistHeart — reusable heart toggle button for product cards and detail pages.
@@ -11,6 +12,7 @@ import { Heart } from "lucide-react";
  *   size        — "sm" | "md" (default "md")
  */
 const WishlistHeart = ({ productId, isInWishlist, onToggle, product, size = "md" }) => {
+  const { t } = useTranslation();
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -25,8 +27,8 @@ const WishlistHeart = ({ productId, isInWishlist, onToggle, product, size = "md"
     <button
       type="button"
       onClick={handleClick}
-      aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-      title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+      aria-label={isInWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+      title={isInWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
       className={`
         ${btnSize} rounded-full
         flex items-center justify-center

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const INITIAL_DISPLAY_COUNT = 8;
 
@@ -60,6 +61,7 @@ function CategoryCard({ cat }) {
 
 export default function HomeCategories({ categories }) {
   const [showAll, setShowAll] = useState(false);
+  const { t } = useTranslation();
   const hasMore = categories.length > INITIAL_DISPLAY_COUNT;
   const initialCategories = categories.slice(0, INITIAL_DISPLAY_COUNT);
 
@@ -70,10 +72,10 @@ export default function HomeCategories({ categories }) {
         <div className="mb-12">
           <div className="text-left">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2">
-              Browse
+              {t('common.browse')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Shop by Category
+              {t('home.shopByCategory')}
             </h2>
           </div>
         </div>
@@ -116,11 +118,11 @@ export default function HomeCategories({ categories }) {
                 >
                   {showAll ? (
                     <>
-                      Show Less <ChevronUp size={18} />
+                      {t('common.showLess')} <ChevronUp size={18} />
                     </>
                   ) : (
                     <>
-                      See More <ChevronDown size={18} />
+                      {t('common.seeMore')} <ChevronDown size={18} />
                     </>
                   )}
                 </motion.button>

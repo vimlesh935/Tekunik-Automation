@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Star, X, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { reviewService, userService } from "../services/api";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -11,6 +12,7 @@ const MUTED = "#64748B";
 const BG = "#080B14";
 
 export default function ProductReviewsModal({ productId, isOpen, onClose, onSuccess }) {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -60,7 +62,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
         }
         setPurchaseRequired(true);
       } catch {
-        setError("Unable to verify your purchase history. Please try again.");
+        setError(t('common.somethingWentWrong'));
       } finally {
         setCheckingEligibility(false);
       }
@@ -75,12 +77,12 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
     setSuccess(false);
 
     if (!rating || rating < 1 || rating > 5) {
-      setError("Please select a rating (1-5 stars)");
+      setError(t('common.invalidInput'));
       return;
     }
 
     if (!eligibleOrderId) {
-      setError("No eligible order found. Please purchase this product first.");
+      setError(t('common.somethingWentWrong'));
       return;
     }
 
@@ -109,11 +111,11 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
           setSuccess(false);
         }, 2000);
       } else {
-        throw new Error(response.message || "Failed to submit review");
+        throw new Error(response.message || t('product.submitReview'));
       }
     } catch (err) {
       console.error("[ReviewModal] Submit error:", err);
-      setError(err.message || "Failed to submit review. Please try again.");
+      setError(err.message || t('product.submitReview'));
     } finally {
       setSubmitting(false);
     }
@@ -169,7 +171,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
             }}
           >
             <Star color="#FCD34D" size={20} fill="#FCD34D" />
-            Write a Review
+            {t('product.writeReview')}
           </h2>
           <button
             type="button"
@@ -219,8 +221,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 margin: 0,
               }}
             >
-              Thank you! Your review has been submitted and is awaiting admin
-              approval.
+              {t('product.reviewPending')}
             </p>
           </div>
         )}
@@ -268,8 +269,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 marginBottom: "16px",
               }}
             >
-              Please log in to submit a product review. Reviews can only be
-              submitted after purchasing and receiving the product.
+              {t('common.loginRequired')}
             </p>
             <a
               href="/login"
@@ -289,7 +289,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 cursor: "pointer",
               }}
             >
-              Log In to Review
+              {t('nav.login')}
             </a>
           </div>
         )}
@@ -313,7 +313,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 marginTop: "12px",
               }}
             >
-              Checking your purchase history...
+              {t('compare.loadingProducts')}
             </p>
           </div>
         )}
@@ -333,7 +333,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 marginBottom: "8px",
               }}
             >
-              You can only review products you have purchased and received.
+              {t('product.beFirstToReview')}
             </p>
             <p
               style={{
@@ -341,8 +341,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 fontSize: "13px",
               }}
             >
-              Purchase this product and once your order is delivered, you will
-              be able to submit a review.
+              {t('product.beFirstToReview')}
             </p>
           </div>
         )}
@@ -432,13 +431,13 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                   marginBottom: "8px",
                 }}
               >
-                Review Title (Optional)
+                {t('product.title')} ({t('common.na')})
               </label>
               <input
                 type="text"
                 value={reviewTitle}
                 onChange={(e) => setReviewTitle(e.target.value)}
-                placeholder="Great product!"
+                placeholder={t('product.sampleReview')}
                 disabled={submitting}
                 maxLength={100}
                 style={{
@@ -478,12 +477,12 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                   marginBottom: "8px",
                 }}
               >
-                Review Message
+                {t('product.reviewMessage')}
               </label>
               <textarea
                 value={reviewMessage}
                 onChange={(e) => setReviewMessage(e.target.value)}
-                placeholder="Share your experience with this product..."
+                placeholder={t('product.reviewPlaceholder')}
                 disabled={submitting}
                 rows={4}
                 maxLength={1000}
@@ -563,7 +562,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                   }
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -609,12 +608,12 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                       size={16}
                       style={{ animation: "spin 0.8s linear infinite" }}
                     />
-                    Submitting...
+                    {t('common.submitting')}
                   </>
                 ) : (
                   <>
                     <Star size={16} color="#FCD34D" fill="#FCD34D" />
-                    Submit Review
+                    {t('product.submitReview')}
                   </>
                 )}
               </button>

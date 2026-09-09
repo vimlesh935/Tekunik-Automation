@@ -1,8 +1,13 @@
 const crypto = require("node:crypto");
 
-const OTP_TTL_MINUTES = 10;
+const OTP_TTL_MINUTES = 5;
 
-const generateOtp = () => String(crypto.randomInt(100000, 1000000));
+const OTP_DIGITS = 6;
+
+const generateOtp = () =>
+  Math.floor(crypto.randomInt(0, Math.pow(10, OTP_DIGITS)))
+    .toString()
+    .padStart(OTP_DIGITS, "0");
 
 const hashOtp = (otp) => {
   const salt = crypto.randomBytes(16).toString("hex");

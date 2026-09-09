@@ -1,12 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, GitCompareArrows, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useComparison } from "../context/ComparisonContext.jsx";
 import { useEffect, useState } from "react";
 import { productService } from "../services/api";
 import SafeImage from "./SafeImage.jsx";
 
 export default function ComparisonBar() {
+  const { t } = useTranslation();
   const { ids, removeProduct, clearProducts } = useComparison();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -29,7 +31,7 @@ export default function ComparisonBar() {
       {ids.length > 0 && (
         <motion.aside initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }} className="fixed bottom-5 left-1/2 z-50 w-[min(760px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border border-indigo-400/30 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-white"><GitCompareArrows size={18} className="text-cyan-400" /> Compare Products <span className="text-cyan-300">{ids.length} selected</span></div>
+            <div className="flex items-center gap-2 text-sm font-bold text-white"><GitCompareArrows size={18} className="text-cyan-400" /> {t('compare.title')} <span className="text-cyan-300">{ids.length} selected</span></div>
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
               {products.map((product) => (
                 <div key={product.id} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs text-slate-200">
@@ -40,8 +42,8 @@ export default function ComparisonBar() {
               ))}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button type="button" onClick={clearProducts} className="px-2 py-2 text-xs font-semibold text-slate-400 hover:text-white">Clear All</button>
-              {ids.length >= 2 && <button type="button" onClick={() => navigate("/compare")} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-500">Compare Now <ArrowRight size={14} /></button>}
+              <button type="button" onClick={clearProducts} className="px-2 py-2 text-xs font-semibold text-slate-400 hover:text-white">{t('common.clearAll')}</button>
+              {ids.length >= 2 && <button type="button" onClick={() => navigate("/compare")} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-500">{t('compare.title')} <ArrowRight size={14} /></button>}
             </div>
           </div>
         </motion.aside>

@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Factory,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const applications = [
   {
@@ -68,6 +69,7 @@ const applications = [
 ];
 
 export default function HomeApplications({ applicationCounts, loadingApps }) {
+  const { t } = useTranslation();
   return (
     <section className="py-24 bg-slate-950 border-t border-slate-900 relative overflow-hidden">
       <div className="absolute top-0 right-1/3 w-96 h-96 bg-indigo-600/5 rounded-full blur-[150px] pointer-events-none" />
@@ -76,13 +78,13 @@ export default function HomeApplications({ applicationCounts, loadingApps }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-2">
-            Applications
+            {t('home.applications')}
           </span>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-            Where Can You Use Tek Node?
+            {t('home.whereCanYouUse')}
           </h2>
           <p className="text-slate-400 text-sm mt-3 max-w-2xl mx-auto leading-relaxed">
-            Explore smart automation solutions designed for homes, offices, hotels, healthcare facilities, educational institutions, and industrial environments.
+            {t('home.applicationsDesc')}
           </p>
         </div>
 
@@ -116,7 +118,7 @@ export default function HomeApplications({ applicationCounts, loadingApps }) {
                       <span className="text-xs text-slate-500 animate-pulse">Loading...</span>
                     )}
                     <span className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-700/60 bg-slate-800/40 text-xs font-bold text-indigo-400 group-hover:text-white group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all duration-300 uppercase tracking-wider ml-auto">
-                      Explore <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      {t('home.explore')} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>
                 </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { userService } from "../services/api";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/Toast.jsx";
+import { useTranslation } from "react-i18next";
 import SafeImage from "../components/SafeImage.jsx";
 import OrderReviewSection from "../components/OrderReviewSection.jsx";
 import {
@@ -23,6 +24,7 @@ export default function OrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const [order, setOrder] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -69,10 +71,10 @@ export default function OrderDetails() {
         status: response?.status,
       });
       const orderData = response.data?.order;
-      if (!orderData) throw new Error("Order not found");
+      if (!orderData) throw new Error(t("orders.notFound"));
       setOrder(orderData);
     } catch (error) {
-      addToast(error?.message || "Failed to load order details", "error");
+      addToast(error?.message || t("orders.loadFailed"), "error");
       navigate("/orders");
     } finally {
       setFetchLoading(false);
@@ -99,8 +101,24 @@ export default function OrderDetails() {
     return colors[s] || colors.pending;
   };
 
+  const statusLabel = (statusValue) => {
+    const map = {
+      pending: "orders.pending",
+      confirmed: "orders.confirmed",
+      processing: "orders.processing",
+      packed: "orders.packed",
+      shipped: "orders.shipped",
+      out_for_delivery: "orders.outForDelivery",
+      delivered: "orders.delivered",
+      cancelled: "orders.cancelled",
+      refunded: "orders.refunded",
+      partially_refunded: "orders.partiallyRefunded",
+    };
+    return map[statusValue] ? t(map[statusValue]) : statusValue;
+  };
+
   const formatDate = (dateStr) => {
-    if (!dateStr) return "N/A";
+    if (!dateStr) return t("common.na");
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
         year: "numeric",
@@ -119,7 +137,7 @@ export default function OrderDetails() {
       <div className="min-h-screen bg-page text-primary flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 size={40} className="animate-spin text-cyan-400" />
-          <p className="text-gray-400">Loading order details...</p>
+          <p className="text-gray-400">{t("orders.loadingDetails")}</p>
         </div>
       </div>
     );
@@ -137,7 +155,7 @@ export default function OrderDetails() {
             onClick={() => navigate("/orders")}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition"
           >
-            <ArrowLeft size={16} /> Back to Orders
+            <ArrowLeft size={16} /> {t("common.back")} {t("orders.myOrders")}
           </button>
         </div>
 
@@ -150,20 +168,19 @@ export default function OrderDetails() {
                   className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold border ${getStatusColor(order.status)}`}
                 >
                   <Package size={12} />
-                  {order.status?.charAt(0).toUpperCase() +
-                    order.status?.slice(1).replace(/_/g, " ")}
+                  {statusLabel(order.status)}
                 </span>
                 {order.payment_status === "paid" && (
                   <span className="text-xs text-emerald-400 font-semibold">
-                    Paid
+                    {t("orders.paid")}
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl font-bold text-white">Order Details</h1>
+              <h1 className="text-3xl font-bold text-white">{t("orders.orderDetails")}</h1>
             </div>
             <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 p-4 sm:p-5 text-sm">
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                Order Number
+                {t("orders.orderNumberLabel")}
               </p>
               <div className="mt-2 flex items-center gap-3">
                 <p className="text-lg font-semibold text-white font-mono">
@@ -172,7 +189,7 @@ export default function OrderDetails() {
                 <button
                   onClick={copyOrderNumber}
                   className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-cyan-400 transition"
-                  title="Copy order number"
+                  title={t("common.copy")}
                 >
                   {copied ? (
                     <Check size={14} className="text-emerald-400" />
@@ -182,7 +199,7 @@ export default function OrderDetails() {
                 </button>
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Placed on {formatDate(order.created_at)}
+                {t("orders.placedOn", { date: formatDate(order.created_at) })}
               </p>
             </div>
           </div>
@@ -193,20 +210,20 @@ export default function OrderDetails() {
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <MapPin size={18} className="text-cyan-400" />
-                  Shipping Details
+                  {t("orders.shippingDetails")}
                 </h2>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
                     <p className="text-xs uppercase tracking-[0.28em] text-gray-500">
-                      Recipient
+                      {t("orders.recipient")}
                     </p>
                     <p className="font-semibold text-white">
-                      {order.guest_name || order.customer_name || "Customer"}
+                      {order.guest_name || order.customer_name || t("orders.customer")}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs uppercase tracking-[0.28em] text-gray-500">
-                      Contact
+                      {t("orders.contact")}
                     </p>
                     {order.guest_email && (
                       <p className="text-white text-sm flex items-center gap-1.5">
@@ -224,7 +241,7 @@ export default function OrderDetails() {
                 </div>
                 <div className="mt-5 rounded-3xl bg-white/5 p-5">
                   <p className="text-xs uppercase tracking-[0.28em] text-gray-500">
-                    Delivery Address
+                    {t("checkout.deliveryAddress")}
                   </p>
                   <p className="mt-3 text-sm text-gray-200">
                     {order.delivery_address}
@@ -241,7 +258,7 @@ export default function OrderDetails() {
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <Package size={18} className="text-cyan-400" />
-                  Order Items
+                  {t("orders.orderItems")}
                 </h2>
                 <div className="mt-6 space-y-4">
                   {order.items?.map((item) => (
@@ -277,7 +294,7 @@ export default function OrderDetails() {
                           </p>
                         )}
                         <p className="text-sm text-gray-400">
-                          Qty {item.quantity} × ₹
+                          {t("common.qty")} {item.quantity} × ₹
                           {parseFloat(item.price || 0).toFixed(2)}
                         </p>
                       </div>
@@ -291,7 +308,7 @@ export default function OrderDetails() {
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-white">
-                  <span className="text-sm">Total</span>
+                  <span className="text-sm">{t("common.total")}</span>
                   <span className="text-2xl font-bold text-cyan-400">
                     ₹{parseFloat(order.total_amount || 0).toFixed(2)}
                   </span>
@@ -304,33 +321,35 @@ export default function OrderDetails() {
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6 space-y-3">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <CreditCard size={16} className="text-cyan-400" />
-                  Payment
+                  {t("orders.paymentMethod")}
                 </h3>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Method</span>
+                  <span className="text-gray-400">{t("orders.method")}</span>
                   <span className="text-white font-medium">
                     {order.payment_method === "online"
-                      ? "Online Payment"
-                      : "Cash on Delivery"}
+                      ? t("checkout.onlinePayment")
+                      : t("checkout.cashOnDelivery")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Status</span>
+                  <span className="text-gray-400">{t("orders.status")}</span>
                   <span
                     className={`font-medium ${order.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"}`}
                   >
-                    {order.payment_status}
+                    {order.payment_status === "paid"
+                      ? t("orders.paid")
+                      : t("orders.pending")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Amount</span>
+                  <span className="text-gray-400">{t("orders.amount")}</span>
                   <span className="text-white font-semibold">
                     ₹{parseFloat(order.total_amount || 0).toFixed(2)}
                   </span>
                 </div>
                 {order.invoice_number && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Invoice</span>
+                    <span className="text-gray-400">{t("orders.invoice")}</span>
                     <span className="text-cyan-400 font-mono text-xs">
                       {order.invoice_number}
                     </span>
@@ -343,18 +362,18 @@ export default function OrderDetails() {
               <div className="rounded-3xl border border-white/10 bg-gray-900/70 p-6 space-y-3">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <Calendar size={16} className="text-cyan-400" />
-                  Order Information
+                  {t("orders.orderInformation")}
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-400">Order Date</span>
+                    <span className="text-gray-400">{t("orders.orderDate")}</span>
                     <span className="text-right text-white">
                       {formatDate(order.created_at)}
                     </span>
                   </div>
                   {order.updated_at && (
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-gray-400">Last Updated</span>
+                      <span className="text-gray-400">{t("orders.lastUpdated")}</span>
                       <span className="text-right text-white">
                         {formatDate(order.updated_at)}
                       </span>
@@ -362,7 +381,7 @@ export default function OrderDetails() {
                   )}
                   {order.estimated_delivery && (
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-gray-400">Estimated Delivery</span>
+                      <span className="text-gray-400">{t("orders.estimatedDelivery")}</span>
                       <span className="text-right text-white">
                         {new Date(order.estimated_delivery).toLocaleDateString(
                           "en-US",
@@ -383,7 +402,7 @@ export default function OrderDetails() {
                 to="/shop"
                 className="inline-flex items-center justify-center w-full rounded-3xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4 text-sm font-semibold text-black hover:shadow-xl hover:shadow-cyan-500/30 transition-all"
               >
-                Continue Shopping
+                {t("common.continueShopping")}
               </Link>
             </div>
           </div>

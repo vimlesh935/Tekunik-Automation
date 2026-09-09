@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, Sparkles, Home as HomeIcon, Lock, Cpu, Lightbulb, CircuitBoard, Camera, Wifi, Thermometer } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
@@ -23,6 +24,7 @@ import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 
 
 export default function HomeWrapper({ token }) {
+  const { t } = useTranslation();
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { settings } = useWebsiteSettings();

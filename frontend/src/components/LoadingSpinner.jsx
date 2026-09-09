@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 function Spinner() {
   return (
@@ -172,6 +173,7 @@ function CheckoutSkeleton() {
 }
 
 export default function LoadingSpinner({ fullPage = true, type = "page" }) {
+  const { t } = useTranslation();
   if (type === "admin") return <AdminSkeleton />;
   if (type === "dashboard") return <DashboardSkeleton />;
   if (type === "shop") return <ShopSkeleton />;
@@ -192,7 +194,7 @@ export default function LoadingSpinner({ fullPage = true, type = "page" }) {
     <div className="flex flex-col items-center justify-center gap-3 min-h-[40vh]">
       <Spinner />
       <p className="text-sm text-slate-500 font-medium tracking-wide animate-pulse">
-        Loading...
+        {t("common.loading")}
       </p>
     </div>
   );

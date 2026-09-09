@@ -10,6 +10,8 @@ import {
   ShoppingCart,
   Bell,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "./LanguageSelector.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -22,6 +24,7 @@ import useNotifications from "../hooks/useNotifications.js";
 import NotificationList from "./NotificationList.jsx";
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const { isAuthenticated: token, logout } = useAuth();
   const { theme } = useTheme();
   const { settings } = useWebsiteSettings();
@@ -76,11 +79,11 @@ export default function Navbar() {
   }, []);
 
   const baseNavLinks = [
-    { path: "/", label: "Home" },
-    { path: "/shop", label: "Shop" },
-    { path: "/about", label: "About Us" },
-    { path: "/contact", label: "Contact Us" },
-    { path: "/track-order", label: "Track Order" },
+    { path: "/", label: t("nav.home") },
+    { path: "/shop", label: t("nav.shop") },
+    { path: "/about", label: t("nav.aboutUs") },
+    { path: "/contact", label: t("nav.contactUs") },
+    { path: "/track-order", label: t("nav.trackOrder") },
   ];
 
   const { itemCount } = useCart();
@@ -172,7 +175,7 @@ export default function Navbar() {
                   type="button"
                 >
                   <Search size={14} className="text-slate-500 group-hover:text-indigo-400 transition-colors" />
-                  <span className="text-[11px] font-medium tracking-wide">Search...</span>
+                  <span className="text-[11px] font-medium tracking-wide">{t("nav.searchDots")}</span>
                 </button>
               )}
             </div>
@@ -184,14 +187,14 @@ export default function Navbar() {
             {token && (
               <Link
                 to="/dashboard"
-                className={`hidden lg:inline-flex items-center gap-2 py-2 px-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
-                  isActive("/dashboard")
-                    ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20"
-                    : "text-slate-300 hover:text-white border border-transparent hover:border-slate-800"
-                }`}
-              >
-                Dashboard
-              </Link>
+                  className={`hidden lg:inline-flex items-center gap-2 py-2 px-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                    isActive("/dashboard")
+                      ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20"
+                      : "text-slate-300 hover:text-white border border-transparent hover:border-slate-800"
+                  }`}
+                >
+                  {t("nav.dashboard")}
+                </Link>
             )}
 
             {/* Authenticated User Floating Dropdown Menu */}
@@ -203,7 +206,7 @@ export default function Navbar() {
                 >
                   <UserCircle size={17} className="text-indigo-400" />
                   <span className="hidden sm:inline text-xs tracking-wide">
-                    Account
+                    {t("nav.account")}
                   </span>
                   <ChevronDown
                     size={13}
@@ -227,7 +230,7 @@ export default function Navbar() {
                       >
                         <div className="px-4 py-2 border-b border-slate-800 bg-slate-950/30 mb-1">
                           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                            Authorized Access
+                            {t("nav.authorizedAccess")}
                           </p>
                         </div>
                         <button
@@ -235,7 +238,7 @@ export default function Navbar() {
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-black text-rose-400 hover:bg-rose-500/10 transition-all duration-200 text-left"
                         >
                           <LogOut size={14} />
-                          Logout
+                          {t("nav.logout")}
                         </button>
                       </motion.div>
                     </>
@@ -250,7 +253,7 @@ export default function Navbar() {
                 to="/login"
                 className="text-xs font-bold tracking-wide uppercase text-slate-400 hover:text-indigo-400 transition-colors px-2.5 py-2"
               >
-                Login
+                {t("nav.login")}
               </Link>
             )}
 
@@ -269,14 +272,17 @@ export default function Navbar() {
                   {showNotifications && <>
                     <button type="button" aria-label="Close notifications" className="fixed inset-0 z-40 h-full w-full cursor-default" onClick={() => setShowNotifications(false)} />
                     <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
-                      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><span className="text-sm font-black text-white">Notifications</span>{unreadCount > 0 && <button type="button" onClick={() => markAllRead()} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300">Mark all as read</button>}</div>
+                      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><span className="text-sm font-black text-white">{t("nav.notifications")}</span>{unreadCount > 0 && <button type="button" onClick={() => markAllRead()} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300">{t("nav.markAllAsRead")}</button>}</div>
                       <NotificationList notifications={notifications} loading={notificationsLoading} error={notificationsError} onRetry={refreshNotifications} onRead={async (id) => { await markRead(id); }} compact />
-                      <Link to="/notifications" onClick={() => setShowNotifications(false)} className="block border-t border-slate-800 px-4 py-3 text-center text-xs font-bold text-cyan-400 hover:bg-slate-950">View All Notifications <span aria-hidden="true">→</span></Link>
+                      <Link to="/notifications" onClick={() => setShowNotifications(false)} className="block border-t border-slate-800 px-4 py-3 text-center text-xs font-bold text-cyan-400 hover:bg-slate-950">{t("nav.viewAllNotifications")} <span aria-hidden="true">→</span></Link>
                     </motion.div>
                   </>}
                 </AnimatePresence>
               </div>
             )}
+
+            {/* Language Selector — beside the Cart */}
+            <LanguageSelector />
 
             {/* Shopping Cart UI Microframe */}
             <motion.div animate={cartBounce ? { scale: [1, 1.08, 1] } : {}}>
@@ -287,7 +293,7 @@ export default function Navbar() {
                     ? "border-indigo-500/30 bg-indigo-500/5 text-indigo-400"
                     : "border-slate-900 bg-slate-900/30 hover:border-slate-800"
                 }`}
-                title="View cart"
+                title={t("nav.viewCart")}
               >
                 <div className="relative">
                   <ShoppingCart
@@ -303,7 +309,7 @@ export default function Navbar() {
                   )}
                 </div>
                 <span className="hidden sm:inline tracking-wide text-[10px]">
-                  Cart
+                  {t("nav.cart")}
                 </span>
               </Link>
             </motion.div>
@@ -343,14 +349,14 @@ export default function Navbar() {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search products..."
+                      placeholder={t("nav.searchProducts")}
                       className="w-full rounded-l-xl border border-slate-900 bg-slate-900 py-2 pl-4 pr-4 text-xs text-white focus:outline-none focus:border-indigo-500/40"
                     />
                     <button
                       type="submit"
                       className="bg-indigo-600 text-white px-4 rounded-r-xl h-[38px] font-bold text-xs tracking-wider uppercase"
                     >
-                      Search
+                      {t("nav.search")}
                     </button>
                   </div>
                 </form>
@@ -379,7 +385,7 @@ export default function Navbar() {
                       : "text-slate-400 hover:text-white hover:bg-slate-900"
                   }`}
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
               )}
 
@@ -393,7 +399,7 @@ export default function Navbar() {
               >
                 <span className="flex items-center gap-2.5">
                   <ShoppingCart size={15} />
-                  My Basket
+                  {t("nav.myBasket")}
                 </span>
                 {itemCount > 0 && (
                   <span
@@ -410,7 +416,7 @@ export default function Navbar() {
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 text-left"
                   >
-                    <LogOut size={14} /> Logout
+                    <LogOut size={14} /> {t("nav.logout")}
                   </button>
                 </div>
               ) : (
@@ -418,7 +424,7 @@ export default function Navbar() {
                   to="/login"
                   className="flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white mt-4 shadow-lg shadow-indigo-600/10 tracking-wider uppercase"
                 >
-                  Initialize Access
+                  {t("nav.initializeAccess")}
                 </Link>
               )}
             </div>

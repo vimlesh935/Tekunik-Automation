@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Tag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { offerService } from "../services/api";
 import { getImageUrl } from "../utils/imageUrl.js";
 
@@ -113,6 +114,7 @@ export function OfferCard({ offer }) {
 }
 
 export default function HomeOfferCarousel() {
+  const { t } = useTranslation();
   const [activeOffers, setActiveOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -152,9 +154,9 @@ export default function HomeOfferCarousel() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 pb-4 pt-10 sm:px-6 sm:pt-14">
       <div className="mb-6">
-        <p className="section-label">Offers &amp; Promotions</p>
+        <p className="section-label">{t('offers.title')}</p>
         <h2 className="mt-1 text-xl font-black tracking-tight text-primary sm:text-2xl">
-          Deals worth grabbing
+          {t('home.dealsWorthGrabbing')}
         </h2>
       </div>
 
@@ -167,7 +169,7 @@ export default function HomeOfferCarousel() {
       {hasMoreOffers && (
         <div className="mt-7 text-center">
           <Link to="/offers" className="btn-primary">
-            View More <ArrowRight size={16} />
+            {t('common.viewMore')} <ArrowRight size={16} />
           </Link>
         </div>
       )}

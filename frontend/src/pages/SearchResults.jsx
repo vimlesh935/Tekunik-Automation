@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, ShoppingCart, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { productService, cartService, wishlistService } from "../services/api";
 import { useCart } from "../context/CartContext.jsx";
@@ -17,6 +18,7 @@ export default function SearchResults({ token }) {
   const { addToCart } = useCart();
   const { addToast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,7 +87,7 @@ export default function SearchResults({ token }) {
         setProducts(searchData?.products || []);
       } catch (error) {
         console.warn("searchProducts error:", error);
-        addToast(error?.message || "Unable to search products", "error");
+        addToast(error?.message || t("searchResults.unableToSearch"), "error");
       } finally {
         setLoading(false);
       }
@@ -96,21 +98,21 @@ export default function SearchResults({ token }) {
 
   const handleAddToCart = async (product) => {
     if (product.stock_quantity === 0) {
-      addToast("Product is out of stock", "warning");
+      addToast(t("searchResults.productOutOfStock"), "warning");
       return;
     }
 
     if (!token) {
       addToCart(product, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t("searchResults.addedToCart", { name: product.name }), "success");
       return;
     }
 
     try {
       await cartService.addToCart(product.id, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t("searchResults.addedToCart", { name: product.name }), "success");
     } catch (error) {
-      addToast(error.message || "Unable to add to cart", "error");
+      addToast(error.message || t("searchResults.unableToAddToCart"), "error");
     }
   };
 
@@ -129,10 +131,10 @@ export default function SearchResults({ token }) {
               onClick={() => navigate(-1)}
               className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200 hover:bg-white/10 transition"
             >
-              <ArrowLeft size={18} /> Back
+              <ArrowLeft size={18} /> {t("common.back")}
             </button>
-            <h1 className="text-4xl font-bold">Search results</h1>
-            <p className="mt-2 text-gray-400">Showing matches for <span className="text-cyan-300">{query || "your query"}</span></p>
+            <h1 className="text-4xl font-bold">{t("searchResults.title")}</h1>
+            <p className="mt-2 text-gray-400">{t("searchResults.showingMatches")} <span className="text-cyan-300">{query || t("searchResults.yourQuery")}</span></p>
           </div>
 
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-lg">
@@ -140,7 +142,7 @@ export default function SearchResults({ token }) {
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search products again"
+              placeholder={t("searchResults.searchAgainPlaceholder")}
               className="w-full rounded-full border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
             />
           </form>
@@ -164,10 +166,10 @@ export default function SearchResults({ token }) {
                             src={product.image_url}
                             alt={product.name}
                             className="h-56 w-full object-cover"
-                            fallback={<div className="flex h-56 items-center justify-center text-gray-500">No image</div>}
+                            fallback={<div className="flex h-56 items-center justify-center text-gray-500">{t("searchResults.noImage")}</div>}
                           />
                         ) : (
-                          <div className="flex h-56 items-center justify-center text-gray-500">No image</div>
+                          <div className="flex h-56 items-center justify-center text-gray-500">{t("searchResults.noImage")}</div>
                         )}
                         {hasDiscount(product) && (
                           <div className="absolute top-2 right-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
@@ -185,14 +187,14 @@ export default function SearchResults({ token }) {
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{product.category_name || "General"}</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{product.category_name || t("searchResults.general")}</p>
                         <h2 className="text-xl font-semibold text-white">{product.name}</h2>
-                        <p className="text-sm text-gray-400 line-clamp-3">{product.description || "No description available."}</p>
+                        <p className="text-sm text-gray-400 line-clamp-3">{product.description || t("searchResults.noDescription")}</p>
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div className="rounded-2xl bg-white/5 p-4 text-sm text-gray-300">
-                          <span className="block">Price</span>
+                          <span className="block">{t("searchResults.price")}</span>
                           {hasDiscount(product) ? (
                             <div className="mt-1 flex items-center gap-2">
                               <span className="text-cyan-300 text-lg font-semibold">{formatCurrency(discountInfo.final_price)}</span>
@@ -203,7 +205,7 @@ export default function SearchResults({ token }) {
                           )}
                         </div>
                         <div className="rounded-2xl bg-white/5 p-4 text-sm text-gray-300">
-                          <span className="block">Stock</span>
+                          <span className="block">{t("searchResults.stock")}</span>
                           <span className="block mt-2 text-white text-lg font-semibold">{product.stock_quantity}</span>
                         </div>
                       </div>
@@ -220,7 +222,7 @@ export default function SearchResults({ token }) {
                               : "bg-cyan-500 text-black hover:bg-cyan-400"
                           }`}
                         >
-                          <ShoppingCart size={16} /> Add to Cart
+                          <ShoppingCart size={16} /> {t("product.addToCart")}
                         </button>
 
                         <button
@@ -228,7 +230,7 @@ export default function SearchResults({ token }) {
                           onClick={() => navigate(`/product/${product.id}`)}
                           className="inline-flex items-center justify-center rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:border-cyan-500/50 hover:bg-white/10 transition"
                         >
-                          View
+                          {t("searchResults.view")}
                         </button>
                       </div>
                     </div>
@@ -237,8 +239,8 @@ export default function SearchResults({ token }) {
               })
             ) : (
               <div className="col-span-full rounded-3xl border border-white/10 bg-gray-900/70 p-16 text-center">
-                <p className="text-xl font-semibold text-white">No results found.</p>
-                <p className="mt-3 text-gray-400">Try another search term or browse the store.</p>
+                <p className="text-xl font-semibold text-white">{t("searchResults.noResults")}</p>
+                <p className="mt-3 text-gray-400">{t("searchResults.tryAnother")}</p>
               </div>
             )}
           </div>

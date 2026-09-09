@@ -6,6 +6,8 @@ const env = require("./src/config/env");
 const { testConnection, pool } = require("./src/config/db");
 const {
   ensureUsersOtpColumns,
+  ensureUsersTokenVersionColumn,
+  ensureUsersLanguagePreference,
   ensureReviewsTable,
   ensureAdminTables,
 } = require("./src/config/migrate");
@@ -276,6 +278,8 @@ const startServer = async () => {
   try {
     console.log("[2/4] Verifying database schema...");
     await ensureUsersOtpColumns();
+    await ensureUsersTokenVersionColumn();
+    await ensureUsersLanguagePreference();
     await ensureReviewsTable();
     await ensureAdminTables();
     await ensureDemoEnquiriesTable();

@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "../i18n";
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -88,13 +89,13 @@ export default class ErrorBoundary extends React.Component {
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded transition"
               >
-                Reload Page
+                {i18n.t("common.retry")}
               </button>
               <button
                 onClick={() => (window.location.href = "/")}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded transition"
               >
-                Go Home
+                {i18n.t("common.goHome")}
               </button>
             </div>
 

@@ -34,6 +34,7 @@ const ACTIVITY_TYPES = Object.freeze({
   DEMAND_EXCEEDS_RESTOCK: "DEMAND_EXCEEDS_RESTOCK",
   RESTOCK_BELOW_DEMAND: "RESTOCK_BELOW_DEMAND",
   POST_RESTOCK_PURCHASE: "POST_RESTOCK_PURCHASE",
+  USER_PASSWORD_CHANGED: "USER_PASSWORD_CHANGED",
 });
 
 const PRIORITY = Object.freeze({
@@ -78,6 +79,7 @@ const ACTIVITY_CONFIG = Object.freeze({
   DEMAND_EXCEEDS_RESTOCK: { priority: PRIORITY.CRITICAL, actionable: true },
   RESTOCK_BELOW_DEMAND: { priority: PRIORITY.HIGH, actionable: true },
   POST_RESTOCK_PURCHASE: { priority: PRIORITY.NORMAL, actionable: false },
+  USER_PASSWORD_CHANGED: { priority: PRIORITY.HIGH, actionable: true },
 });
 
 // Map activity types to their display category
@@ -115,6 +117,7 @@ const ACTIVITY_CATEGORY = {
   DEMAND_EXCEEDS_RESTOCK: "inventory",
   RESTOCK_BELOW_DEMAND: "inventory",
   POST_RESTOCK_PURCHASE: "inventory",
+  USER_PASSWORD_CHANGED: "customers",
 };
 
 /**

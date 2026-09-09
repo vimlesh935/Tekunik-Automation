@@ -2,6 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Home, Layers, PackageCheck, ShieldCheck } from "lucide-react";
 
 /**
@@ -77,6 +78,7 @@ function Counter({ from, to, suffix }) {
 }
 
 export default function StatsSection() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden py-16 sm:py-24">
       {/* Background glow */}
@@ -98,7 +100,7 @@ export default function StatsSection() {
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
           </span>
           <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-text-secondary/70">
-            Live automation output
+            {t('home.liveOutput')}
           </span>
         </motion.div>
 

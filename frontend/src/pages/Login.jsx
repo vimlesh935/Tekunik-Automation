@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useTranslation } from "react-i18next";
 import { authService } from "../services/api";
 import AuthInput from "../components/AuthInput.jsx";
 
@@ -106,6 +107,7 @@ function EyeIcon({ open, onClick }) {
 export default function Login() {
   const { login } = useAuth();
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isDark = theme === "dark";
 
@@ -129,18 +131,18 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return setError("Enter your email address.");
-    if (!password) return setError("Enter your password.");
+    if (!email.trim()) return setError(t("auth.enterEmail"));
+    if (!password) return setError(t("auth.enterPassword"));
     setLoading(true); setError("");
     try {
       const data = await authService.login(email.trim(), password);
       const token = data.data?.token;
-      if (!token) throw new Error("No token received.");
+      if (!token) throw new Error(t("auth.noTokenReceived"));
       login(token);
       setSuccess(true);
       setTimeout(() => navigate("/dashboard", { replace: true }), 1600);
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      setError(err.message || t("auth.loginFailed"));
     } finally { setLoading(false); }
   };
 
@@ -194,7 +196,7 @@ export default function Login() {
               <div style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.25em",
                 textTransform: "uppercase", color: VL, marginBottom: 16,
-              }}>Automation Studio · v2.0</div>
+              }}>{t("auth.automationStudio")}</div>
             </Appear>
             <Appear delay={550}>
               <h2 style={{
@@ -202,22 +204,25 @@ export default function Login() {
                 fontSize: "clamp(1.6rem,3vw,2.4rem)", lineHeight: 1.15,
                 letterSpacing: "-0.03em", color: "#fff", marginBottom: 16,
               }}>
-                Automate the<br />
                 <span style={{
                   background: `linear-gradient(135deg,${VL},${CL},${VL})`,
                   backgroundSize: "200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   animation: "shimmer 5s linear infinite",
-                }}>future of work.</span>
+                }}>{t("auth.automateFuture")}</span>
               </h2>
             </Appear>
             <Appear delay={700}>
               <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, maxWidth: 320, marginBottom: 32 }}>
-                Intelligent workflows, zero friction. Sign in to access your automation dashboard and take control of your processes.
+                {t("auth.loginDescription")}
               </p>
             </Appear>
             <Appear delay={850}>
               <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
-                {[["99.9%","Uptime"],["10x","Faster"],["500+","Automations"]].map(([v, l]) => (
+                {[
+  ["99.9%", t("auth.uptime")],
+  ["10x", t("auth.faster")],
+  ["500+", t("auth.automations")],
+].map(([v, l]) => (
                   <div key={l}>
                     <div style={{
                       fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
@@ -264,7 +269,7 @@ export default function Login() {
                   style={{ transform: backHover ? "translateX(-3px)" : "none", transition: "transform 0.2s" }}>
                   <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back
+                {t("common.back")}
               </button>
             </Appear>
 
@@ -283,15 +288,15 @@ export default function Login() {
                     width: 24, height: 1, background: `linear-gradient(90deg,${V},${C})`,
                     display: "inline-block",
                   }} />
-                  Secure Sign In
+                  {t("auth.loginTitle")}
                 </div>
                 <h1 style={{
                   fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
                   fontSize: "clamp(1.8rem,4vw,2.4rem)", letterSpacing: "-0.03em",
                   lineHeight: 1.1, color: "#fff", marginBottom: 8,
-                }}>Welcome back.</h1>
+                }}>{t("auth.welcomeBack")}</h1>
                 <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-                  Sign in to your automation workspace.
+                  {t("auth.signInSubtitle")}
                 </p>
               </div>
             </Appear>
@@ -312,12 +317,12 @@ export default function Login() {
                   <div style={{
                     fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
                     color: SUCCESS, marginBottom: 6,
-                  }}>Authenticated!</div>
+                  }}>{t("auth.authenticated")}</div>
                   <div style={{
                     fontFamily: "'DM Mono', monospace", fontSize: 12,
                     color: "rgba(52,211,153,0.6)", letterSpacing: "0.05em",
                   }}>
-                    Redirecting to dashboard
+                    {t("auth.redirectingToDashboard")}
                     <span style={{ animation: "dotBlink 1s ease-in-out infinite" }}>…</span>
                   </div>
                 </div>
@@ -326,7 +331,7 @@ export default function Login() {
               <form onSubmit={handleLogin}>
                 <Appear delay={320} style={{ marginBottom: 16 }}>
                   <AuthInput
-                    label="Email Address"
+                    label={t("auth.emailAddress")}
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
@@ -338,7 +343,7 @@ export default function Login() {
 
                 <Appear delay={420} style={{ marginBottom: 8 }}>
                   <AuthInput
-                    label="Password"
+                    label={t("auth.password")}
                     type="password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(""); }}
@@ -356,7 +361,7 @@ export default function Login() {
                       fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em",
                       color: VL, cursor: "pointer", textDecoration: "underline",
                       textDecorationColor: "rgba(167,139,250,0.3)", textUnderlineOffset: 3,
-                    }}>Forgot password?</button>
+                    }}>{t("auth.forgotPassword")}</button>
                   </div>
                 </Appear>
 
@@ -395,11 +400,11 @@ export default function Login() {
                           borderTop: "2px solid #fff", borderRadius: "50%",
                           animation: "spin 0.75s linear infinite", display: "inline-block",
                         }} />
-                        Authenticating…
+                        {t("auth.authenticating")}
                       </>
                     ) : (
                       <>
-                        Sign In
+                        {t("auth.signIn")}
                         <span style={{ opacity: 0.8, fontSize: 18 }}>→</span>
                       </>
                     )}
@@ -415,7 +420,7 @@ export default function Login() {
                     <span style={{
                       fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.18em",
                       textTransform: "uppercase", color: MUTED,
-                    }}>or</span>
+                    }}>{t("common.or")}</span>
                     <div style={{ flex: 1, height: 1, background: BORDER }} />
                   </div>
                 </Appear>
@@ -426,14 +431,14 @@ export default function Login() {
                     border: `1px solid ${BORDER}`, borderRadius: 14,
                     textAlign: "center", fontSize: 14, color: MUTED,
                   }}>
-                    New to Tek Node?{" "}
+                    {t("auth.newToTekNode")}{" "}
                     <button type="button" onClick={() => navigate("/register")} style={{
                       background: "none", border: "none",
                       fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 14,
                       cursor: "pointer",
                       backgroundImage: `linear-gradient(90deg,${VL},${CL})`,
                       WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                    }}>Create an account →</button>
+                    }}>{t("auth.createAccount")}</button>
                   </div>
                 </Appear>
               </form>
@@ -449,7 +454,7 @@ export default function Login() {
                   width: 6, height: 6, borderRadius: "50%", background: SUCCESS, boxShadow: `0 0 6px ${SUCCESS}`,
                   display: "inline-block", flexShrink: 0, animation: "dotBlink 2s ease-in-out infinite",
                 }} />
-                © {new Date().getFullYear()} Tek Node · Secure Core Architecture
+                © {new Date().getFullYear()} Tek Node · {t("auth.secureCoreArchitecture")}
               </div>
             </Appear>
           </div>

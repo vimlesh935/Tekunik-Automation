@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Tag, ArrowRight, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { offerService } from "../services/api";
 
 const formatDiscount = (offer) => {
@@ -13,6 +14,7 @@ const formatDiscount = (offer) => {
 };
 
 export default function HomeTopOffers() {
+  const { t } = useTranslation();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
@@ -97,7 +99,7 @@ export default function HomeTopOffers() {
       <button
         onClick={() => setIsVisible(false)}
         className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-        aria-label="Close offer banner"
+        aria-label={t('home.closeOfferBanner')}
       >
         <X size={16} />
       </button>

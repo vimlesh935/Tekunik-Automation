@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
@@ -54,6 +55,7 @@ const safeExternalUrl = (value) => {
 };
 
 export default function Footer() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { settings } = useWebsiteSettings();
@@ -144,15 +146,15 @@ export default function Footer() {
           {/* Column 2: Quick Links */}
           <motion.div variants={itemVariants} className="space-y-5">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
-              Quick Links
+              {t("footer.quickLinks")}
             </h4>
             <ul className="space-y-3.5">
               {[
-                { label: "Home", to: "/home" },
-                { label: "Shop", to: "/shop" },
-                { label: "About Us", to: "/about" },
-                { label: "Contact Us", to: "/contact" },
-                { label: "Track Order", to: "/track-order" },
+                { label: t("footer.home"), to: "/home" },
+                { label: t("footer.shop"), to: "/shop" },
+                { label: t("footer.aboutUs"), to: "/about" },
+                { label: t("footer.contactUs"), to: "/contact" },
+                { label: t("footer.trackOrder"), to: "/track-order" },
               ].map((link) => (
                 <li key={link.to}>
                   <Link
@@ -172,7 +174,7 @@ export default function Footer() {
           {/* Column 3: Contact Info */}
           <motion.div variants={itemVariants} className="space-y-5">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
-              Contact
+              {t("footer.contact")}
             </h4>
             <ul className="space-y-4">
               {settings.company_email && (
@@ -181,7 +183,7 @@ export default function Footer() {
                     <Mail size={13} className="text-indigo-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Email</p>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">{t("footer.email")}</p>
                     <a href={`mailto:${settings.company_email}`} className="text-slate-300 hover:text-indigo-400 transition-colors break-all">
                       {settings.company_email}
                     </a>
@@ -194,14 +196,14 @@ export default function Footer() {
                     <Phone size={13} className="text-indigo-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Phone</p>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">{t("footer.phone")}</p>
                     <a href={`tel:${settings.company_phone}`} className="text-slate-300 hover:text-indigo-400 transition-colors">
                       {settings.company_phone}
                     </a>
                     {settings.company_whatsapp && (
                       <a href={`https://wa.me/${settings.company_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-xs mt-0.5">
                         <MessageCircle size={11} />
-                        WhatsApp
+                        {t("footer.whatsapp")}
                       </a>
                     )}
                   </div>
@@ -213,7 +215,7 @@ export default function Footer() {
                     <MapPin size={13} className="text-indigo-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Address</p>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">{t("footer.address")}</p>
                     <p className="text-slate-300 leading-relaxed">
                       {settings.company_address}
                       {settings.city && `, ${settings.city}`}
@@ -229,7 +231,7 @@ export default function Footer() {
                     <Clock size={13} className="text-indigo-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Hours</p>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">{t("footer.hours")}</p>
                     <p className="text-slate-300">{settings.business_hours}</p>
                   </div>
                 </li>
@@ -240,14 +242,14 @@ export default function Footer() {
           {/* Column 4: Policies & Subscribe */}
           <motion.div variants={itemVariants} className="space-y-5">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-300">
-              Policies
+              {t("footer.policies")}
             </h4>
             <ul className="space-y-3.5">
               {settings.privacy_policy_url && (
                 <li>
                   <a href={settings.privacy_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
                     <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
-                    Privacy Policy
+                    {t("footer.privacyPolicy")}
                   </a>
                 </li>
               )}
@@ -255,7 +257,7 @@ export default function Footer() {
                 <li>
                   <a href={settings.terms_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
                     <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
-                    Terms & Conditions
+                    {t("footer.termsAndConditions")}
                   </a>
                 </li>
               )}
@@ -263,7 +265,7 @@ export default function Footer() {
                 <li>
                   <a href={settings.refund_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
                     <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
-                    Refund Policy
+                    {t("footer.refundPolicy")}
                   </a>
                 </li>
               )}
@@ -271,7 +273,7 @@ export default function Footer() {
                 <li>
                   <a href={settings.shipping_policy_url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group w-fit">
                     <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-indigo-400 flex-shrink-0" />
-                    Shipping Policy
+                    {t("footer.shippingPolicy")}
                   </a>
                 </li>
               )}
@@ -279,7 +281,7 @@ export default function Footer() {
 
             <div className="pt-2 space-y-3">
               <p className="text-xs font-bold text-slate-500 tracking-wide uppercase">
-                Subscribe
+                {t("footer.subscribe")}
               </p>
               <form
                 onSubmit={(e) => e.preventDefault()}
@@ -287,7 +289,7 @@ export default function Footer() {
               >
                 <input
                   type="email"
-                  placeholder="Your email..."
+                  placeholder={t("footer.yourEmail")}
                   className="flex-1 min-w-0 rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500/40 focus:bg-slate-900/80 focus:outline-none transition-all duration-300"
                 />
                 <motion.button
@@ -295,7 +297,7 @@ export default function Footer() {
                   type="submit"
                   className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-xs font-bold text-white transition-colors duration-300 shadow-md shadow-indigo-600/20 whitespace-nowrap"
                 >
-                  Subscribe
+                  {t("footer.subscribe")}
                 </motion.button>
               </form>
             </div>
@@ -314,14 +316,14 @@ export default function Footer() {
                 <Shield size={12} className="text-emerald-400" />
               </motion.span>
               <span className="text-[10px] uppercase tracking-wider font-bold">
-                SSL 256-Bit Encrypted
+                {t("footer.sslEncrypted")}
               </span>
             </div>
             <span className="hidden sm:inline text-slate-800">|</span>
             <span>
               {settings.copyright_text
                 ? settings.copyright_text.replace("{year}", new Date().getFullYear())
-                : `\u00A9 ${new Date().getFullYear()} ${settings.company_name || "Tekunik Automation"}. All rights reserved.`
+                : `\u00A9 ${new Date().getFullYear()} ${settings.company_name || "Tekunik Automation"}. ${t("common.allRightsReserved")}.`
               }
             </span>
           </div>
@@ -330,14 +332,14 @@ export default function Footer() {
             <motion.button
               whileHover={{ borderColor: "rgba(245,158,11,0.3)" }}
               onClick={() => navigate("/admin-login")}
-              title="Secure Admin Access"
+              title={t("footer.secureAdminAccess")}
               className="group flex items-center gap-1.5 rounded-xl border border-slate-900 bg-slate-900/20 px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-amber-400 transition-colors duration-300"
             >
               <Settings
                 size={11}
                 className="group-hover:rotate-90 transition-transform duration-500 text-slate-600 group-hover:text-amber-400"
               />
-              <span>Admin Portal</span>
+              <span>{t("footer.adminPortal")}</span>
               <ArrowUpRight
                 size={10}
                 className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-amber-500/70"

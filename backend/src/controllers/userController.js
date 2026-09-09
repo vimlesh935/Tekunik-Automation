@@ -13,7 +13,7 @@ const normalizeOrderItemImages = (items) =>
 /** GET /api/user/profile — Get current user's profile */
 const getProfile = asyncHandler(async (req, res) => {
   const rows = await query(
-    `SELECT u.id, u.email, u.is_verified, u.created_at,
+    `SELECT u.id, u.email, u.is_verified, u.created_at, u.language_preference,
             up.first_name, up.last_name, up.phone, up.address, up.city, up.pincode
      FROM users u
      LEFT JOIN user_profiles up ON u.id = up.user_id
@@ -29,7 +29,15 @@ const getProfile = asyncHandler(async (req, res) => {
 /** PUT /api/user/profile — Update current user's profile */
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { first_name, last_name, phone, address, city, pincode } = req.body;
+  const { first_name, last_name, phone, address, city, pincode, language_preference } = req.body;
+
+  // Update language_preference on users table if provided
+  if (language_preference !== undefined) {
+    await query(
+      `UPDATE users SET language_preference = ? WHERE id = ?`,
+      [String(language_preference), userId]
+    );
+  }
 
   // Update user_profiles table
   await query(
@@ -47,7 +55,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   // Fetch updated profile
   const rows = await query(
-    `SELECT u.id, u.email, u.is_verified, u.created_at,
+    `SELECT u.id, u.email, u.is_verified, u.created_at, u.language_preference,
             up.first_name, up.last_name, up.phone, up.address, up.city, up.pincode
      FROM users u
      LEFT JOIN user_profiles up ON u.id = up.user_id

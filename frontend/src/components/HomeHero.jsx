@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Play, X, Sun, Moon, Shield, Lightbulb, Thermometer, Camera, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
@@ -262,6 +263,7 @@ function RoomCarousel({ isDark }) {
 /*  Signature CTA — animated conic-gradient border, orbiting spark     */
 /* ------------------------------------------------------------------ */
 function AutomateButton() {
+  const { t } = useTranslation();
   return (
     <Link
       to="/smart-home-planner"
@@ -279,7 +281,7 @@ function AutomateButton() {
       />
       <span className="relative flex items-center justify-center gap-2 w-full h-full px-8 py-4 rounded-[10px] bg-background text-white font-semibold transition-transform duration-300 group-hover:-translate-y-0.5">
         <Zap className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-        Automate My Home
+        {t('home.automateMyHome')}
         <ChevronRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
       </span>
     </Link>
@@ -290,6 +292,7 @@ function AutomateButton() {
 /*  Hero section                                                       */
 /* ------------------------------------------------------------------ */
 export default function HeroSection() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { settings } = useWebsiteSettings();
   const isDark = theme === "dark";
@@ -359,7 +362,7 @@ export default function HeroSection() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
               </span>
               <span className={`text-sm font-medium ${isDark ? "" : "text-slate-900"}`}>
-                New: Automate Hub Pro Available
+                {t('home.newArrivalBanner')}
               </span>
             </div>
 
@@ -375,7 +378,7 @@ export default function HeroSection() {
               isDark ? "text-text-secondary" : "text-slate-600"
             }`}
           >
-            Control your lights, security, doors, curtains, cameras, and appliances from anywhere. Experience the future of home automation.
+            {t('home.controlDesc')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
@@ -390,7 +393,7 @@ export default function HeroSection() {
               }`}
             >
               <Play className="w-5 h-5" />
-              Watch Demo
+              {t('home.watchDemo')}
             </button>
           </div>
         </motion.div>
@@ -411,7 +414,7 @@ export default function HeroSection() {
           >
             <img
               src={heroImageUrl}
-              alt="Automate Dashboard Mockup"
+              alt={t('home.demoDashboard')}
               className="absolute inset-0 w-full h-full object-cover"
               loading="eager"
             />

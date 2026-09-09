@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ShoppingCart,
   ChevronLeft,
@@ -64,6 +65,7 @@ export default function Shop({ token }) {
   const { addToCart } = useCart();
   const { addToast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -142,21 +144,21 @@ export default function Shop({ token }) {
 
   const handleAddToCart = async (product) => {
     if (product.stock_quantity === 0) {
-      addToast(`${product.name} is out of stock`, "warning");
+      addToast(`${product.name} ${t("product.outOfStock")}`, "warning");
       return;
     }
 
     if (!token) {
       addToCart(product, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t("searchResults.addedToCart", { name: product.name }), "success");
       return;
     }
 
     try {
       await cartService.addToCart(product.id, 1);
-      addToast(`${product.name} added to cart! 🛒`, "success");
+      addToast(t("searchResults.addedToCart", { name: product.name }), "success");
     } catch (error) {
-      addToast(error.message || "Unable to add to cart", "error");
+      addToast(error.message || t("searchResults.unableToAddToCart"), "error");
     }
   };
 
@@ -247,14 +249,14 @@ export default function Shop({ token }) {
                 {selectedApplication || products[0]?.category_name || "Category"}
               </h1>
               <p className="text-sm text-slate-500 mt-1">
-                {totalProducts} Products
+                {totalProducts} {t("common.products")}
               </p>
             </div>
             <Link
               to="/shop"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-slate-900 border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-lg"
             >
-              <ChevronLeft size={14} /> All {selectedApplication ? "Applications" : "Categories"}
+              <ChevronLeft size={14} /> {t("shop.allProducts")}
             </Link>
           </div>
         )}
@@ -321,10 +323,10 @@ export default function Shop({ token }) {
                       }`}
                     >
                       {Number(product.stock_quantity) === 0
-                        ? "❌ Out of Stock"
+                        ? "❌ " + t("product.outOfStock")
                         : Number(product.stock_quantity) < Number(product.low_stock_limit || 5)
                           ? "⚠ Low Stock"
-                          : "✅ Available"}
+                          : "✅ " + t("product.inStock")}
                     </span>
                   </div>
 
@@ -379,7 +381,7 @@ export default function Shop({ token }) {
                         <div className="flex items-center gap-1.5">
                           <Star size={12} className="text-slate-600" />
                           <span className="text-[11px] text-slate-500 font-medium">
-                            No Reviews Yet
+                            {t("product.noReviews")}
                           </span>
                         </div>
                       )}
@@ -431,8 +433,8 @@ export default function Shop({ token }) {
                         }
                       />
                       {product.stock_quantity === 0
-                        ? "Unavailable"
-                        : "Add to Cart"}
+                        ? t("product.outOfStock")
+                        : t("product.addToCart")}
                     </button>
                   </div>
                 </div>
@@ -450,10 +452,10 @@ export default function Shop({ token }) {
               <Package size={28} className="opacity-60" />
             </div>
             <h3 className="text-lg font-bold text-slate-200 tracking-tight">
-              No Products Found
+              {t("shop.noProductsFound")}
             </h3>
             <p className="mt-2 text-sm text-slate-500 font-medium max-w-xs mx-auto leading-relaxed">
-              No products are currently available in this category.
+              {t("shop.tryAdjustingFilters")}
             </p>
           </motion.div>
         )}

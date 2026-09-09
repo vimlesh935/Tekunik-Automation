@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { reviewService } from "../services/api";
 
 export default function HomeReviews() {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentReview, setCurrentReview] = useState(0);
@@ -38,7 +40,7 @@ export default function HomeReviews() {
               Customer Reviews
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              What Our Customers Say
+              {t('home.whatCustomersSay')}
             </h2>
           </div>
           <div className="flex items-center justify-center py-20">
@@ -58,7 +60,7 @@ export default function HomeReviews() {
               Customer Reviews
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              What Our Customers Say
+              {t('home.whatCustomersSay')}
             </h2>
             <p className="text-slate-400 text-sm mt-3">
               No approved reviews yet. Reviews from verified buyers will appear here after admin approval.
@@ -80,10 +82,10 @@ export default function HomeReviews() {
             Customer Reviews
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            What Our Customers Say
+            {t('home.whatCustomersSay')}
           </h2>
           <p className="text-slate-400 text-sm mt-3 leading-relaxed">
-            Trusted by customers across India for reliable smart automation solutions and exceptional service.
+            {t('home.trustedAcrossIndia')}
           </p>
         </div>
 
@@ -141,7 +143,7 @@ export default function HomeReviews() {
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full inline-flex items-center gap-1">
                               <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-emerald-400" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                              Verified Buyer
+                              {t('home.verifiedBuyer')}
                             </span>
                             <span className="text-xs text-slate-500 truncate">
                               {review.product_name ? `Purchased: ${review.product_name}` : ""}

@@ -33,6 +33,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "react-i18next";
 import apiCall, { productService, orderService, userService, reviewService, wishlistService, backInStockService, couponService } from "../services/api";
 import SafeImage from "../components/SafeImage.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
@@ -40,6 +41,7 @@ import { useCart } from "../context/CartContext.jsx";
 import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 import RecentlyViewedSection from "../components/RecentlyViewedSection.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import ChangePassword from "../components/ChangePassword.jsx";
 
 // Animation Configurations
 const fadeInContainer = {
@@ -62,7 +64,8 @@ const tabContentVariants = {
 };
 
 export default function Dashboard() {
-  const { token, logout } = useAuth();
+  const { token, logout, login } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const recentlyViewed = useRecentlyViewed();
@@ -167,7 +170,7 @@ export default function Dashboard() {
         } catch (err2) {
           if (!mounted) return;
           console.error("[Dashboard] Offers & Coupons (fallback) failed:", err2?.message || err2);
-          setCouponsError("Unable to load offers right now.");
+          setCouponsError(t("dashboard.unableToLoadOffers"));
           setMyCoupons([]);
           setMyOffers([]);
         }
@@ -180,7 +183,7 @@ export default function Dashboard() {
   }, [activeTab, couponReloadKey]);
 
 useEffect(() => {
-    loadDashboardData();
+    loadDashboardData(true);
     loadRecommendedProducts();
 
     const onVisible = () => {
@@ -196,8 +199,12 @@ useEffect(() => {
     };
   }, []);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const loadDashboardData = async (showSpinner = false) => {
+    // Only show the full-page loading spinner on the very first (initial) load.
+    // Background refreshes (30s interval / visibilitychange) must NOT unmount
+    // the dashboard, otherwise the ChangePassword OTP flow (typed digits,
+    // countdown, stage) would be reset mid-flow.
+    if (showSpinner) setLoading(true);
     setError("");
     try {
       const [profileRes, ordersRes, wishlistRes] = await Promise.all([
@@ -249,7 +256,7 @@ useEffect(() => {
       });
     } catch (err) {
       console.warn("Dashboard load error:", err);
-      setError(err.message || "Failed to load dashboard");
+      setError(err.message || t("dashboard.failedToLoadDashboard"));
     } finally {
       setLoading(false);
     }
@@ -281,7 +288,7 @@ useEffect(() => {
       const updatedUser = res.data?.user || res.data;
       setProfile(updatedUser);
       setEditMode(false);
-      showNotification("Delivery address updated successfully.", "success");
+      showNotification(t("dashboard.profileUpdated"), "success");
     } catch (err) {
       setError(err.message || "Failed to update profile");
     } finally {
@@ -295,11 +302,26 @@ useEffect(() => {
     setTimeout(() => setNotification(""), 3000);
   };
 
+  // After a successful password change the server bumps token_version and hands
+  // back a fresh JWT. Store it so the current session stays valid while all
+  // other sessions (old tokens) are invalidated server-side.
+  //
+  // This is invoked ONLY after the backend confirms the password was changed
+  // (a fresh JWT is returned). Validation errors, wrong current password, and
+  // wrong/expired OTP all throw before reaching here, so the dashboard is
+  // never refreshed on failure or while a request is still processing.
+  const handlePasswordChanged = (newToken) => {
+    if (!newToken) return;
+    login(newToken, profile);
+    showNotification(t("dashboard.passwordChanged"), "success");
+    setTimeout(() => window.location.reload(), 1500);
+  };
+
   const handleAddToCart = async (product, e) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product, 1);
-    showNotification(`${product.name} added to cart!`, "success");
+    showNotification(t("dashboard.addedToCart", { name: product.name }), "success");
   };
 
   const handleRemoveWishlist = async (productId) => {
@@ -307,9 +329,9 @@ useEffect(() => {
     try {
       await wishlistService.removeFromWishlist(productId);
       setWishlist(prev => prev.filter(item => item.product_id !== productId));
-      showNotification("Product removed from wishlist", "success");
+      showNotification(t("dashboard.removedFromWishlist"), "success");
     } catch (error) {
-      showNotification(error?.message || "Failed to remove from wishlist", "error");
+      showNotification(error?.message || t("dashboard.failedToRemoveWishlist"), "error");
     } finally {
       setRemovingFromWishlist(null);
     }
@@ -322,12 +344,12 @@ useEffect(() => {
     try {
       await backInStockService.subscribe(productId);
       setNotifySubscribed((prev) => ({ ...prev, [productId]: true }));
-      showNotification("We'll notify you when this product is back in stock! 🔔", "success");
+      showNotification(t("dashboard.notifyBackInStock"), "success");
     } catch (error) {
       if (error?.code === "ALREADY_IN_STOCK") {
-        showNotification("Good news — this product is back in stock!", "success");
+        showNotification(t("dashboard.backInStock"), "success");
       } else {
-        showNotification(error?.message || "Could not register your notification.", "error");
+        showNotification(error?.message || t("dashboard.failedNotify"), "error");
       }
     } finally {
       setNotifyLoadingId(null);
@@ -336,7 +358,7 @@ useEffect(() => {
 
   const handleCancelOrder = async (orderId, orderNumber) => {
     const confirmCancel = window.confirm(
-      `Cancel order ${orderNumber}? This cannot be undone.`,
+      t("dashboard.confirmCancelOrder", { orderNumber }),
     );
     if (!confirmCancel) return;
     setCancellingOrderId(orderId);
@@ -355,9 +377,9 @@ useEffect(() => {
         const existingOrder = orders.find(o => o.id === orderId);
         setCancelSuccessOrder(existingOrder || { id: orderId, order_number: orderNumber });
       }
-      showNotification("Order cancelled successfully", "success");
+      showNotification(t("dashboard.orderCancelled"), "success");
     } catch (error) {
-      showNotification(error?.message || "Failed to cancel order", "error");
+      showNotification(error?.message || t("dashboard.failedToCancel"), "error");
     } finally {
       setCancellingOrderId(null);
     }
@@ -399,7 +421,7 @@ useEffect(() => {
         review_message: reviewMessage.trim() || null,
       });
       setReviewSuccess(true);
-      showNotification("Review submitted successfully and is pending approval.", "success");
+      showNotification(t("dashboard.reviewSubmitted"), "success");
       setTimeout(() => {
         setShowReviewModal(false);
         setReviewSuccess(false);
@@ -462,6 +484,22 @@ useEffect(() => {
     return cancellable.includes(status);
   };
 
+  const statusLabel = (status) => {
+    const map = {
+      pending: t("orders.pending"),
+      confirmed: t("orders.confirmed"),
+      processing: t("orders.processing"),
+      packed: t("orders.packed"),
+      shipped: t("orders.shipped"),
+      out_for_delivery: t("orders.outForDelivery"),
+      delivered: t("orders.delivered"),
+      cancelled: t("orders.cancelled"),
+      refunded: t("orders.refunded"),
+      partially_refunded: t("orders.partiallyRefunded"),
+    };
+    return map[status] || status;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -519,7 +557,7 @@ useEffect(() => {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Welcome{profile?.first_name ? `, ${profile.first_name}` : ""}
+                  {t("dashboard.welcome")}{profile?.first_name ? `, ${profile.first_name}` : ""}
                 </h1>
               </div>
             </div>
@@ -533,7 +571,7 @@ useEffect(() => {
                   to="/shop"
                   className="inline-flex items-center gap-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-600/15 transition-colors"
                 >
-                  <ShoppingBag size={16} /> Continue Shopping
+                  <ShoppingBag size={16} /> {t("dashboard.continueShopping")}
                 </Link>
               </motion.div>
               <motion.button
@@ -542,7 +580,7 @@ useEffect(() => {
                 onClick={logout}
                 className="inline-flex items-center gap-2 rounded-lg bg-slate-800 border border-slate-700/80 hover:bg-slate-700/50 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors"
               >
-                <LogOut size={16} /> Sign Out
+                <LogOut size={16} /> {t("dashboard.signOut")}
               </motion.button>
             </div>
           </div>
@@ -571,7 +609,7 @@ useEffect(() => {
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <User size={16} /> Profile Information
+              <User size={16} /> {t("dashboard.profile")}
             </button>
             <button
               onClick={() => setActiveTab("orders")}
@@ -581,7 +619,7 @@ useEffect(() => {
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <Package size={16} /> Order Portfolio
+              <Package size={16} /> {t("dashboard.orderPortfolio")}
             </button>
             <button
               onClick={() => setActiveTab("addresses")}
@@ -591,7 +629,7 @@ useEffect(() => {
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <MapPin size={16} /> Delivery Address
+              <MapPin size={16} /> {t("dashboard.deliveryAddress")}
             </button>
             <button
               onClick={() => setActiveTab("wishlist")}
@@ -601,7 +639,7 @@ useEffect(() => {
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <Heart size={16} /> My Wishlist
+              <Heart size={16} /> {t("dashboard.myWishlist")}
             </button>
             <button
               onClick={() => setActiveTab("recently-viewed")}
@@ -609,7 +647,7 @@ useEffect(() => {
                 activeTab === "recently-viewed" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/10" : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <Eye size={16} /> Recently Viewed
+              <Eye size={16} /> {t("dashboard.recentlyViewed")}
             </button>
             <button
               onClick={() => setActiveTab("offers-coupons")}
@@ -619,7 +657,7 @@ useEffect(() => {
                   : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
               }`}
             >
-              <Ticket size={16} /> Offers & Coupons
+              <Ticket size={16} /> {t("dashboard.offersAndCoupons")}
             </button>
 
             </nav>
@@ -629,6 +667,7 @@ useEffect(() => {
             <AnimatePresence mode="wait">
               {/* PROFILE CONTROL VIEW */}
               {activeTab === "profile" && (
+                <>
                 <motion.div
                   key="profile-tab"
                   variants={tabContentVariants}
@@ -640,10 +679,10 @@ useEffect(() => {
                   <div className="flex items-start justify-between border-b border-slate-800 pb-5 mb-6">
                     <div>
                       <h2 className="text-lg font-bold text-white">
-                        Profile Information
+                        {t("dashboard.profile")}
                       </h2>
                       <p className="text-slate-400 text-xs mt-0.5">
-                        Manage your personal details and contact information.
+                        {t("dashboard.profileDescription")}
                       </p>
                     </div>
                     {!editMode && (
@@ -651,7 +690,7 @@ useEffect(() => {
                         onClick={() => setEditMode(true)}
                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all"
                       >
-                        <Settings size={14} /> Modify Data
+                        <Settings size={14} /> {t("dashboard.modifyData")}
                       </button>
                     )}
                   </div>
@@ -661,7 +700,7 @@ useEffect(() => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                            First Name
+                            {t("dashboard.firstName")}
                           </label>
                           <input
                             type="text"
@@ -675,7 +714,7 @@ useEffect(() => {
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                            Last Name
+                            {t("dashboard.lastName")}
                           </label>
                           <input
                             type="text"
@@ -691,7 +730,7 @@ useEffect(() => {
 
                       <div>
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                          Phone Number
+                          {t("dashboard.phoneNumber")}
                         </label>
                         <input
                           type="text"
@@ -705,7 +744,7 @@ useEffect(() => {
 
                       <div>
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                          Address
+                          {t("dashboard.address")}
                         </label>
                         <textarea
                           value={form.address}
@@ -720,7 +759,7 @@ useEffect(() => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                            City
+                            {t("dashboard.city")}
                           </label>
                           <input
                             type="text"
@@ -737,7 +776,7 @@ useEffect(() => {
 
                       <div>
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                          Pincode
+                          {t("dashboard.pincode")}
                         </label>
                         <input
                           type="text"
@@ -763,7 +802,7 @@ useEffect(() => {
                           className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
                         />
                         {pincodeLoading && (
-                          <p className="text-xs text-cyan-400 mt-1">Fetching location...</p>
+                          <p className="text-xs text-cyan-400 mt-1">{t("dashboard.fetchingLocation")}</p>
                         )}
                         {pincodeError && (
                           <p className="text-xs text-rose-400 mt-1">{pincodeError}</p>
@@ -776,14 +815,14 @@ useEffect(() => {
                           disabled={saving}
                           className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-lg shadow-md disabled:opacity-50 transition-colors"
                         >
-                          {saving ? "Saving Changes..." : "Update Profile"}
+                          {saving ? t("dashboard.updatingProfile") : t("dashboard.updateProfile")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditMode(false)}
                           className="px-5 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors"
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </form>
@@ -791,18 +830,16 @@ useEffect(() => {
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <User size={12} className="text-cyan-400" /> Full
-                          Name
+                          <User size={12} className="text-cyan-400" /> {t("dashboard.fullName")}
                         </div>
                         <p className="text-white text-sm font-semibold">
-                          {profile?.first_name} {profile?.last_name || "N/A"}
+                          {profile?.first_name} {profile?.last_name || t("common.na")}
                         </p>
                       </div>
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Mail size={12} className="text-cyan-400" /> Email
-                          Address
+                          <Mail size={12} className="text-cyan-400" /> {t("dashboard.email")}
                         </div>
                         <p className="text-white text-sm font-semibold break-all">
                           {profile?.email}
@@ -811,35 +848,42 @@ useEffect(() => {
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Phone size={12} className="text-cyan-400" /> Phone
-                          Number
+                          <Phone size={12} className="text-cyan-400" /> {t("dashboard.phoneNumber")}
                         </div>
                         <p className="text-white text-sm font-semibold">
-                          {profile?.phone || "Not set"}
+                          {profile?.phone || t("common.notSet")}
                         </p>
                       </div>
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
-                          <Home size={12} className="text-cyan-400" /> City
+                          <Home size={12} className="text-cyan-400" /> {t("dashboard.city")}
                         </div>
                         <p className="text-white text-sm font-semibold">
-                          {profile?.city || "Not set"}
+                          {profile?.city || t("common.notSet")}
                         </p>
                       </div>
 
                       <div className="rounded-lg bg-slate-950 border border-slate-800/80 p-4 sm:col-span-2">
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-1">
                           <MapPin size={12} className="text-cyan-400" />{" "}
-                          Address
+                          {t("dashboard.address")}
                         </div>
                         <p className="text-slate-300 text-sm leading-relaxed">
-                          {profile?.address || "No address saved"}
+                          {profile?.address || t("dashboard.noAddress")}
                         </p>
                       </div>
                     </div>
                   )}
                 </motion.div>
+
+                {/* CHANGE PASSWORD — inside Profile / Settings */}
+                <ChangePassword
+                  email={profile?.email || ""}
+                  onPasswordChanged={handlePasswordChanged}
+                  onNotice={showNotification}
+                />
+                </>
               )}
 
               {/* ORDER PORTFOLIO VIEW - Professional Ecommerce Design */}
@@ -855,17 +899,17 @@ useEffect(() => {
                   <div className="flex items-center justify-between border-b border-slate-800 pb-5 mb-6">
                     <div>
                       <h2 className="text-lg font-bold text-white">
-                        Order Portfolio
+                        {t("dashboard.orderPortfolio")}
                       </h2>
                       <p className="text-slate-400 text-xs mt-0.5">
-                        Track and manage your orders.
+                        {t("dashboard.orderPortfolioDescription")}
                       </p>
                     </div>
                     <Link
                       to="/orders"
                       className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
                     >
-                      Complete History <ChevronRight size={14} />
+                      {t("dashboard.completeHistory")} <ChevronRight size={14} />
                     </Link>
                   </div>
 
@@ -874,14 +918,14 @@ useEffect(() => {
                     <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
                       <Package size={18} className="text-cyan-400" />
                       <div>
-                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Total Orders</p>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("dashboard.totalOrders")}</p>
                         <p className="text-lg font-black text-white">{totalOrders}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
                       <Package size={18} className="text-cyan-400" />
                       <div>
-                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Items</p>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("dashboard.items")}</p>
                         <p className="text-lg font-black text-white">{totalItems}</p>
                       </div>
                     </div>
@@ -918,7 +962,7 @@ useEffect(() => {
                               >
                                 {getStatusIcon(order.status)}
                                 <span className="uppercase tracking-wider">
-                                  {order.status === "out_for_delivery" ? "Out For Delivery" : order.status}
+                                  {statusLabel(order.status)}
                                 </span>
                               </span>
                             </div>
@@ -926,7 +970,7 @@ useEffect(() => {
                             {/* Middle: Stats Row - Items, Date, Refund Status */}
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-medium mb-2">
                               <span className="text-slate-300 font-semibold">
-                                {totalQuantity} Item{totalQuantity !== 1 ? "s" : ""}
+                                {totalQuantity} {totalQuantity !== 1 ? t("common.items") : t("common.item")}
                               </span>
                               <span className="w-1 h-1 rounded-full bg-slate-700" />
                               <span className="flex items-center gap-1">
@@ -951,7 +995,7 @@ useEffect(() => {
                                     }}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-bold text-cyan-400 hover:bg-cyan-500/20 transition-colors"
                                   >
-                                    <Star size={12} /> Write Review
+                                    <Star size={12} /> {t("dashboard.writeReview")}
                                   </button>
                                 )}
                                 {isCancellable(order.status) && (
@@ -966,10 +1010,10 @@ useEffect(() => {
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-[11px] font-bold text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
                                   >
                                     {cancellingOrderId === order.id ? (
-                                      "Cancelling..."
+                                      t("dashboard.cancelling")
                                     ) : (
                                       <>
-                                        <X size={12} /> Cancel
+                                        <X size={12} /> {t("dashboard.cancelOrder")}
                                       </>
                                     )}
                                   </button>
@@ -986,17 +1030,16 @@ useEffect(() => {
                         <ShoppingBag size={20} className="text-slate-500" />
                       </div>
                       <h3 className="text-sm font-bold text-slate-300 mb-1">
-                        No orders placed yet
+                        {t("dashboard.noOrdersYet")}
                       </h3>
                       <p className="text-xs text-slate-500 mb-4">
-                        You haven't placed any orders yet. Start shopping to see
-                        your order history here.
+                        {t("dashboard.noOrdersMessage")}
                       </p>
                       <Link
                         to="/shop"
                         className="inline-flex items-center justify-center text-xs font-bold rounded-lg bg-cyan-600 hover:bg-cyan-500 px-4 py-2 text-white shadow-md transition-colors"
                       >
-                        Start Shopping
+                        {t("dashboard.startShopping")}
                       </Link>
                     </div>
                   )}
@@ -1008,12 +1051,12 @@ useEffect(() => {
                         className="text-cyan-400 flex-shrink-0"
                       />
                       <p className="text-xs text-slate-400 font-medium">
-                        Track your order status in real time.{" "}
+                        {t("dashboard.trackOrderStatus")}{" "}
                         <Link
                           to="/track-order"
                           className="text-cyan-400 hover:underline font-semibold inline-flex items-center gap-0.5"
                         >
-                          Track Order <ChevronRight size={12} />
+                          {t("dashboard.trackOrder")} <ChevronRight size={12} />
                         </Link>
                       </p>
                     </div>
@@ -1034,8 +1077,8 @@ useEffect(() => {
                   <div className="border-b border-slate-800 pb-5 mb-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-lg font-bold text-white">Delivery Address</h2>
-                        <p className="text-slate-400 text-xs mt-0.5">Your saved delivery address for orders.</p>
+                        <h2 className="text-lg font-bold text-white">{t("dashboard.deliveryAddress")}</h2>
+                        <p className="text-slate-400 text-xs mt-0.5">{t("dashboard.deliveryAddressDescription")}</p>
                       </div>
                       <button
                         type="button"
@@ -1053,7 +1096,7 @@ useEffect(() => {
                         }}
                         className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all"
                       >
-                        <Settings size={14} /> Edit Address
+                        <Settings size={14} /> {t("dashboard.editAddress")}
                       </button>
                     </div>
                   </div>
@@ -1065,7 +1108,7 @@ useEffect(() => {
                       </div>
                       <div className="space-y-1">
                         <p className="font-bold text-sm text-white">
-                          Default Address
+                          {t("dashboard.defaultAddress")}
                         </p>
                         <p className="text-slate-400 text-xs leading-relaxed">
                           {profile?.address ? (
@@ -1076,8 +1119,7 @@ useEffect(() => {
                             </>
                           ) : (
                             <span className="text-slate-500 italic">
-                              No address saved. Update your profile to add a
-                              delivery address.
+                              {t("dashboard.noAddressSaved")}
                             </span>
                           )}
                         </p>
@@ -1099,10 +1141,10 @@ useEffect(() => {
                 >
                   <div className="border-b border-slate-800 pb-5 mb-6">
                     <h2 className="text-lg font-bold text-white">
-                      My Wishlist
+                      {t("dashboard.myWishlist")}
                     </h2>
                     <p className="text-slate-400 text-xs mt-0.5">
-                      Products you have saved for later.
+                      {t("dashboard.wishlistDescription")}
                     </p>
                   </div>
 
@@ -1129,7 +1171,7 @@ useEffect(() => {
                             {Number(item.stock_quantity) <= 0 && (
                               <div className="mb-3">
                                 <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 text-[10px] font-bold text-rose-400 mb-2">
-                                  Out of Stock
+                                  {t("product.outOfStock")}
                                 </span>
                                 <button
                                   type="button"
@@ -1173,7 +1215,7 @@ useEffect(() => {
                                   onClick={(e) => handleAddToCart(item, e)}
                                   disabled={item.stock_quantity <= 0}
                                   className="w-8 h-8 rounded-lg bg-cyan-600/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Add to Cart"
+                                  title={t("product.addToCart")}
                                 >
                                   <ShoppingCart size={14} />
                                 </button>
@@ -1181,7 +1223,7 @@ useEffect(() => {
                                   onClick={() => handleRemoveWishlist(item.product_id)}
                                   disabled={removingFromWishlist === item.product_id}
                                   className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-600 hover:text-white hover:border-rose-500 flex items-center justify-center transition-colors disabled:opacity-50"
-                                  title="Remove from Wishlist"
+                                  title={t("product.removeFromWishlist")}
                                 >
                                   {removingFromWishlist === item.product_id ? (
                                     <Loader size={14} className="animate-spin" />
@@ -1627,7 +1669,7 @@ useEffect(() => {
                 <>
                   <div className="mb-5">
                     <label className="mb-3 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Rating
+                      {t("product.rating")}
                     </label>
                     <div className="flex gap-1.5">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -1654,7 +1696,7 @@ useEffect(() => {
 
                   <div className="mb-4">
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Review Title
+                      {t("product.title")}
                     </label>
                     <input
                       type="text"
@@ -1667,7 +1709,7 @@ useEffect(() => {
 
                   <div className="mb-6">
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Review Message
+                      {t("product.yourReview")}
                     </label>
                     <textarea
                       value={reviewMessage}
@@ -1686,7 +1728,7 @@ useEffect(() => {
                   onClick={() => setShowReviewModal(false)}
                   className="flex-1 rounded-[12px] border border-slate-700 bg-slate-800 py-3 text-sm font-bold text-slate-300 transition hover:bg-slate-700"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -1709,7 +1751,7 @@ useEffect(() => {
                   ) : (
                     <>
                       <Star size={15} className="fill-white/90" />
-                      <span>Submit Review</span>
+                      <span>{t("product.submitReview")}</span>
                     </>
                   )}
                 </button>

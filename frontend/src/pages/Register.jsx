@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { authService } from "../services/api";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useTranslation } from "react-i18next";
 import AuthInput from "../components/AuthInput.jsx";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 import { usePincodeLookup } from "../hooks/usePincodeLookup.js";
@@ -114,6 +115,7 @@ const Icons = {
 
 export default function Register() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isDark = theme === "dark";
 
@@ -162,13 +164,13 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!form.email.trim()) return setError("Email is required.");
-    if (!form.first_name.trim() || !form.last_name.trim()) return setError("First and last name are required.");
-    if (form.password.length < 6) return setError("Password must be at least 6 characters.");
-    if (form.password !== form.confirm_password) return setError("Passwords do not match.");
-    if (!form.phone.trim()) return setError("Phone number is required.");
-    if (!form.age || isNaN(form.age) || form.age < 18) return setError("You must be at least 18 years old.");
-    if (!form.address.trim() || !form.city.trim() || !form.state.trim() || !form.pincode.trim()) return setError("Address, city, state, and pincode are required.");
+    if (!form.email.trim()) return setError(t("auth.emailRequired"));
+    if (!form.first_name.trim() || !form.last_name.trim()) return setError(t("auth.nameRequired"));
+    if (form.password.length < 6) return setError(t("auth.passwordMinLength"));
+    if (form.password !== form.confirm_password) return setError(t("auth.passwordsNoMatch"));
+    if (!form.phone.trim()) return setError(t("auth.phoneRequired"));
+    if (!form.age || isNaN(form.age) || form.age < 18) return setError(t("auth.ageRequired"));
+    if (!form.address.trim() || !form.city.trim() || !form.state.trim() || !form.pincode.trim()) return setError(t("auth.addressRequired"));
     setLoading(true); setError("");
     try {
       await authService.register({
@@ -187,8 +189,8 @@ export default function Register() {
       setTimeout(() => navigate("/login"), 1800);
     } catch (err) {
       setError(err.message === "Failed to fetch"
-        ? "Cannot connect to server. Make sure the backend is running."
-        : err.message || "Registration failed. Please try again.");
+        ? t("auth.cannotConnect")
+        : err.message || t("auth.registrationFailed"));
     } finally { setLoading(false); }
   };
 
@@ -244,7 +246,7 @@ export default function Register() {
               <div style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.25em",
                 textTransform: "uppercase", color: VL, marginBottom: 16,
-              }}>Automation Studio · v2.0</div>
+              }}>{t("auth.automationStudio")}</div>
             </Appear>
             <Appear delay={550}>
               <h2 style={{
@@ -252,22 +254,25 @@ export default function Register() {
                 fontSize: "clamp(1.6rem,3vw,2.4rem)", lineHeight: 1.15,
                 letterSpacing: "-0.03em", color: "#fff", marginBottom: 16,
               }}>
-                Join the<br />
                 <span style={{
                   background: `linear-gradient(135deg,${VL},${CL},${VL})`,
                   backgroundSize: "200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   animation: "shimmer 5s linear infinite",
-                }}>automation studio.</span>
+                }}>{t("auth.joinStudio")}</span>
               </h2>
             </Appear>
             <Appear delay={700}>
               <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, maxWidth: 320, marginBottom: 32 }}>
-                Create your account to build, deploy, and monitor intelligent workflows — all from a single dashboard.
+                {t("auth.registerDescription")}
               </p>
             </Appear>
             <Appear delay={850}>
               <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
-                {[["99.9%","Uptime"],["10x","Faster"],["500+","Automations"]].map(([v, l]) => (
+                {[
+                  ["99.9%", t("auth.uptime")],
+                  ["10x", t("auth.faster")],
+                  ["500+", t("auth.automations")],
+                ].map(([v, l]) => (
                   <div key={l}>
                     <div style={{
                       fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
@@ -314,7 +319,7 @@ export default function Register() {
                   style={{ transform: backHover ? "translateX(-3px)" : "none", transition: "transform 0.2s" }}>
                   <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back
+                {t("common.back")}
               </button>
             </Appear>
 
@@ -333,15 +338,15 @@ export default function Register() {
                     width: 24, height: 1, background: `linear-gradient(90deg,${V},${C})`,
                     display: "inline-block",
                   }} />
-                  Create Account
+                  {t("auth.registerTitle")}
                 </div>
                 <h1 style={{
                   fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
                   fontSize: "clamp(1.8rem,4vw,2.4rem)", letterSpacing: "-0.03em",
                   lineHeight: 1.1, color: "#fff", marginBottom: 8,
-                }}>Start automating.</h1>
+                }}>{t("auth.startAutomating")}</h1>
                 <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-                  Set up your workspace in a couple of minutes.
+                  {t("auth.registerSubtitle")}
                 </p>
               </div>
             </Appear>
@@ -362,12 +367,12 @@ export default function Register() {
                   <div style={{
                     fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20,
                     color: SUCCESS, marginBottom: 6,
-                  }}>Account created!</div>
+                  }}>{t("auth.accountCreated")}</div>
                   <div style={{
                     fontFamily: "'DM Mono', monospace", fontSize: 12,
                     color: "rgba(52,211,153,0.6)", letterSpacing: "0.05em",
                   }}>
-                    Redirecting to sign in
+                    {t("auth.redirectingToSignIn")}
                     <span style={{ animation: "dotBlink 1s ease-in-out infinite" }}>…</span>
                   </div>
                 </div>
@@ -376,10 +381,10 @@ export default function Register() {
               <form onSubmit={handleRegister}>
                 <Appear delay={280} style={{ marginBottom: 16 }}>
                   <div className="reg-row">
-                    <AuthInput label="First name" value={form.first_name}
+                    <AuthInput label={t("auth.firstName")} value={form.first_name}
                       onChange={(e) => updateField("first_name", e.target.value)}
                       placeholder="John" icon={Icons.user} />
-                    <AuthInput label="Last name" value={form.last_name}
+                    <AuthInput label={t("auth.lastName")} value={form.last_name}
                       onChange={(e) => updateField("last_name", e.target.value)}
                       placeholder="Doe" icon={Icons.user} />
                   </div>
@@ -387,7 +392,7 @@ export default function Register() {
 
                 <Appear delay={340} style={{ marginBottom: 16 }}>
                   <ValidatedEmailInput
-                    label="Email address"
+                    label={t("auth.emailAddress")}
                     value={form.email}
                     onChange={(e) => updateField("email", e.target.value)}
                     placeholder="you@example.com"
@@ -397,30 +402,30 @@ export default function Register() {
 
                 <Appear delay={400} style={{ marginBottom: 16 }}>
                   <div className="reg-row">
-                    <AuthInput label="Phone number" type="tel" value={form.phone}
+                    <AuthInput label={t("auth.phone")} type="tel" value={form.phone}
                       onChange={(e) => updateField("phone", e.target.value)}
                       placeholder="+91 98765 43210" icon={Icons.phone} />
-                    <AuthInput label="Age" type="number" value={form.age} min="18"
+                    <AuthInput label={t("auth.age")} type="number" value={form.age} min="18"
                       onChange={(e) => updateField("age", e.target.value)}
                       placeholder="18" icon={Icons.cal} />
                   </div>
                 </Appear>
 
                 <Appear delay={460} style={{ marginBottom: 16 }}>
-                  <AuthInput label="Address" as="textarea" value={form.address}
+                  <AuthInput label={t("auth.address")} as="textarea" value={form.address}
                     onChange={(e) => updateField("address", e.target.value)}
                     placeholder="Street address" icon={Icons.pin} />
                 </Appear>
 
                 <Appear delay={500} style={{ marginBottom: 16 }}>
                   <div className="reg-row">
-                    <AuthInput label="City" value={form.city}
+                    <AuthInput label={t("auth.city")} value={form.city}
                       onChange={(e) => {
                         updateField("city", e.target.value);
                         setCityLocked(false);
                       }}
                       placeholder="Mumbai" icon={Icons.city} disabled={cityLocked} />
-                    <AuthInput label="Pincode" value={form.pincode}
+                    <AuthInput label={t("auth.pincode")} value={form.pincode}
                       onChange={(e) => {
                         updateField("pincode", e.target.value);
                         if (e.target.value.replace(/\D/g, "").length === 6) {
@@ -451,7 +456,7 @@ export default function Register() {
                 </Appear>
 
                 <Appear delay={540} style={{ marginBottom: 16 }}>
-                  <AuthInput label="State" value={form.state}
+                  <AuthInput label={t("auth.state")} value={form.state}
                     onChange={(e) => {
                       updateField("state", e.target.value);
                       setStateLocked(false);
@@ -461,10 +466,10 @@ export default function Register() {
 
                 <Appear delay={560} style={{ marginBottom: 8 }}>
                   <div className="reg-row">
-                  <AuthInput label="Password" type="password" value={form.password}
+                  <AuthInput label={t("auth.password")} type="password" value={form.password}
                     onChange={(e) => updateField("password", e.target.value)}
                     placeholder="Min 6 characters" icon={Icons.lock} showPasswordToggle />
-                  <AuthInput label="Confirm password" type="password" value={form.confirm_password}
+                  <AuthInput label={t("auth.confirmPassword")} type="password" value={form.confirm_password}
                     onChange={(e) => updateField("confirm_password", e.target.value)}
                     placeholder="Re-enter password" icon={Icons.lock} showPasswordToggle />
                   </div>
@@ -497,7 +502,7 @@ export default function Register() {
                         borderTop: "2px solid #A78BFA", borderRadius: "50%",
                         animation: "spin 0.75s linear infinite", display: "inline-block",
                       }} />
-                      Fetching location...
+                      {t("checkout.fetchingLocation")}
                     </div>
                   </Appear>
                 )}
@@ -537,11 +542,11 @@ export default function Register() {
                           borderTop: "2px solid #fff", borderRadius: "50%",
                           animation: "spin 0.75s linear infinite", display: "inline-block",
                         }} />
-                        Creating account…
+                        {t("auth.creatingAccount")}
                       </>
                     ) : (
                       <>
-                        Create account
+                        {t("auth.createAccountBtn")}
                         <span style={{ opacity: 0.8, fontSize: 18 }}>→</span>
                       </>
                     )}
@@ -557,7 +562,7 @@ export default function Register() {
                     <span style={{
                       fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.18em",
                       textTransform: "uppercase", color: MUTED,
-                    }}>or</span>
+                    }}>{t("common.or")}</span>
                     <div style={{ flex: 1, height: 1, background: BORDER }} />
                   </div>
                 </Appear>
@@ -568,14 +573,14 @@ export default function Register() {
                     border: `1px solid ${BORDER}`, borderRadius: 14,
                     textAlign: "center", fontSize: 14, color: MUTED,
                   }}>
-                    Already have an account?{" "}
+                    {t("auth.alreadyHaveAccount")}{" "}
                     <button type="button" onClick={() => navigate("/login")} style={{
                       background: "none", border: "none",
                       fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 14,
                       cursor: "pointer",
                       backgroundImage: `linear-gradient(90deg,${VL},${CL})`,
                       WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                    }}>Sign in →</button>
+                    }}>{t("auth.signInLink")}</button>
                   </div>
                 </Appear>
               </form>
@@ -591,7 +596,7 @@ export default function Register() {
                   width: 6, height: 6, borderRadius: "50%", background: SUCCESS, boxShadow: `0 0 6px ${SUCCESS}`,
                   display: "inline-block", flexShrink: 0, animation: "dotBlink 2s ease-in-out infinite",
                 }} />
-                © {new Date().getFullYear()} Tek Node · Secure Core Architecture
+                © {new Date().getFullYear()} Tek Node · {t("auth.secureCoreArchitecture")}
               </div>
             </Appear>
           </div>
