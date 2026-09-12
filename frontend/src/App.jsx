@@ -47,6 +47,9 @@ const AdminSmartHomeRequests = React.lazy(() => import("./pages/admin/AdminSmart
 const AdminSmartHomeRequestDetail = React.lazy(() => import("./pages/admin/AdminSmartHomeRequestDetail.jsx"));
 const AdminDemoBookings = React.lazy(() => import("./pages/admin/AdminDemoBookings.jsx"));
 const AdminActivityCenter = React.lazy(() => import("./pages/admin/AdminActivityCenter.jsx"));
+const AdminEmailTemplates = React.lazy(() => import("./pages/admin/AdminEmailTemplates.jsx"));
+const AdminEmailTemplateEditor = React.lazy(() => import("./pages/admin/AdminEmailTemplateEditor.jsx"));
+const AdminAbandonedCart = React.lazy(() => import("./pages/admin/AdminAbandonedCart.jsx"));
 const AboutUs = React.lazy(() => import("./pages/AboutUs.jsx"));
 const ContactUs = React.lazy(() => import("./pages/ContactUs.jsx"));
 const SmartHomePlanner = React.lazy(() => import("./pages/SmartHomePlanner.jsx"));
@@ -152,6 +155,9 @@ function AppContent() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="settings/frontend" element={<AdminFrontendSettings />} />
           <Route path="settings/backend" element={<AdminBackendSettings />} />
+          <Route path="email-templates" element={<AdminEmailTemplates />} />
+          <Route path="email-templates/:key" element={<AdminEmailTemplateEditor />} />
+          <Route path="custom-email" element={<Navigate to="/admin/email-templates?tab=custom" replace />} />
           <Route path="frontend-information" element={<Navigate to="/admin/settings/frontend" replace />} />
           <Route path="smart-home-requests" element={<AdminSmartHomeRequests />} />
           <Route path="smart-home-requests/:id" element={<AdminSmartHomeRequestDetail />} />
@@ -160,6 +166,7 @@ function AppContent() {
           <Route path="installation-requests" element={<Navigate to="/admin/smart-home-requests" replace />} />
           <Route path="installations" element={<Navigate to="/admin/smart-home-requests" replace />} />
           <Route path="demobooking" element={<AdminDemoBookings />} />
+          <Route path="abandoned-cart" element={<AdminAbandonedCart />} />
           <Route path="notifications" element={<AdminActivityCenter />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>

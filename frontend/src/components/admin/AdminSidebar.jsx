@@ -16,8 +16,10 @@ import {
   Percent,
   LogOut,
   ClipboardList,
-  Settings as SettingsIcon,
+Settings as SettingsIcon,
   Activity,
+  Mail,
+  ShoppingBag,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -28,10 +30,12 @@ const NAV_ITEMS = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/demobooking", label: "Demo Bookings", icon: Calendar },
+  { to: "/admin/abandoned-cart", label: "Abandoned Cart", icon: ShoppingBag },
   { to: "/admin/reviews", label: "Reviews", icon: Star },
   { to: "/admin/smart-home-requests", label: "Smart Home Requests", icon: ClipboardList },
   { to: "/admin/offers", label: "Offers & Promotions", icon: Percent },
   { to: "/admin/notifications", label: "Activity Center", icon: Activity },
+  { to: "/admin/email-templates", label: "Email Templates", icon: Mail },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -49,7 +53,7 @@ export default function AdminSidebar() {
           className="h-[70px] w-auto max-w-full object-contain block"
         />
       </div>
-      <nav className="flex-1 space-y-1">
+<nav className="flex-1 space-y-1">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}

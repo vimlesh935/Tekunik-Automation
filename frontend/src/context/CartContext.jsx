@@ -3,8 +3,11 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useAuth } from "./AuthContext.jsx";
+import { cartService } from "../services/api.js";
 
 const CART_STORAGE_KEY = "teknode_guest_cart";
 const CartContext = createContext(null);
@@ -102,6 +105,15 @@ const normalizeCartItem = (product, quantity = 1) => {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => loadCartItems());
+  const { isAuthenticated } = useAuth();
+
+  const itemsRef = useRef(items);
+  const syncingRef = useRef(false);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     saveCartItems(items);
@@ -109,7 +121,91 @@ export function CartProvider({ children }) {
 
   const updateState = (nextItems) => {
     setItems(nextItems);
+    itemsRef.current = nextItems;
   };
+
+  const adoptServerCart = (serverItems) => {
+    const mapped = (serverItems || []).map((it) => {
+      const finalPrice = Number(it.price ?? it.final_price ?? 0);
+      const originalPrice = Number(it.original_price ?? finalPrice);
+      return {
+        cart_item_id: it.cart_item_id,
+        product_id: it.product_id,
+        name: it.name || "Untitled product",
+        image_url: it.image_url || "",
+        price: finalPrice,
+        final_price: finalPrice,
+        original_price: originalPrice,
+        discount_percent: Number(it.discount_percent ?? 0),
+        discount_amount: Math.max(0, originalPrice - finalPrice),
+        quantity: Number(it.quantity || 0),
+        max_quantity: Number(
+          it.max_quantity ?? it.stock_quantity ?? it.maxQuantity ?? 99,
+        ),
+        stock_quantity: Number(it.stock_quantity ?? 0),
+        product_status: it.product_status || "active",
+        is_available: it.is_available !== false,
+      };
+    });
+    updateState(mapped);
+    return mapped;
+  };
+
+  const fetchServerCart = async () => {
+    try {
+      const res = await cartService.getCart();
+      const c = res?.data?.cart || res?.data || {};
+      return c?.items && c.items.length > 0 ? c.items : [];
+    } catch (error) {
+      console.warn("[CART] fetch server cart failed:", error.message);
+      return null;
+    }
+  };
+
+  const resolveServerItemId = async (productId) => {
+    const local = itemsRef.current.find((i) => i.product_id === productId);
+    if (local && local.cart_item_id) return local.cart_item_id;
+    const serverItems = await fetchServerCart();
+    if (serverItems === null) return null;
+    const hit = serverItems.find((i) => i.product_id === productId);
+    return hit ? hit.cart_item_id : null;
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      hydratedRef.current = false;
+      return;
+    }
+    if (hydratedRef.current || syncingRef.current) return;
+    hydratedRef.current = true;
+    syncingRef.current = true;
+    (async () => {
+      try {
+        const serverItems = await fetchServerCart();
+        if (serverItems === null) return;
+        if (serverItems.length > 0) {
+          adoptServerCart(serverItems);
+        } else {
+          const localItems = itemsRef.current;
+          if (localItems && localItems.length > 0) {
+            for (const it of localItems) {
+              try {
+                await cartService.addToCart(it.product_id, it.quantity || 1);
+              } catch (error) {
+                console.warn("[CART] sync local to server failed:", error.message);
+              }
+            }
+            const synced = await fetchServerCart();
+            if (synced !== null && synced.length > 0) {
+              adoptServerCart(synced);
+            }
+          }
+        }
+      } finally {
+        syncingRef.current = false;
+      }
+    })();
+  }, [isAuthenticated]);
 
   const addToCart = (product, quantity = 1) => {
     if (!product || !product.id) return;
@@ -136,6 +232,21 @@ export function CartProvider({ children }) {
     }
 
     updateState(nextItems);
+
+    if (isAuthenticated) {
+      (async () => {
+        try {
+          const res = await cartService.addToCart(
+            normalizedItem.product_id,
+            normalizedItem.quantity,
+          );
+          const c = res?.data?.cart || res?.data || {};
+          if (c?.items) adoptServerCart(c.items);
+        } catch (error) {
+          console.warn("[CART] server add failed:", error.message);
+        }
+      })();
+    }
   };
 
   const updateCartItem = (product_id, quantity) => {
@@ -151,14 +262,51 @@ export function CartProvider({ children }) {
       .filter(Boolean);
 
     updateState(nextItems);
+
+    if (isAuthenticated) {
+      (async () => {
+        try {
+          if (nextQuantity === 0) {
+            const itemId = await resolveServerItemId(product_id);
+            if (itemId) await cartService.removeFromCart(itemId);
+          } else {
+            const itemId = await resolveServerItemId(product_id);
+            if (itemId) {
+              const res = await cartService.updateCartItem(itemId, nextQuantity);
+              const c = res?.data?.cart || res?.data || {};
+              if (c?.items) adoptServerCart(c.items);
+            }
+          }
+        } catch (error) {
+          console.warn("[CART] server update failed:", error.message);
+        }
+      })();
+    }
   };
 
   const removeItem = (product_id) => {
     updateState(items.filter((item) => item.product_id !== product_id));
+
+    if (isAuthenticated) {
+      (async () => {
+        try {
+          const itemId = await resolveServerItemId(product_id);
+          if (itemId) await cartService.removeFromCart(itemId);
+        } catch (error) {
+          console.warn("[CART] server remove failed:", error.message);
+        }
+      })();
+    }
   };
 
   const clearCart = () => {
     updateState([]);
+
+    if (isAuthenticated) {
+      cartService.clearCart().catch((error) => {
+        console.warn("[CART] server clear failed:", error.message);
+      });
+    }
   };
 
   const totals = useMemo(() => calculateCart(items), [items]);

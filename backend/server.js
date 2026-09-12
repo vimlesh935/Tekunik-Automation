@@ -3,7 +3,7 @@ const path = require("node:path");
 const express = require("express");
 const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
-const { ensureUsersOtpColumns, ensureAdminsTable } = require("./src/config/migrate");
+const { ensureUsersOtpColumns, ensureAdminsTable, ensureEmailTemplatesTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
 const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable, ensureWishlistTable } = require("./src/config/migrate");
 const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
@@ -32,6 +32,7 @@ const websiteReviewRoutes = require("./src/routes/websiteReviewRoutes");
 const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 const wishlistRoutes = require("./src/routes/wishlistRoutes");
+const emailTemplateRoutes = require("./src/routes/emailTemplateRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -109,6 +110,7 @@ app.use(reviewRoutes);
 app.use(websiteReviewRoutes);
 app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
+app.use(emailTemplateRoutes);
 
 // Ensure uploads dir exists and serve static files
 const uploadDir = ensureUploadsDir();
@@ -245,6 +247,14 @@ const startServer = async () => {
     console.log("✅ [STARTUP] Wishlist table ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Wishlist table setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring email templates table...");
+    await ensureEmailTemplatesTable();
+    console.log("✅ [STARTUP] Email templates table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Email templates table setup failed:", error.message, "\n");
   }
 
   // Start HTTP server immediately

@@ -153,6 +153,22 @@ const register = asyncHandler(async (req, res) => {
     console.warn("[COUPON] Welcome coupon generation failed:", couponError.message);
   }
 
+  // 📧 Welcome email — exactly once per registration (admin-editable template).
+  try {
+    const { sendEmailTemplate } = require("../services/mailService");
+    const welcomeName = `${first_name} ${last_name}`.trim() || email;
+    sendEmailTemplate({
+      templateKey: "welcome",
+      emailKey: `WELCOME:${userId}`,
+      to: email,
+      variables: { user_name: welcomeName, user_email: email },
+    }).catch((welcomeEmailError) => {
+      console.warn("[EMAIL] Welcome email failed:", welcomeEmailError.message);
+    });
+  } catch (welcomeSetupError) {
+    console.warn("[EMAIL] Welcome email setup failed:", welcomeSetupError.message);
+  }
+
   // Admin activity: new customer registered
   try {
     await createActivity({
@@ -551,6 +567,7 @@ const sendChangePasswordOtp = asyncHandler(async (req, res) => {
     to: user.email,
     otp,
     name: user.first_name || "User",
+    purpose: "change_password",
   });
 
   console.log("[auth] Change-password OTP sent to:", { email: maskEmail(user.email) });

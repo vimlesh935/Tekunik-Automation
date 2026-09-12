@@ -74,6 +74,14 @@ const ENV_FALLBACK = {
   "payment.razorpayKeyId": () => String(env.razorpay.keyId || "").trim(),
   "payment.razorpayKeySecret": () => String(env.razorpay.keySecret || ""),
   "emailValidation.abstractApiKey": () => String(process.env.ABSTRACT_EMAIL_API_KEY || ""),
+  // Abandoned cart / recovery defaults (DB value wins once set by an Admin).
+  "abandonedCart.enabled": () => "true",
+  "abandonedCart.thresholdMinutes": () => "60",
+  "abandonedCart.firstReminderHours": () => "2",
+  "abandonedCart.secondReminderHours": () => "24",
+  "abandonedCart.maxReminders": () => "2",
+  "abandonedCart.recoveryWindowHours": () => "24",
+  "abandonedCart.stopRemindersOnRecovery": () => "true",
 };
 
 // Keys (by convention) whose DB rows are stored encrypted.
@@ -97,6 +105,13 @@ const KEY_CATEGORY = {
   "payment.razorpayKeyId": "payment",
   "payment.razorpayKeySecret": "payment",
   "emailValidation.abstractApiKey": "emailvalidation",
+  "abandonedCart.enabled": "abandoned_cart",
+  "abandonedCart.thresholdMinutes": "abandoned_cart",
+  "abandonedCart.firstReminderHours": "abandoned_cart",
+  "abandonedCart.secondReminderHours": "abandoned_cart",
+  "abandonedCart.maxReminders": "abandoned_cart",
+  "abandonedCart.recoveryWindowHours": "abandoned_cart",
+  "abandonedCart.stopRemindersOnRecovery": "abandoned_cart",
 };
 
 const cache = { rows: null };

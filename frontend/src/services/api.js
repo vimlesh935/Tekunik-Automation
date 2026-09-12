@@ -832,4 +832,101 @@ export const couponService = {
   adminStats: () => apiCall("/api/admin/coupons/stats"),
 };
 
+export const emailTemplateService = {
+  list: () => apiCall("/api/admin/email-templates"),
+  get: (key) => apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}`),
+  update: (key, data) =>
+    apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  reset: (key) =>
+    apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}/reset`, { method: "POST" }),
+  preview: (key, draft = null) =>
+    apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}/preview`, {
+      method: "POST",
+      body: JSON.stringify(draft || {}),
+    }),
+  sendTest: (key, { to, subject, body }) =>
+    apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}/send-test`, {
+      method: "POST",
+      body: JSON.stringify({ to, subject, body }),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOM EMAIL SERVICES (manual, admin-only, independent feature)
+// ─────────────────────────────────────────────────────────────
+
+export const customEmailService = {
+  resolveRecipient: (to) =>
+    apiCall("/api/admin/custom-email/resolve", {
+      method: "POST",
+      body: JSON.stringify({ to }),
+    }),
+  preview: ({ to, subject, body }) =>
+    apiCall("/api/admin/custom-email/preview", {
+      method: "POST",
+      body: JSON.stringify({ to, subject, body }),
+    }),
+  sendTest: ({ to, subject, body }) =>
+    apiCall("/api/admin/custom-email/send-test", {
+      method: "POST",
+      body: JSON.stringify({ to, subject, body }),
+    }),
+  send: ({ to, subject, body }) =>
+    apiCall("/api/admin/custom-email/send", {
+      method: "POST",
+      body: JSON.stringify({ to, subject, body }),
+    }),
+  listTemplates: () => apiCall("/api/admin/custom-email/templates"),
+  getTemplate: (id) => apiCall(`/api/admin/custom-email/templates/${id}`),
+  saveTemplate: (data) =>
+    apiCall("/api/admin/custom-email/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateTemplate: (id, data) =>
+    apiCall(`/api/admin/custom-email/templates/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteTemplate: (id) =>
+    apiCall(`/api/admin/custom-email/templates/${id}`, { method: "DELETE" }),
+  history: (limit = 50) =>
+    apiCall(`/api/admin/custom-email/history?limit=${limit}`),
+};
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN ABANDONED CART & RECOVERY SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const adminRecoveryService = {
+  summary: () => apiCall("/api/admin/recovery/summary"),
+  list: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.status) query.set("status", params.status);
+    if (params.search) query.set("search", params.search);
+    if (params.activityType) query.set("activityType", params.activityType);
+    if (params.from) query.set("from", params.from);
+    if (params.to) query.set("to", params.to);
+    const qs = query.toString();
+    return apiCall(`/api/admin/recovery${qs ? `?${qs}` : ""}`);
+  },
+  detail: (id) => apiCall(`/api/admin/recovery/${id}`),
+  sendReminder: (id) =>
+    apiCall(`/api/admin/recovery/${id}/send-reminder`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  getSettings: () => apiCall("/api/admin/recovery/settings"),
+  updateSettings: (data) =>
+    apiCall("/api/admin/recovery/settings", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
 export default apiCall;

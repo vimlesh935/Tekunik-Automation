@@ -16,6 +16,9 @@ const {
   getOrderStats,
   cancelOrder,
   markPaymentFailedOrder,
+  createReturnRequest,
+  listReturnRequests,
+  updateReturnRequestStatus,
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -34,6 +37,7 @@ router.get("/api/user/orders/:id", requireAuth, getUserOrder);
 router.get("/api/user/orders/:id/download-invoice", requireAuth, downloadUserInvoice);
 router.post("/api/user/orders/:id/cancel", requireAuth, cancelOrder);
 router.post("/api/user/orders/:id/payment-failed", requireAuth, markPaymentFailedOrder);
+router.post("/api/user/orders/:id/return-request", requireAuth, createReturnRequest);
 
 /** Admin routes */
 router.get("/api/admin/orders", requireAdmin, listOrders);
@@ -42,5 +46,7 @@ router.get("/api/admin/orders/:id", requireAdmin, getOrder);
 router.patch("/api/admin/orders/:id/status", requireAdmin, updateOrderStatus);
 router.get("/api/admin/orders/:id/invoice", requireAdmin, downloadInvoice);
 router.post("/api/admin/orders/:id/invoice", requireAdmin, regenerateInvoice);
+router.get("/api/admin/order-returns", requireAdmin, listReturnRequests);
+router.patch("/api/admin/order-returns/:id/status", requireAdmin, updateReturnRequestStatus);
 
 module.exports = router;

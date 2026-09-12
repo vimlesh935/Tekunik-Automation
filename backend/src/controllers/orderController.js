@@ -44,8 +44,15 @@ const calculateDiscountPrice = (product) => {
 const normalizeOrderItemImages = (items) =>
   items.map((item) => ({
     ...item,
-    product_image: normalizeImageUrl(item.product_image),
+    image_url: normalizeImageUrl(item.image_url),
   }));
+
+/** Friendly date for customer emails (e.g. "10 Sep 2026"). */
+const formatEmailDate = (value) => {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return value || new Date().toLocaleDateString("en-IN");
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
 
 const clearUserCart = async (userId) => {
   if (!userId) return;
@@ -583,6 +590,24 @@ const createOrder = asyncHandler(async (req, res) => {
 
     await clearUserCart(user_id);
 
+    // Abandoned-cart recovery: flag this recovery record as "recovered" is
+    // driven ONLY by this real completion event (never time-based). Non-fatal.
+    try {
+      const { markRecoveredForOrder } = require("../services/abandonedRecoveryService");
+      await markRecoveredForOrder({
+        userId: user_id,
+        orderId,
+        orderNumber,
+        totalAmount,
+        items: validatedItems.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+        })),
+      });
+    } catch (recoveryError) {
+      console.warn("[RECOVERY] markRecoveredForOrder failed:", recoveryError.message);
+    }
+
     const [createdOrder] = await query("SELECT * FROM orders WHERE id = ?", [
       orderId,
     ]);
@@ -632,6 +657,40 @@ const createOrder = asyncHandler(async (req, res) => {
           pdfError.message,
         );
       });
+
+    // 📧 Order-placed confirmation email — admin-editable template. This is a
+    // separate message from the invoice email above (which carries the PDF
+    // attachment and is intentionally left unchanged).
+    try {
+      const { sendEmailTemplate } = require("../services/mailService");
+      let customerName = createdOrder.guest_name || createdOrder.user_email || "Customer";
+      if (createdOrder.user_id) {
+        const [profile] = await query(
+          "SELECT CONCAT_WS(' ', first_name, last_name) AS name FROM user_profiles WHERE user_id = ?",
+          [createdOrder.user_id],
+        );
+        if (profile?.name?.trim()) customerName = profile.name.trim();
+      }
+      sendEmailTemplate({
+        templateKey: "order_placed",
+        emailKey: `ORDER_PLACED:${orderId}`,
+        to: createdOrder.user_email,
+        variables: {
+          user_name: customerName,
+          user_email: createdOrder.user_email,
+          order_id: createdOrder.order_number || String(orderId),
+          order_total: Number(createdOrder.total_amount || 0).toLocaleString("en-IN", {
+            style: "currency",
+            currency: "INR",
+          }),
+          date: formatEmailDate(createdOrder.created_at),
+        },
+      }).catch((orderEmailError) => {
+        console.warn(`[EMAIL] Order placed email failed for order #${orderNumber}:`, orderEmailError.message);
+      });
+    } catch (orderEmailSetupError) {
+      console.warn(`[EMAIL] Order placed email setup failed for order #${orderNumber}:`, orderEmailSetupError.message);
+    }
 
     return success(
       res,
@@ -1060,7 +1119,167 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   const [updated] = await query("SELECT * FROM orders WHERE id = ?", [id]);
+
+  // 📧 Refund email — the existing refund process is the admin marking the
+  // order payment as refunded. Send exactly once per refund transition.
+  if (payment_status === "refunded" && existing[0].payment_status !== "refunded") {
+    try {
+      const { sendEmailTemplate } = require("../services/mailService");
+      let customerName = updated.guest_name || updated.user_email || "Customer";
+      if (updated.user_id) {
+        const [profile] = await query(
+          "SELECT CONCAT_WS(' ', first_name, last_name) AS name FROM user_profiles WHERE user_id = ?",
+          [updated.user_id],
+        );
+        if (profile?.name?.trim()) customerName = profile.name.trim();
+      }
+      await sendEmailTemplate({
+        templateKey: "refund",
+        emailKey: `REFUND:${id}`,
+        to: updated.user_email,
+        variables: {
+          user_name: customerName,
+          user_email: updated.user_email,
+          order_id: updated.order_number || String(id),
+          refund_amount: Number(updated.total_amount || 0).toLocaleString("en-IN", {
+            style: "currency",
+            currency: "INR",
+          }),
+          date: formatEmailDate(new Date()),
+        },
+      });
+    } catch (refundEmailError) {
+      console.warn(`[EMAIL] Refund email failed for order #${updated.order_number || id}:`, refundEmailError.message);
+    }
+  }
+
   return success(res, "Order updated", { order: updated });
+});
+
+/**
+ * POST /api/user/orders/:id/return-request
+ * Customer submits a return request for their own order. One request per
+ * order (unique constraint on order_id) → exactly one return email.
+ */
+const createReturnRequest = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const reason = String(req.body?.reason || "").trim();
+  const details = String(req.body?.details || "").trim();
+
+  if (!userId) throw new AppError("Authentication required", 401, "UNAUTHORIZED");
+
+  const [order] = await query("SELECT * FROM orders WHERE id = ?", [id]);
+  if (!order) throw new AppError("Order not found", 404, "NOT_FOUND");
+
+  const hasAccess =
+    order.user_id === userId ||
+    (order.guest_email && String(order.guest_email).toLowerCase() === String(req.user?.email || "").toLowerCase());
+  if (!hasAccess) {
+    throw new AppError("You can only request a return for your own orders", 403, "FORBIDDEN");
+  }
+
+  const [existingReturn] = await query("SELECT id FROM order_returns WHERE order_id = ?", [id]);
+  if (existingReturn) {
+    throw new AppError("A return request for this order already exists", 409, "RETURN_ALREADY_EXISTS");
+  }
+
+  if (!reason) throw new AppError("Return reason is required", 400, "VALIDATION_ERROR");
+
+  const result = await query(
+    `INSERT INTO order_returns (order_id, user_id, order_number, reason, details)
+     VALUES (?, ?, ?, ?, ?)`,
+    [id, userId, order.order_number || String(id), reason.slice(0, 255), details.slice(0, 2000)],
+  );
+  const returnId = result.insertId;
+
+  // 📧 Return confirmation email — admin-editable template, once per request.
+  try {
+    const { sendEmailTemplate } = require("../services/mailService");
+    let customerName = order.guest_name || order.user_email || "Customer";
+    if (userId) {
+      const [profile] = await query(
+        "SELECT CONCAT_WS(' ', first_name, last_name) AS name FROM user_profiles WHERE user_id = ?",
+        [userId],
+      );
+      if (profile?.name?.trim()) customerName = profile.name.trim();
+    }
+    await sendEmailTemplate({
+      templateKey: "return_request",
+      emailKey: `RETURN:${returnId}`,
+      to: order.user_email,
+      variables: {
+        user_name: customerName,
+        user_email: order.user_email,
+        order_id: order.order_number || String(id),
+        date: formatEmailDate(new Date()),
+      },
+    });
+  } catch (returnEmailError) {
+    console.warn(`[EMAIL] Return email failed for order #${order.order_number || id}:`, returnEmailError.message);
+  }
+
+  // Admin activity: return requested.
+  try {
+    await createActivity({
+      userId,
+      activityType: ACTIVITY_TYPES.RETURN_REQUESTED,
+      entityType: "orders",
+      entityId: id,
+      metadata: { returnId, orderNumber: order.order_number, reason },
+      eventKey: `RETURN_REQUESTED:${returnId}`,
+    });
+  } catch (activityError) {
+    console.warn("[ACTIVITY] Return request activity failed:", activityError.message);
+  }
+
+  const [created] = await query("SELECT * FROM order_returns WHERE id = ?", [returnId]);
+  return success(res, "Return request submitted. Our team will contact you shortly.", { returnRequest: created }, 201);
+});
+
+/** GET /api/admin/order-returns - List all return requests (admin). */
+const listReturnRequests = asyncHandler(async (req, res) => {
+  const rows = await query(
+    `SELECT r.id, r.order_id, r.user_id, r.order_number, r.reason, r.details, r.status,
+            r.admin_notes, r.requested_at, r.resolved_at, o.total_amount,
+            u.email AS user_email
+     FROM order_returns r
+     LEFT JOIN orders o ON o.id = r.order_id
+     LEFT JOIN users u ON u.id = r.user_id
+     ORDER BY r.created_at DESC`,
+  );
+  return success(res, "Return requests", { returnRequests: rows });
+});
+
+/** PATCH /api/admin/order-returns/:id/status - Update return request (admin). */
+const updateReturnRequestStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, admin_notes } = req.body;
+
+  const validStatuses = ["requested", "approved", "rejected", "in_transit", "received", "completed", "cancelled"];
+  if (!status || !validStatuses.includes(status)) {
+    throw new AppError("Invalid return status", 400, "VALIDATION_ERROR");
+  }
+
+  const updates = ["status = ?"];
+  const params = [status];
+  if (admin_notes !== undefined) {
+    updates.push("admin_notes = ?");
+    params.push(String(admin_notes || ""));
+  }
+  params.push(id);
+
+  await query(
+    `UPDATE order_returns SET ${updates.join(", ")},
+       resolved_at = CASE WHEN ? IN ('completed','cancelled','rejected') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [...params.slice(0, params.length - 1), status, id],
+  );
+
+  const [row] = await query("SELECT * FROM order_returns WHERE id = ?", [id]);
+  if (!row) throw new AppError("Return request not found", 404, "NOT_FOUND");
+  return success(res, "Return request updated", { returnRequest: row });
 });
 
 /** POST /api/admin/orders/:id/invoice - Regenerate invoice */
@@ -1373,4 +1592,7 @@ module.exports = {
   getOrderStats,
   cancelOrder,
   markPaymentFailedOrder,
+  createReturnRequest,
+  listReturnRequests,
+  updateReturnRequestStatus,
 };

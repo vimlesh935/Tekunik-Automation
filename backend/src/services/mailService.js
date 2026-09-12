@@ -4,6 +4,8 @@ const { X509Certificate } = require("node:crypto");
 const nodemailer = require("nodemailer");
 const env = require("../config/env");
 const settingsService = require("../config/settingsService");
+const { getTemplateByKey, renderTemplate, htmlToText } = require("./emailTemplateService");
+const { query } = require("../config/db");
 
 let transporter;
 let activeTransportLabel = null;
@@ -595,19 +597,36 @@ const verifyTransporter = async () => {
   throw last;
 };
 
-const buildOtpTemplate = (otp, name = "User") => `
+const buildFallbackOtpTemplate = (otp, name = "User", purpose = "password_reset") => {
+  const isChangePassword = purpose === "change_password";
+  const title = isChangePassword ? "Change Password OTP" : "Password Reset OTP";
+  const message = isChangePassword
+    ? "Use this 6-digit OTP to change your password. It is valid for 5 minutes."
+    : "Use this 6-digit OTP to reset your password. It is valid for 5 minutes.";
+  const ignoreMessage = isChangePassword
+    ? "If you did not request a password change, you can safely ignore this email."
+    : "If you did not request a password reset, you can safely ignore this email.";
+  
+  return `
   <div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
     <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
-      <h2 style="margin:0 0 12px;color:#111827;">Password Reset OTP</h2>
+      <h2 style="margin:0 0 12px;color:#111827;">${title}</h2>
       <p style="color:#374151;font-size:15px;">Hi ${name},</p>
-      <p style="color:#374151;font-size:15px;">Use this 6-digit OTP to reset your password. It is valid for 5 minutes.</p>
+      <p style="color:#374151;font-size:15px;">${message}</p>
       <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#111827;background:#f3f4f6;border-radius:10px;padding:16px;text-align:center;margin:24px 0;">
         ${otp}
       </div>
-      <p style="color:#6b7280;font-size:13px;">If you did not request a password reset, you can safely ignore this email.</p>
+      <p style="color:#6b7280;font-size:13px;">${ignoreMessage}</p>
     </div>
   </div>
 `;
+};
+
+const buildFallbackOtpText = (otp, purpose = "password_reset") => {
+  const isChangePassword = purpose === "change_password";
+  const title = isChangePassword ? "Change Password OTP" : "Password Reset OTP";
+  return `${title}\n\nYour OTP is: ${otp}\n\nThis OTP expires in 5 minutes.\n\nIf you did not request a password ${isChangePassword ? "change" : "reset"}, ignore this email.`;
+};
 
 const getSmtpStatus = () => {
   const maskedUser = (value) => {
@@ -633,26 +652,56 @@ const getSmtpStatus = () => {
   };
 };
 
-const sendOtpEmail = async ({ to, otp, name }) => {
+const sendOtpEmail = async ({ to, otp, name, purpose = "password_reset" }) => {
   try {
     const recipient = assertValidRecipient(to);
+    const templateKey = purpose === "change_password" ? "change_password_otp" : "forgot_password_otp";
 
     console.log("[mailService] Preparing OTP email:", {
       to: recipient,
       from: currentSmtp?.from || "<env fallback>",
       hasOtp: Boolean(otp),
       name,
+      purpose,
+      templateKey,
       transport: activeTransportLabel,
     });
+
+    // Load the admin-managed template for this trigger.
+    const template = await getTemplateByKey(templateKey);
+
+    // If the template exists but the admin disabled it → do NOT send this
+    // specific email. The trigger stays intact; no fallback/duplicate email.
+    if (template && !template.is_enabled) {
+      console.log(`[mailService] ⏭️ Template "${templateKey}" is disabled — skipping OTP email to ${recipient}`);
+      return { skipped: true, reason: "template_disabled", templateKey, to: recipient };
+    }
+
+    let subject, html, text;
+
+    if (template) {
+      // Admin-managed content: replace dynamic variables with real values.
+      const variables = { user_name: name, user_email: recipient, otp };
+      const rendered = renderTemplate(template, variables);
+      subject = rendered.subject;
+      html = rendered.body;
+      text = htmlToText(rendered.body) || buildFallbackOtpText(otp, purpose);
+    } else {
+      // No template record (feature not yet migrated) → preserve the original
+      // hardcoded email exactly so existing behavior never changes.
+      subject = purpose === "change_password" ? "Change Password OTP" : "Password Reset OTP";
+      html = buildFallbackOtpTemplate(otp, name, purpose);
+      text = buildFallbackOtpText(otp, purpose);
+    }
 
     const smtp = await createTransporter();
 
     const mailOptions = {
       from: currentSmtp?.from || normalizeSmtpUser(currentSmtp?.user),
       to: recipient,
-      subject: "Password Reset OTP",
-      text: `Your OTP is: ${otp}\n\nThis OTP expires in 5 minutes.\n\nIf you did not request a password reset, ignore this email.`,
-      html: buildOtpTemplate(otp, name),
+      subject,
+      text,
+      html,
     };
 
     console.log("[mailService] Sending OTP email via SMTP...");
@@ -692,9 +741,149 @@ const sendOtpEmail = async ({ to, otp, name }) => {
   }
 };
 
+let emailLogDbErrorLogged = false;
+
+/**
+ * Register a business email event in `email_send_logs` exactly once.
+ * Returns true when the event has NOT been sent before (caller must send),
+ * false when it was already recorded (caller must SKIP to avoid duplicates).
+ */
+const claimEmailSend = async ({ emailKey, templateKey, recipient, variables = {} }) => {
+  if (!emailKey) return true;
+  try {
+    const result = await query(
+      `INSERT IGNORE INTO email_send_logs (email_key, template_key, recipient, event_signature)
+       VALUES (?, ?, ?, ?)`,
+      [emailKey, templateKey, recipient, JSON.stringify(variables || {})],
+    );
+    return Number(result?.affectedRows) === 1;
+  } catch (error) {
+    // Fail-closed: never risk a second email for the same business event.
+    if (!emailLogDbErrorLogged) {
+      console.error("[mailService] email_send_logs unavailable — skipping templated email:", error.message);
+      emailLogDbErrorLogged = true;
+    }
+    return false;
+  }
+};
+
+/**
+ * Generic, admin-template-driven email for customer flows (welcome, order
+ * placed, return, refund, abandoned cart).
+ *
+ * Contract (matches the OTP behavior):
+ *  - Template missing   → skip (no fallback/hardcoded content is ever built).
+ *  - Template disabled  → skip (trigger stays intact, no duplicate email).
+ *  - Admin subject/body is the EXACT content sent (variables substituted).
+ *  - Optional `emailKey` guarantees exactly-once delivery per business event.
+ */
+const sendEmailTemplate = async ({ templateKey, to, variables = {}, emailKey = null }) => {
+  try {
+    const recipient = assertValidRecipient(to);
+
+    const template = await getTemplateByKey(templateKey);
+    if (!template) {
+      console.log(
+        `[mailService] ⏭️ Template "${templateKey}" not found — skipping email to ${recipient}`,
+      );
+      return { skipped: true, reason: "template_not_found", templateKey, to: recipient };
+    }
+    if (!template.is_enabled) {
+      console.log(
+        `[mailService] ⏭️ Template "${templateKey}" is disabled — skipping email to ${recipient}`,
+      );
+      return { skipped: true, reason: "template_disabled", templateKey, to: recipient };
+    }
+
+    const claimed = await claimEmailSend({ emailKey, templateKey, recipient, variables });
+    if (!claimed) {
+      console.log(`[mailService] ⏭️ Email key "${emailKey}" already recorded — skipping duplicate`);
+      return { skipped: true, reason: "duplicate", emailKey, templateKey, to: recipient };
+    }
+
+    const rendered = renderTemplate(template, variables);
+    const html = rendered.body;
+    const text = htmlToText(html);
+
+    await sendTemplatedMessage({ to: recipient, subject: rendered.subject, html, text });
+
+    console.log("✅ [mailService] Templated email delivered:", {
+      templateKey,
+      recipient,
+      subject: rendered.subject,
+      emailKey: emailKey || undefined,
+    });
+
+    return { sent: true, templateKey, to: recipient };
+  } catch (error) {
+    console.error(`❌ [mailService] sendEmailTemplate failed for "${templateKey}" to ${to}:`, error.message);
+    return { sent: false, error: error.message, templateKey, to: to || null };
+  }
+};
+
+/**
+ * Send a message; if the network path presents a self-signed / intercepted
+ * certificate chain AND the operator explicitly enabled
+ * `smtp.allowSelfSignedFallback` (DB or .env), retry once with TLS
+ * certificate verification disabled. Strict TLS is always preferred — the
+ * relaxed retry only happens when that flag is set, never silently.
+ */
+const attemptSendWithRelaxedFallback = async (smtp, mailOptions) => {
+  try {
+    return await smtp.sendMail(mailOptions);
+  } catch (error) {
+    const canRelax =
+      (currentSmtp?.allowSelfSignedFallback || env.smtp.allowSelfSignedFallback) &&
+      isSelfSignedCertificateError(error);
+    if (!canRelax) throw error;
+    console.warn(
+      `[mailService] Retrying send with relaxed TLS (allowSelfSignedFallback enabled): ${error.message}`,
+    );
+    const [candidate] = await getSmtpCandidates();
+    if (!candidate) throw error;
+    const relaxed = createTransportFromConfig(candidate, {
+      rejectUnauthorized: false,
+      ca: undefined,
+    });
+    return relaxed.sendMail(mailOptions);
+  }
+};
+
+/**
+ * Send a complete, already-rendered message through the existing SMTP
+ * infrastructure. Used by the Admin "Send Test Email" feature so that test
+ * sends reuse the exact same transporter/credentials as production emails.
+ */
+const sendTemplatedMessage = async ({ to, subject, html, text }) => {
+  const recipient = assertValidRecipient(to);
+  const smtp = await createTransporter();
+
+  const mailOptions = {
+    from: currentSmtp?.from || normalizeSmtpUser(currentSmtp?.user),
+    to: recipient,
+    subject: String(subject || "").slice(0, 500),
+    text: String(text || htmlToText(html) || ""),
+    html: String(html || ""),
+  };
+
+  console.log("[mailService] Sending admin-rendered template email via SMTP...");
+  const info = await attemptSendWithRelaxedFallback(smtp, mailOptions);
+
+  if (!info.accepted || !info.accepted.length) {
+    const error = new Error("SMTP did not accept the recipient");
+    error.code = "SMTP_RECIPIENT_REJECTED";
+    error.response = info.response;
+    throw error;
+  }
+
+  return info;
+};
+
 module.exports = {
   verifyTransporter,
   sendOtpEmail,
+  sendTemplatedMessage,
+  sendEmailTemplate,
   createTransporter,
   getSmtpStatus,
   resetTransporter,

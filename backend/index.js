@@ -15,8 +15,8 @@ const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
 const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
-const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables, ensureCouponTables } = require("./src/config/migrate");
-const { detectAbandonedCarts } = require("./src/services/adminActivityService");
+const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables, ensureCouponTables, ensureEmailTemplatesTable, ensureEmailSendLogsTable, ensureOrderReturnsTable, ensureCustomEmailTables, ensureRecoveryTables } = require("./src/config/migrate");
+const { runRecoveryCycle } = require("./src/services/abandonedRecoveryService");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
 
@@ -30,6 +30,7 @@ const { requireAdmin } = require("./src/middleware/adminMiddleware");
 // Routes
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
+const abandonedRecoveryRoutes = require("./src/routes/abandonedRecoveryRoutes");
 const publicRoutes = require("./src/routes/publicRoutes");
 const dashboardRoutes = require("./src/routes/dashboardRoutes");
 const productRoutes = require("./src/routes/productRoutes");
@@ -57,6 +58,8 @@ const recentlyViewedRoutes = require("./src/routes/recentlyViewedRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const adminActivityRoutes = require("./src/routes/adminActivityRoutes");
 const backInStockRoutes = require("./src/routes/backInStockRoutes");
+const emailTemplateRoutes = require("./src/routes/emailTemplateRoutes");
+const customEmailRoutes = require("./src/routes/customEmailRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -174,6 +177,7 @@ app.get("/health", async (req, res) => {
 // API Routes
 app.use(authRoutes);
 app.use(adminRoutes);
+app.use(abandonedRecoveryRoutes);
 app.use(publicRoutes);
 app.use(userRoutes);
 app.use(dashboardRoutes);
@@ -202,6 +206,8 @@ app.use(recentlyViewedRoutes);
 app.use(notificationRoutes);
 app.use(adminActivityRoutes);
 app.use(backInStockRoutes);
+app.use(emailTemplateRoutes);
+app.use(customEmailRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -296,6 +302,11 @@ await ensureOffersTable();
     await ensureProductPriceHistoryTable();
     await ensureBackInStockTables();
     await ensureOfferLinkedCouponTables();
+    await ensureEmailTemplatesTable();
+    await ensureEmailSendLogsTable();
+    await ensureOrderReturnsTable();
+    await ensureCustomEmailTables();
+    await ensureRecoveryTables();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);
@@ -366,23 +377,23 @@ await ensureOffersTable();
     }
   }, 750);
 
-  // Abandoned cart detection - run every 15 minutes
-  const abandonedCartInterval = setInterval(async () => {
+  // Abandoned cart & recovery engine - detect records, send due reminders,
+  // expire stale records. Run every 5 minutes (first pass after 60s).
+  const recoveryCycleInterval = setInterval(async () => {
     try {
-      const created = await detectAbandonedCarts();
-      if (created > 0) {
-        console.log(`[ACTIVITY] Detected ${created} abandoned cart(s)`);
-      }
+      const result = await runRecoveryCycle();
+      if (result.created > 0) console.log(`[RECOVERY] Created ${result.created} abandoned recovery record(s)`);
+      if (result.sentReminders > 0) console.log(`[RECOVERY] Sent ${result.sentReminders} recovery reminder(s)`);
     } catch (error) {
-      console.warn("[ACTIVITY] Abandoned cart detection failed:", error.message);
+      console.warn("[RECOVERY] Abandoned cart recovery cycle failed:", error.message);
     }
-  }, 15 * 60 * 1000);
-  // Run once shortly after startup
+  }, 5 * 60 * 1000);
   setTimeout(async () => {
     try {
-      await detectAbandonedCarts();
+      const result = await runRecoveryCycle();
+      if (result.created > 0) console.log(`[RECOVERY] Created ${result.created} abandoned recovery record(s)`);
     } catch (error) {
-      console.warn("[ACTIVITY] Initial abandoned cart detection failed:", error.message);
+      console.warn("[RECOVERY] Initial abandoned cart recovery cycle failed:", error.message);
     }
   }, 60 * 1000);
 
@@ -428,7 +439,7 @@ await ensureOffersTable();
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   process.on("exit", () => {
-    clearInterval(abandonedCartInterval);
+    clearInterval(recoveryCycleInterval);
     clearInterval(couponExpiryInterval);
   });
 };

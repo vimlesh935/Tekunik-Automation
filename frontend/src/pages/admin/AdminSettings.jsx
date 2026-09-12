@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Globe, Settings2, Server } from "lucide-react";
+import { ArrowRight, Globe, Mail, Send, Settings2, Server } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const SETTING_GROUPS = [
@@ -36,6 +36,40 @@ const SETTING_GROUPS = [
       "Session token expiry",
       "SMTP host, port, security & from email",
       "Live system status with real checks",
+    ],
+  },
+  {
+    to: "/admin/email-templates",
+    title: "Email Templates",
+    icon: Mail,
+    accent: "bg-cyan-500",
+    iconRing: "bg-cyan-500/10 border-cyan-500/30",
+    iconText: "text-cyan-400",
+    shadow: "hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]",
+    description:
+      "Customize the transactional emails real users receive — subjects, HTML bodies, dynamic variables and enable/disable.",
+    items: [
+      "Forgot Password OTP",
+      "Change Password OTP",
+      "Insert available variables",
+      "Preview & send test email",
+    ],
+  },
+  {
+    to: "/admin/email-templates?tab=custom",
+    title: "Custom Email",
+    icon: Send,
+    accent: "bg-emerald-400",
+    iconRing: "bg-emerald-500/10 border-emerald-500/30",
+    iconText: "text-emerald-400",
+    shadow: "hover:shadow-[0_0_40px_rgba(52,211,153,0.15)]",
+    description:
+      "Manually send a custom email to any address with a simple visual editor, preview, test sends and history — right inside Email Templates.",
+    items: [
+      "Send to any email (no account needed)",
+      "Bonus tags [Name] & [Email]",
+      "Preview & send test email",
+      "Custom email history",
     ],
   },
 ];

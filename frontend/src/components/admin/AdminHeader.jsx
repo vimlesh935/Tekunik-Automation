@@ -15,8 +15,11 @@ const TITLES = {
   "/admin/settings": "Settings",
   "/admin/settings/frontend": "Settings / Frontend",
   "/admin/settings/backend": "Settings / Backend",
+  "/admin/email-templates": "Email Templates",
+  "/admin/email-templates/:key": "Settings / Email Templates",
   "/admin/smart-home-requests": "Smart Home Requests",
   "/admin/demobooking": "Demo Bookings",
+  "/admin/abandoned-cart": "Abandoned Cart",
   "/admin/notifications": "Activity Center",
 };
 

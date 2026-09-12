@@ -1,5 +1,6 @@
 const { query } = require("./db");
 const bcrypt = require("bcrypt");
+const { ensureEmailTemplatesTable } = require("./emailTemplateMigration");
 
 const BCRYPT_ROUNDS = 12;
 
@@ -1089,8 +1090,231 @@ const ensureAdminActivityTable = async () => {
   } catch (error) { console.warn("⚠️ [MIGRATE] Could not ensure admin activity table:", error.message); }
 };
 
+const ensureEmailSendLogsTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'email_send_logs'");
+    if (!tables.length) {
+      await query(`CREATE TABLE email_send_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email_key VARCHAR(255) NOT NULL,
+        template_key VARCHAR(100) NOT NULL,
+        recipient VARCHAR(255) NOT NULL,
+        event_signature JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_email_send_key (email_key),
+        INDEX idx_email_send_template (template_key),
+        INDEX idx_email_send_recipient (recipient),
+        INDEX idx_email_send_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created email_send_logs table");
+    } else {
+      console.log("✅ [MIGRATE] email_send_logs table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure email_send_logs table:", error.message);
+  }
+};
+
+const ensureOrderReturnsTable = async () => {
+  try {
+    const tables = await query("SHOW TABLES LIKE 'order_returns'");
+    if (!tables.length) {
+      await query(`CREATE TABLE order_returns (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        user_id INT NOT NULL,
+        order_number VARCHAR(100) NOT NULL,
+        reason VARCHAR(255) NOT NULL DEFAULT '',
+        details TEXT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'requested',
+        admin_notes VARCHAR(500) NULL,
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_return_order (order_id),
+        INDEX idx_return_user (user_id),
+        INDEX idx_return_status (status),
+        CONSTRAINT fk_return_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        CONSTRAINT fk_return_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created order_returns table");
+    } else {
+      console.log("✅ [MIGRATE] order_returns table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure order_returns table:", error.message);
+  }
+};
+
+/**
+ * Standalone storage for the Admin "Custom Email" feature.
+ * Completely separate from the automated email_templates table — the custom
+ * email feature is manual only and never touches automated template records.
+ */
+const ensureCustomEmailTables = async () => {
+  try {
+    const templates = await query("SHOW TABLES LIKE 'custom_email_templates'");
+    if (!templates.length) {
+      await query(`CREATE TABLE custom_email_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        template_name VARCHAR(200) NOT NULL,
+        subject VARCHAR(500) NOT NULL,
+        body TEXT NOT NULL,
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_cet_created_by (created_by),
+        INDEX idx_cet_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created custom_email_templates table");
+    } else {
+      console.log("✅ [MIGRATE] custom_email_templates table exists");
+    }
+
+    const history = await query("SHOW TABLES LIKE 'custom_email_history'");
+    if (!history.length) {
+      await query(`CREATE TABLE custom_email_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recipient_email VARCHAR(255) NOT NULL,
+        subject VARCHAR(500) NOT NULL,
+        body TEXT NOT NULL,
+        recipient_name VARCHAR(200) NULL,
+        sent_by_admin INT NULL,
+        sent_by_email VARCHAR(255) NULL,
+        status ENUM('sent','failed') NOT NULL DEFAULT 'sent',
+        error_message VARCHAR(500) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_ceh_recipient (recipient_email),
+        INDEX idx_ceh_sent_by (sent_by_admin),
+        INDEX idx_ceh_status (status),
+        INDEX idx_ceh_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created custom_email_history table");
+    } else {
+      console.log("✅ [MIGRATE] custom_email_history table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure custom email tables:", error.message);
+  }
+};
+
+/**
+ * Abandoned Cart / Recovery tables + default settings.
+ * - recovery_records  : one row per tracked activity (user + activity_type + reference_id).
+ * - recovery_reminders: reminder history rows linked to a recovery record.
+ * Settings are seeded into system_settings with INSERT IGNORE so admin-edited
+ * values are never overwritten on restart; they are configurable from Admin →
+ * Abandoned Cart → Settings.
+ */
+const ensureRecoveryTables = async () => {
+  try {
+    const recordsTable = await query("SHOW TABLES LIKE 'recovery_records'");
+    if (!recordsTable.length) {
+      await query(`CREATE TABLE recovery_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        activity_type VARCHAR(50) NOT NULL DEFAULT 'CART',
+        reference_id VARCHAR(100) NOT NULL DEFAULT '',
+        started_at DATETIME NOT NULL,
+        last_activity_at DATETIME NOT NULL,
+        abandoned_at DATETIME NULL,
+        status ENUM('abandoned','reminder_sent','recovered','not_recovered','recovered_late') NOT NULL DEFAULT 'abandoned',
+        value DECIMAL(12,2) NULL,
+        currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+        item_count INT NOT NULL DEFAULT 0,
+        product_snapshot JSON NULL,
+        reminder_count INT NOT NULL DEFAULT 0,
+        cycle_count INT NOT NULL DEFAULT 1,
+        recovery_deadline DATETIME NULL,
+        recovered_at DATETIME NULL,
+        recovery_value DECIMAL(12,2) NULL,
+        completion_reference VARCHAR(120) NULL,
+        completion_details JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_recovery_activity (user_id, activity_type, reference_id),
+        INDEX idx_recovery_status (status),
+        INDEX idx_recovery_activity_type (activity_type),
+        INDEX idx_recovery_abandoned (abandoned_at),
+        INDEX idx_recovery_deadline (recovery_deadline),
+        INDEX idx_recovery_user (user_id),
+        CONSTRAINT fk_recovery_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created recovery_records table");
+    } else {
+      console.log("✅ [MIGRATE] recovery_records table exists");
+    }
+
+    // Upgrade existing tables with the `recovered_late` lifecycle status.
+    // Idempotent: only alters when the enum is missing the new value.
+    try {
+      const [statusCol] = await query(
+        "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'recovery_records' AND COLUMN_NAME = 'status'"
+      );
+      const colType = String(statusCol?.COLUMN_TYPE || "");
+      if (colType.indexOf("recovered_late") === -1) {
+        await query(
+          "ALTER TABLE recovery_records MODIFY COLUMN status ENUM('abandoned','reminder_sent','recovered','not_recovered','recovered_late') NOT NULL DEFAULT 'abandoned'"
+        );
+        console.log("✅ [MIGRATE] recovery_records.status upgraded to include recovered_late");
+      }
+    } catch (err) {
+      console.warn("⚠️ [MIGRATE] Could not verify recovery status enum:", err.message);
+    }
+
+    const remindersTable = await query("SHOW TABLES LIKE 'recovery_reminders'");
+    if (!remindersTable.length) {
+      await query(`CREATE TABLE recovery_reminders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recovery_record_id INT NOT NULL,
+        reminder_number INT NOT NULL,
+        scheduled_at DATETIME NULL,
+        sent_at DATETIME NULL,
+        status ENUM('scheduled','sent','skipped','failed','cancelled') NOT NULL DEFAULT 'scheduled',
+        template_key VARCHAR(100) NULL,
+        error_message VARCHAR(500) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_recovery_reminder_number (recovery_record_id, reminder_number),
+        INDEX idx_recovery_reminder_record (recovery_record_id),
+        CONSTRAINT fk_recovery_reminder FOREIGN KEY (recovery_record_id) REFERENCES recovery_records(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      console.log("✅ [MIGRATE] Created recovery_reminders table");
+    } else {
+      console.log("✅ [MIGRATE] recovery_reminders table exists");
+    }
+
+    // Default recovery settings (INSERT IGNORE — never overwrite admin values).
+    const defaultSettings = [
+      { key: "abandonedCart.enabled", value: "true", type: "boolean", category: "abandoned_cart" },
+      { key: "abandonedCart.thresholdMinutes", value: "60", type: "number", category: "abandoned_cart" },
+      { key: "abandonedCart.firstReminderHours", value: "2", type: "number", category: "abandoned_cart" },
+      { key: "abandonedCart.secondReminderHours", value: "24", type: "number", category: "abandoned_cart" },
+      { key: "abandonedCart.maxReminders", value: "2", type: "number", category: "abandoned_cart" },
+      { key: "abandonedCart.recoveryWindowHours", value: "24", type: "number", category: "abandoned_cart" },
+      { key: "abandonedCart.stopRemindersOnRecovery", value: "true", type: "boolean", category: "abandoned_cart" },
+    ];
+    for (const seed of defaultSettings) {
+      await query(
+        `INSERT IGNORE INTO system_settings (setting_key, setting_value, setting_type, category, is_encrypted)
+         VALUES (?, ?, ?, ?, 0)`,
+        [seed.key, seed.value, seed.type, seed.category]
+      );
+    }
+    try {
+      const settingsService = require("./settingsService");
+      await settingsService.invalidateCache();
+    } catch (err) {
+      console.warn("⚠️ [MIGRATE] Could not refresh settings cache:", err.message);
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure recovery tables:", error.message);
+  }
+};
+
 module.exports = {
   ensureCouponTables,
+  ensureRecoveryTables,
   ensureGuestOrderColumns,
   ensureProductsColumns,
   ensureUsersOtpColumns,
@@ -1112,4 +1336,8 @@ module.exports = {
   ensureAdminActivityTable,
   ensureProductPriceHistoryTable,
   ensureBackInStockTables,
+  ensureEmailTemplatesTable,
+  ensureEmailSendLogsTable,
+  ensureOrderReturnsTable,
+  ensureCustomEmailTables,
 };

@@ -35,6 +35,8 @@ const ACTIVITY_TYPES = Object.freeze({
   RESTOCK_BELOW_DEMAND: "RESTOCK_BELOW_DEMAND",
   POST_RESTOCK_PURCHASE: "POST_RESTOCK_PURCHASE",
   USER_PASSWORD_CHANGED: "USER_PASSWORD_CHANGED",
+  RETURN_REQUESTED: "RETURN_REQUESTED",
+  CUSTOM_EMAIL_SENT: "CUSTOM_EMAIL_SENT",
 });
 
 const PRIORITY = Object.freeze({
@@ -80,6 +82,8 @@ const ACTIVITY_CONFIG = Object.freeze({
   RESTOCK_BELOW_DEMAND: { priority: PRIORITY.HIGH, actionable: true },
   POST_RESTOCK_PURCHASE: { priority: PRIORITY.NORMAL, actionable: false },
   USER_PASSWORD_CHANGED: { priority: PRIORITY.HIGH, actionable: true },
+  RETURN_REQUESTED: { priority: PRIORITY.HIGH, actionable: true },
+  CUSTOM_EMAIL_SENT: { priority: PRIORITY.LOW, actionable: false },
 });
 
 // Map activity types to their display category
@@ -118,6 +122,8 @@ const ACTIVITY_CATEGORY = {
   RESTOCK_BELOW_DEMAND: "inventory",
   POST_RESTOCK_PURCHASE: "inventory",
   USER_PASSWORD_CHANGED: "customers",
+  RETURN_REQUESTED: "orders",
+  CUSTOM_EMAIL_SENT: "system",
 };
 
 /**
@@ -613,12 +619,16 @@ const detectZeroResultSearch = async (searchTerm) => {
 const detectAbandonedCarts = async () => {
   const rows = await query(
     `SELECT c.user_id, c.id AS cart_id,
+            u.email AS user_email,
+            CONCAT_WS(' ', up.first_name, up.last_name) AS user_name,
             COUNT(ci.id) AS item_count,
             SUM(p.price * ci.quantity) AS cart_value,
             MAX(ci.updated_at) AS last_activity
      FROM carts c
      JOIN cart_items ci ON ci.cart_id = c.id
      JOIN products p ON p.id = ci.product_id
+     JOIN users u ON u.id = c.user_id
+     LEFT JOIN user_profiles up ON up.user_id = c.user_id
      WHERE ci.updated_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
        AND ci.updated_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
        AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = c.user_id AND o.created_at > ci.updated_at)
@@ -632,9 +642,6 @@ const detectAbandonedCarts = async () => {
     return 0;
   }
   for (const cart of rows) {
-    const [user] = await query("SELECT id, email FROM users WHERE id = ?", [cart.user_id]);
-    if (!user) continue;
-
     const products = await query(
       `SELECT p.id, p.name, p.image_url, ci.quantity
        FROM cart_items ci
