@@ -169,6 +169,26 @@ const getSampleVariables = (templateKey) => {
       order_id: "ORD123456",
       date: "10 Sep 2026",
     },
+    return_approved: {
+      user_name: "Rahul Sharma",
+      user_email: "rahul.sharma@example.com",
+      order_id: "ORD123456",
+      date: "10 Sep 2026",
+    },
+    return_rejected: {
+      user_name: "Rahul Sharma",
+      user_email: "rahul.sharma@example.com",
+      order_id: "ORD123456",
+      reason: "Return window expired.",
+      date: "10 Sep 2026",
+    },
+    refund_started: {
+      user_name: "Rahul Sharma",
+      user_email: "rahul.sharma@example.com",
+      order_id: "ORD123456",
+      refund_amount: "₹12,499",
+      date: "10 Sep 2026",
+    },
     refund: {
       user_name: "Rahul Sharma",
       user_email: "rahul.sharma@example.com",

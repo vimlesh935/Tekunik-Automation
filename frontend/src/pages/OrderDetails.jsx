@@ -6,6 +6,9 @@ import { useToast } from "../components/Toast.jsx";
 import { useTranslation } from "react-i18next";
 import SafeImage from "../components/SafeImage.jsx";
 import OrderReviewSection from "../components/OrderReviewSection.jsx";
+import ReturnRequestSection from "../components/ReturnRequestSection.jsx";
+import { getStatusKey } from "../utils/statusTranslations.js";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 import {
   ArrowLeft,
   Package,
@@ -74,7 +77,7 @@ export default function OrderDetails() {
       if (!orderData) throw new Error(t("orders.notFound"));
       setOrder(orderData);
     } catch (error) {
-      addToast(error?.message || t("orders.loadFailed"), "error");
+      addToast(getErrorMessage(error, t, "orders.loadFailed"), "error");
       navigate("/orders");
     } finally {
       setFetchLoading(false);
@@ -93,29 +96,18 @@ export default function OrderDetails() {
       pending: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       confirmed: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
       processing: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+      packed: "text-teal-400 bg-teal-500/10 border-teal-500/20",
       shipped: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+      in_transit: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
       out_for_delivery: "text-orange-400 bg-orange-500/10 border-orange-500/20",
       delivered: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+      delivery_failed: "text-red-400 bg-red-500/10 border-red-500/20",
       cancelled: "text-red-400 bg-red-500/10 border-red-500/20",
     };
     return colors[s] || colors.pending;
   };
 
-  const statusLabel = (statusValue) => {
-    const map = {
-      pending: "orders.pending",
-      confirmed: "orders.confirmed",
-      processing: "orders.processing",
-      packed: "orders.packed",
-      shipped: "orders.shipped",
-      out_for_delivery: "orders.outForDelivery",
-      delivered: "orders.delivered",
-      cancelled: "orders.cancelled",
-      refunded: "orders.refunded",
-      partially_refunded: "orders.partiallyRefunded",
-    };
-    return map[statusValue] ? t(map[statusValue]) : statusValue;
-  };
+  const statusLabel = (statusValue) => t(getStatusKey(statusValue, 'order'));
 
   const formatDate = (dateStr) => {
     if (!dateStr) return t("common.na");
@@ -155,7 +147,7 @@ export default function OrderDetails() {
             onClick={() => navigate("/orders")}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition"
           >
-            <ArrowLeft size={16} /> {t("common.back")} {t("orders.myOrders")}
+            <ArrowLeft size={16} /> {t("orders.backToOrders")}
           </button>
         </div>
 
@@ -172,7 +164,7 @@ export default function OrderDetails() {
                 </span>
                 {order.payment_status === "paid" && (
                   <span className="text-xs text-emerald-400 font-semibold">
-                    {t("orders.paid")}
+                    {t(getStatusKey(order.payment_status, 'payment'))}
                   </span>
                 )}
               </div>
@@ -274,13 +266,13 @@ export default function OrderDetails() {
                             className="h-full w-full object-cover"
                             fallback={
                               <div className="flex h-full items-center justify-center text-gray-500 text-xs">
-                                Img
+                                {t("searchResults.noImage")}
                               </div>
                             }
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-gray-500 text-xs">
-                            No img
+                            {t("searchResults.noImage")}
                           </div>
                         )}
                       </div>
@@ -290,7 +282,7 @@ export default function OrderDetails() {
                         </p>
                         {item.product_sku && (
                           <p className="text-xs text-gray-500 mt-0.5">
-                            SKU: {item.product_sku}
+                            {t("product.sku")}: {item.product_sku}
                           </p>
                         )}
                         <p className="text-sm text-gray-400">
@@ -336,9 +328,7 @@ export default function OrderDetails() {
                   <span
                     className={`font-medium ${order.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"}`}
                   >
-                    {order.payment_status === "paid"
-                      ? t("orders.paid")
-                      : t("orders.pending")}
+                    {t(getStatusKey(order.payment_status || 'pending', 'payment'))}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -409,6 +399,9 @@ export default function OrderDetails() {
 
           {/* Review Section - Only for delivered orders */}
           <OrderReviewSection order={order} />
+
+          {/* Return & Refund Section */}
+          <ReturnRequestSection order={order} onRefresh={fetchOrderDetails} />
         </div>
       </div>
     </div>

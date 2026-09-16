@@ -36,6 +36,10 @@ const ACTIVITY_TYPES = Object.freeze({
   POST_RESTOCK_PURCHASE: "POST_RESTOCK_PURCHASE",
   USER_PASSWORD_CHANGED: "USER_PASSWORD_CHANGED",
   RETURN_REQUESTED: "RETURN_REQUESTED",
+  RETURN_APPROVED: "RETURN_APPROVED",
+  RETURN_REJECTED: "RETURN_REJECTED",
+  REFUND_STARTED: "REFUND_STARTED",
+  REFUND_COMPLETED: "REFUND_COMPLETED",
   CUSTOM_EMAIL_SENT: "CUSTOM_EMAIL_SENT",
 });
 
@@ -83,6 +87,10 @@ const ACTIVITY_CONFIG = Object.freeze({
   POST_RESTOCK_PURCHASE: { priority: PRIORITY.NORMAL, actionable: false },
   USER_PASSWORD_CHANGED: { priority: PRIORITY.HIGH, actionable: true },
   RETURN_REQUESTED: { priority: PRIORITY.HIGH, actionable: true },
+  RETURN_APPROVED: { priority: PRIORITY.NORMAL, actionable: true },
+  RETURN_REJECTED: { priority: PRIORITY.NORMAL, actionable: true },
+  REFUND_STARTED: { priority: PRIORITY.HIGH, actionable: true },
+  REFUND_COMPLETED: { priority: PRIORITY.NORMAL, actionable: false },
   CUSTOM_EMAIL_SENT: { priority: PRIORITY.LOW, actionable: false },
 });
 
@@ -123,6 +131,10 @@ const ACTIVITY_CATEGORY = {
   POST_RESTOCK_PURCHASE: "inventory",
   USER_PASSWORD_CHANGED: "customers",
   RETURN_REQUESTED: "orders",
+  RETURN_APPROVED: "orders",
+  RETURN_REJECTED: "orders",
+  REFUND_STARTED: "orders",
+  REFUND_COMPLETED: "orders",
   CUSTOM_EMAIL_SENT: "system",
 };
 

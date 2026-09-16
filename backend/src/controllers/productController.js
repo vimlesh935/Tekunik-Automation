@@ -309,7 +309,7 @@ const listProducts = asyncHandler(async (req, res) => {
     }
 
     const products = await query(
-      `SELECT p.*, pc.name AS category_name
+      `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
        FROM products p
        LEFT JOIN product_categories pc ON p.category_id = pc.id
        ${where}
@@ -395,7 +395,7 @@ const compareProducts = asyncHandler(async (req, res) => {
   const numericIds = ids.map(Number);
   const placeholders = numericIds.map(() => "?").join(",");
   const products = await query(
-    `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
+    `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr, pc.slug AS category_slug
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
      WHERE p.status = 'active' AND p.id IN (${placeholders})`,
@@ -447,7 +447,7 @@ const getProduct = asyncHandler(async (req, res) => {
     const identifier = (req.params.id || req.params.slug || "").trim();
     const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
 
-    const productSelect = `SELECT p.*, pc.name AS category_name, pc.slug AS category_slug
+    const productSelect = `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr, pc.slug AS category_slug
          FROM products p
          LEFT JOIN product_categories pc ON p.category_id = pc.id`;
 
@@ -684,7 +684,7 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 
     const [created] = await query(
-      `SELECT p.*, pc.name AS category_name
+      `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
        FROM products p LEFT JOIN product_categories pc ON p.category_id = pc.id
        WHERE p.id = ?`,
       [productId],
@@ -912,7 +912,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
 
     const [updated] = await query(
-      `SELECT p.*, pc.name AS category_name
+      `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
        FROM products p LEFT JOIN product_categories pc ON p.category_id = pc.id
        WHERE p.id = ?`,
       [req.params.id],
@@ -1216,7 +1216,7 @@ const getProductsByApplication = asyncHandler(async (req, res) => {
     );
 
     const products = await query(
-      `SELECT p.*, pc.name AS category_name
+      `SELECT p.*, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
        FROM products p
        LEFT JOIN product_categories pc ON p.category_id = pc.id
        WHERE p.status = 'active' AND JSON_CONTAINS(p.applications, ?)
@@ -1308,7 +1308,7 @@ const searchProducts = asyncHandler(async (req, res) => {
 
     const products = await query(
       `SELECT p.id, p.name, p.short_description, p.price, p.discount_percent, p.stock_quantity, p.stock_status, p.image_url,
-              p.brand, p.sku, pc.name AS category_name
+              p.brand, p.sku, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
        FROM products p
        LEFT JOIN product_categories pc ON p.category_id = pc.id
        WHERE ${where.join(" ")}
@@ -1398,7 +1398,7 @@ const getTrendingProducts = asyncHandler(async (req, res) => {
 
   const products = await query(
     `SELECT p.id, p.name, p.short_description, p.price, p.discount_percent, p.stock_quantity, p.stock_status, p.image_url,
-            p.brand, p.sku, pc.name AS category_name
+            p.brand, p.sku, pc.name AS category_name, pc.name_hi AS category_name_hi, pc.name_mr AS category_name_mr
      FROM products p
      LEFT JOIN product_categories pc ON p.category_id = pc.id
      WHERE p.status = 'active'

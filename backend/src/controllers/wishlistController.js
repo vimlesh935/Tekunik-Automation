@@ -1,4 +1,5 @@
 const { query } = require("../config/db");
+const { failure } = require("../utils/response");
 const { ACTIVITY_TYPES, createActivity, detectHighProductInterest } = require("../services/adminActivityService");
 
 /**
@@ -60,7 +61,7 @@ const getWishlist = async (req, res) => {
     res.json({ success: true, wishlist: wishlistItems });
   } catch (error) {
     console.error("[WISHLIST] Get wishlist error:", error);
-    res.status(500).json({ success: false, message: "Database error" });
+    return failure(res, "Database error", 500, "SERVER_ERROR");
   }
 };
 
@@ -74,9 +75,7 @@ const addToWishlist = async (req, res) => {
     const userId = req.user.id;
 
     if (!productId || isNaN(productId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Valid Product ID required" });
+      return failure(res, "Valid Product ID required", 400, "VALIDATION_ERROR");
     }
 
     // Check if product exists
@@ -86,9 +85,7 @@ const addToWishlist = async (req, res) => {
     );
 
     if (products.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found" });
+      return failure(res, "Product not found", 404, "PRODUCT_NOT_FOUND");
     }
 
     // Check if already in wishlist (prevent duplicates)
@@ -134,7 +131,7 @@ const addToWishlist = async (req, res) => {
     res.json({ success: true, alreadyInWishlist: false });
   } catch (error) {
     console.error("[WISHLIST] Add to wishlist error:", error);
-    res.status(500).json({ success: false, message: "Database error" });
+    return failure(res, "Database error", 500, "SERVER_ERROR");
   }
 };
 
@@ -148,9 +145,7 @@ const removeFromWishlist = async (req, res) => {
     const userId = req.user.id;
 
     if (!productId || isNaN(productId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Valid Product ID required" });
+      return failure(res, "Valid Product ID required", 400, "VALIDATION_ERROR");
     }
 
     await query(
@@ -180,7 +175,7 @@ const removeFromWishlist = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("[WISHLIST] Remove from wishlist error:", error);
-    res.status(500).json({ success: false, message: "Database error" });
+    return failure(res, "Database error", 500, "SERVER_ERROR");
   }
 };
 

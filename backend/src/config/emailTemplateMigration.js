@@ -142,6 +142,99 @@ const EMAIL_TEMPLATE_KEYS = [
     category: "order",
   },
   {
+    templateKey: "return_approved",
+    templateName: "Return Approved",
+    trigger: "When an admin approves a customer's return request",
+    defaultSubject: "Return Approved for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Return Approved</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Great news! Your return request for Order #{{order_id}} has been approved.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Approved On:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">We'll begin processing your refund shortly. The amount typically appears in your account within 3-7 business days after the refund is initiated.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number being returned", sample: "ORD123456" },
+      { key: "date", label: "Date", description: "The date the request was approved", sample: "10 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
+    templateKey: "return_rejected",
+    templateName: "Return Rejected",
+    trigger: "When an admin rejects a customer's return request",
+    defaultSubject: "Update on Your Return Request for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Return Request Update</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">We're sorry, but your return request for Order #{{order_id}} could not be approved.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 10px;color:#111827;font-size:15px;"><strong>Reason:</strong></p>
+      <p style="margin:0;color:#b91c1c;font-size:15px;">{{reason}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">If you believe this decision is in error, please reply to this email and our support team will take another look.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "reason", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number being returned", sample: "ORD123456" },
+      { key: "reason", label: "Reason", description: "The rejection reason set by the admin", sample: "Return window expired." },
+      { key: "date", label: "Date", description: "The date the request was rejected", sample: "10 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
+    templateKey: "refund_started",
+    templateName: "Refund Started",
+    trigger: "When a refund is initiated for an approved return",
+    defaultSubject: "Refund Initiated for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Refund Initiated</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your refund for Order #{{order_id}} has been initiated.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Amount:</strong> {{refund_amount}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Initiated On:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">The amount usually reflects in your account within 3-7 business days.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "refund_amount", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number being refunded", sample: "ORD123456" },
+      { key: "refund_amount", label: "Refund Amount", description: "The amount being refunded to the customer", sample: "₹12,499" },
+      { key: "date", label: "Date", description: "The date the refund was initiated", sample: "10 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
     templateKey: "refund",
     templateName: "Refund",
     trigger: "When an order's payment is marked as refunded",
@@ -174,6 +267,114 @@ const EMAIL_TEMPLATE_KEYS = [
     category: "order",
   },
   {
+    templateKey: "cod_refund_details_required",
+    templateName: "COD Refund Details Required",
+    trigger: "When a COD return is approved and refund details are needed from the customer",
+    defaultSubject: "Action Required: Provide Refund Details for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Refund Details Required</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your return for Order #{{order_id}} has been approved. To process your refund, we need your payment details.</p>
+    <p style="color:#374151;font-size:15px;">Please log in to your account and provide your preferred refund method:</p>
+    <ul style="color:#374151;font-size:15px;line-height:2;">
+      <li><strong>UPI</strong> - Enter your UPI ID</li>
+      <li><strong>Bank Transfer</strong> - Enter account holder name, account number, IFSC code, and bank name</li>
+    </ul>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Amount:</strong> {{refund_amount}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="{{dashboard_link}}" style="background:#111827;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:600;display:inline-block;">Submit Refund Details</a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;">If you have already submitted your details, you can ignore this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "refund_amount", "date", "dashboard_link"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD123456" },
+      { key: "refund_amount", label: "Refund Amount", description: "The amount to be refunded", sample: "₹12,499" },
+      { key: "date", label: "Date", description: "The date of the email", sample: "10 Sep 2026" },
+      { key: "dashboard_link", label: "Dashboard Link", description: "Link to the customer's dashboard", sample: "https://tekunikautomation.com/dashboard" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
+    templateKey: "cod_refund_processing",
+    templateName: "COD Refund Processing",
+    trigger: "When a COD refund is being processed after details are submitted",
+    defaultSubject: "Your COD Refund is Being Processed for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Refund Processing</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">We have received your refund details for Order #{{order_id}} and are now processing your refund.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Amount:</strong> {{refund_amount}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Method:</strong> {{refund_method}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">The refund will be completed shortly. You will receive a confirmation once it's done.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "refund_amount", "refund_method", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD123456" },
+      { key: "refund_amount", label: "Refund Amount", description: "The amount being refunded", sample: "₹12,499" },
+      { key: "refund_method", label: "Refund Method", description: "UPI or Bank", sample: "UPI" },
+      { key: "date", label: "Date", description: "The date the refund was initiated", sample: "10 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
+    templateKey: "cod_refund_completed",
+    templateName: "COD Refund Completed",
+    trigger: "When a COD refund is completed and money is transferred to the customer",
+    defaultSubject: "Your COD Refund has been Completed for Order #{{order_id}}",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Refund Completed</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your COD refund for Order #{{order_id}} has been completed successfully.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Amount:</strong> {{refund_amount}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Refund Method:</strong> {{refund_method}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Completed On:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">The amount should reflect in your account within 1-3 business days.</p>
+    <p style="color:#6b7280;font-size:13px;">If you don't see the refund by then, just reply to this email and we'll look into it.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "refund_amount", "refund_method", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "Name", description: "The customer's full name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "Email", description: "The customer's email address", sample: "rahul.sharma@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD123456" },
+      { key: "refund_amount", label: "Refund Amount", description: "The amount refunded", sample: "₹12,499" },
+      { key: "refund_method", label: "Refund Method", description: "UPI or Bank", sample: "UPI" },
+      { key: "date", label: "Date", description: "The date the refund was completed", sample: "10 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "order",
+  },
+  {
     templateKey: "abandoned_cart",
     templateName: "Abandoned Cart",
     trigger: "When a cart with items is left inactive for over 30 minutes",
@@ -200,6 +401,260 @@ const EMAIL_TEMPLATE_KEYS = [
     ],
     protectedVariables: [],
     category: "cart",
+  },
+  {
+    templateKey: "order_processing",
+    templateName: "Order Processing",
+    trigger: "When an order status changes to Processing",
+    defaultSubject: "Your Order #{{order_id}} is Being Processed",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} is Being Processed</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">We're now processing your order. Our team is picking and packing your items.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">We'll notify you as soon as your order is packed and ready to ship.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "date", label: "Date", description: "The date of status change", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_packed",
+    templateName: "Order Packed",
+    trigger: "When an order status changes to Packed",
+    defaultSubject: "Your Order #{{order_id}} Has Been Packed",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} Has Been Packed</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your order has been packed and is ready for shipping.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">Your package will be handed over to the courier shortly.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "date", label: "Date", description: "The date of status change", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_shipped",
+    templateName: "Order Shipped",
+    trigger: "When an order status changes to Shipped",
+    defaultSubject: "Your Order #{{order_id}} Has Been Shipped — Track It Now",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} Has Been Shipped</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Great news! Your order is on its way.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Tracking Number:</strong> {{tracking_number}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Courier:</strong> {{shipping_provider}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Estimated Delivery:</strong> {{estimated_delivery}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">You can track your shipment using the tracking number above.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "tracking_number", "shipping_provider", "estimated_delivery", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "tracking_number", label: "Tracking Number", description: "Courier tracking number", sample: "TRK-ABC123" },
+      { key: "shipping_provider", label: "Shipping Provider", description: "Courier company name", sample: "Delhivery" },
+      { key: "estimated_delivery", label: "Estimated Delivery", description: "Expected delivery date", sample: "20 Sep 2026" },
+      { key: "date", label: "Date", description: "The date of status change", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_in_transit",
+    templateName: "Order In Transit",
+    trigger: "When an order status changes to In Transit",
+    defaultSubject: "Your Order #{{order_id}} is In Transit",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} is In Transit</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your package is on the way to your location.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Tracking Number:</strong> {{tracking_number}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Courier:</strong> {{shipping_provider}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">Estimated delivery: {{estimated_delivery}}</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "tracking_number", "shipping_provider", "estimated_delivery", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "tracking_number", label: "Tracking Number", description: "Courier tracking number", sample: "TRK-ABC123" },
+      { key: "shipping_provider", label: "Shipping Provider", description: "Courier company name", sample: "Delhivery" },
+      { key: "estimated_delivery", label: "Estimated Delivery", description: "Expected delivery date", sample: "20 Sep 2026" },
+      { key: "date", label: "Date", description: "The date of status change", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_out_for_delivery",
+    templateName: "Order Out for Delivery",
+    trigger: "When an order status changes to Out for Delivery",
+    defaultSubject: "Your Order #{{order_id}} is Out for Delivery Today",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} is Out for Delivery</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your package is out for delivery today! Please ensure someone is available to receive it.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Tracking Number:</strong> {{tracking_number}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Courier:</strong> {{shipping_provider}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">You can track the live status using the tracking number.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "tracking_number", "shipping_provider", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "tracking_number", label: "Tracking Number", description: "Courier tracking number", sample: "TRK-ABC123" },
+      { key: "shipping_provider", label: "Shipping Provider", description: "Courier company name", sample: "Delhivery" },
+      { key: "date", label: "Date", description: "The date of status change", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_delivered",
+    templateName: "Order Delivered",
+    trigger: "When an order status changes to Delivered",
+    defaultSubject: "Your Order #{{order_id}} Has Been Delivered",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} Has Been Delivered</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your order has been delivered successfully. We hope you love your purchase!</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">If you have any feedback or need assistance, we're here to help.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "date", label: "Date", description: "The date of delivery", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "delivery_failed",
+    templateName: "Delivery Failed",
+    trigger: "When a delivery attempt fails",
+    defaultSubject: "Delivery Failed for Order #{{order_id}} — We'll Retry",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Delivery Attempt Failed for Order #{{order_id}}</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Our courier partner was unable to deliver your order today. We'll schedule a re-attempt or contact you to arrange an alternative.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Tracking Number:</strong> {{tracking_number}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Courier:</strong> {{shipping_provider}}</p>
+    </div>
+    <p style="color:#374151;font-size:15px;">Please check your tracking for updates or contact us if you need to reschedule.</p>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "tracking_number", "shipping_provider", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "tracking_number", label: "Tracking Number", description: "Courier tracking number", sample: "TRK-ABC123" },
+      { key: "shipping_provider", label: "Shipping Provider", description: "Courier company name", sample: "Delhivery" },
+      { key: "date", label: "Date", description: "The date of delivery failure", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
+  },
+  {
+    templateKey: "order_cancelled",
+    templateName: "Order Cancelled",
+    trigger: "When an order is cancelled",
+    defaultSubject: "Your Order #{{order_id}} Has Been Cancelled",
+    defaultBody: `
+<div style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;">
+  <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e6eaf0;">
+    <h2 style="margin:0 0 12px;color:#111827;">Your Order #{{order_id}} Has Been Cancelled</h2>
+    <p style="color:#374151;font-size:15px;">Hi {{user_name}},</p>
+    <p style="color:#374151;font-size:15px;">Your order has been cancelled as requested. If this was a mistake, please contact us.</p>
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 6px;color:#111827;font-size:15px;"><strong>Order ID:</strong> {{order_id}}</p>
+      <p style="margin:0;color:#111827;font-size:15px;"><strong>Date:</strong> {{date}}</p>
+    </div>
+    <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email.</p>
+  </div>
+</div>
+`.trim(),
+    variables: ["user_name", "user_email", "order_id", "date"],
+    variablesMeta: [
+      { key: "user_name", label: "User Name", description: "The customer's name", sample: "Rahul Sharma" },
+      { key: "user_email", label: "User Email", description: "The customer's email", sample: "rahul@example.com" },
+      { key: "order_id", label: "Order ID", description: "The order number", sample: "ORD-123456" },
+      { key: "date", label: "Date", description: "The date of cancellation", sample: "15 Sep 2026" },
+    ],
+    protectedVariables: [],
+    category: "shipping",
   },
 ];
 

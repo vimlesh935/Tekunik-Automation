@@ -135,8 +135,39 @@ const updateAdminAccount = asyncHandler(async (req, res) => {
   return success(res, "Admin account updated", result);
 });
 
+/**
+ * GET /api/admin/me — returns the currently authenticated admin's profile.
+ * Used by the frontend to validate an admin session (e.g. after a page
+ * refresh) against the `admins` table.
+ */
+const getAdminMe = asyncHandler(async (req, res) => {
+  const adminId = req.admin?.id;
+  if (!adminId) {
+    throw new AppError("Admin session missing", 401, "ADMIN_AUTH_REQUIRED");
+  }
+
+  const rows = await query(
+    "SELECT id, email, name, role, status FROM admins WHERE id = ? LIMIT 1",
+    [adminId]
+  );
+  const admin = rows[0];
+  if (!admin) {
+    throw new AppError("Admin not found", 404, "ADMIN_NOT_FOUND");
+  }
+
+  return success(res, "Admin profile loaded", {
+    admin: {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name || "",
+      role: admin.role,
+      status: admin.status,
+    },
+  });
+});
+
 module.exports = {
   adminLogin,
   updateAdminAccount,
-  updateAdminAccountCore,
+  getAdminMe,
 };

@@ -3,19 +3,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Clock, TrendingUp, Loader2, ChevronRight, Package } from "lucide-react";
 import { productService } from "../services/api";
+import { useTranslation } from "react-i18next";
 
 const POPULAR_SEARCHES = [
-  "Smart Switch",
-  "Digital Lock",
-  "Smart Gateway",
-  "WiFi Switch",
-  "Motion Sensor",
-  "Smart Home",
+  { key: "smartSearch.popularSmartSwitch", term: "Smart Switch" },
+  { key: "smartSearch.popularDigitalLock", term: "Digital Lock" },
+  { key: "smartSearch.popularSmartGateway", term: "Smart Gateway" },
+  { key: "smartSearch.popularWifiSwitch", term: "WiFi Switch" },
+  { key: "smartSearch.popularMotionSensor", term: "Motion Sensor" },
+  { key: "smartSearch.popularSmartHome", term: "Smart Home" },
 ];
 
 const MAX_HISTORY = 5;
 
 const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -245,9 +247,9 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
 
   const getAvailabilityLabel = (product) => {
     if (product.stock_status === "out_of_stock" || product.stock_quantity === 0) {
-      return "Out of Stock";
+      return t("status.product.outOfStock");
     }
-    return "Available";
+    return t("status.product.inStock");
   };
 
   const getAvailabilityClass = (product) => {
@@ -272,7 +274,7 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search..."
+            placeholder={t("common.searchPlaceholder")}
             className="w-full h-9 rounded-full border border-slate-600/60 bg-slate-900/95 pl-9 pr-8 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 focus:bg-slate-900 transition-all shadow-lg backdrop-blur-xl"
             autoFocus
           />
@@ -314,9 +316,9 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
               {!isLoading && suggestions.length === 0 && query.trim().length >= 1 && (
                 <div className="px-4 py-8 text-center">
                   <Package className="mx-auto text-slate-600 mb-2" size={32} />
-                  <p className="text-sm text-slate-400">No products found</p>
+                  <p className="text-sm text-slate-400">{t("shop.noProductsFound")}</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Try searching for something else
+                    {t("smartSearch.trySearching")}
                   </p>
                 </div>
               )}
@@ -410,7 +412,7 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-all duration-200"
                       >
                         <TrendingUp size={14} />
-                        View All Results ({totalResults})
+                        {t("smartSearch.viewAllResults", { total: totalResults })}
                       </button>
                     </div>
                   )}
@@ -422,13 +424,13 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
                 <div className="p-2">
                   <div className="flex items-center justify-between px-2 py-1.5">
                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      Recent Searches
+                      {t("smartSearch.recentSearches")}
                     </span>
                     <button
                       onClick={clearHistory}
                       className="text-xs text-slate-500 hover:text-rose-400 transition-colors"
                     >
-                      Clear
+                      {t("smartSearch.clearHistory")}
                     </button>
                   </div>
                   {searchHistory.map((historyItem, index) => (
@@ -450,18 +452,18 @@ const SmartSearch = ({ isOpen, onClose, query: externalQuery = "", onQueryChange
                 <div className="p-2">
                   <div className="px-2 py-1.5">
                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      Popular Searches
+                      {t("smartSearch.popularSearches")}
                     </span>
                   </div>
                   <div className="space-y-1">
                     {POPULAR_SEARCHES.map((term, index) => (
                       <div
                         key={index}
-                        onClick={() => handleSearchHistoryClick(term)}
+                        onClick={() => handleSearchHistoryClick(term.term)}
                         className="flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer hover:bg-slate-800/60 transition-all duration-200"
                       >
                         <TrendingUp className="text-indigo-500" size={14} />
-                        <span className="text-sm text-slate-300 flex-1">{term}</span>
+                        <span className="text-sm text-slate-300 flex-1">{t(term.key)}</span>
                         <ChevronRight className="text-slate-600" size={14} />
                       </div>
                     ))}

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { demoEnquiryService } from "../services/api";
 import ValidatedEmailInput from "./ValidatedEmailInput.jsx";
 
 export default function EnquiryModal({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -30,23 +32,23 @@ export default function EnquiryModal({ isOpen, onClose }) {
     const newErrors = {};
 
     if (!formData.full_name.trim()) {
-      newErrors.full_name = "Full Name is required";
+      newErrors.full_name = t("enquiry.fullNameRequired");
     }
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = t("enquiry.emailRequired");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(formData.email.trim())) {
-      newErrors.email = "Invalid email format";
+      newErrors.email = t("enquiry.invalidEmail");
     }
     if (!formData.phone.trim()) {
-      newErrors.phone = "Phone is required";
+      newErrors.phone = t("enquiry.phoneRequired");
     } else {
       const digits = formData.phone.replace(/\D/g, "");
       if (digits.length < 10) {
-        newErrors.phone = "Phone must be at least 10 digits";
+        newErrors.phone = t("enquiry.phoneMinDigits");
       }
     }
     if (!formData.preferred_date) {
-      newErrors.preferred_date = "Preferred Date is required";
+      newErrors.preferred_date = t("enquiry.preferredDateRequired");
     }
 
     setErrors(newErrors);
@@ -89,7 +91,7 @@ export default function EnquiryModal({ isOpen, onClose }) {
       } else {
         setServerError({
           code: response.code || "UNKNOWN",
-          message: response.message || "Submission failed.",
+          message: response.message || t("enquiry.submissionFailed"),
           errors: response.errors || [],
         });
       }
@@ -97,7 +99,7 @@ export default function EnquiryModal({ isOpen, onClose }) {
       console.error("[EnquiryModal] Error:", error);
       setServerError({
         code: error.code || "NETWORK_ERROR",
-        message: error.message || "Unable to connect to server.",
+        message: error.message || t("enquiry.unableToConnect"),
         errors: error.details?.errors || [],
       });
     } finally {
@@ -132,8 +134,8 @@ export default function EnquiryModal({ isOpen, onClose }) {
               className="relative w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-12 text-center shadow-2xl"
             >
               <CheckCircle className="w-20 h-20 text-emerald-400 mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-white mb-3">✅ Demo request submitted successfully.</h3>
-              <p className="text-gray-400 text-lg">Our team will contact you shortly.</p>
+              <h3 className="text-2xl font-bold text-white mb-3">{t("thankYou.demoSubmitted")}</h3>
+              <p className="text-gray-400 text-lg">{t("enquiry.teamWillContact")}</p>
             </motion.div>
           </div>
         )}
@@ -188,22 +190,22 @@ export default function EnquiryModal({ isOpen, onClose }) {
 
             <div className="px-8 pt-8 pb-4">
               <div className="w-12 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mb-6" />
-              <h2 className="text-3xl font-bold text-white mb-2">Book Free Demo</h2>
-              <p className="text-gray-400">Fill in your details below and we'll get back to you.</p>
+              <h2 className="text-3xl font-bold text-white mb-2">{t("enquiry.bookFreeDemo")}</h2>
+              <p className="text-gray-400">{t("enquiry.fillDetails")}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Full Name <span className="text-red-400">*</span>
+                  {t("enquiry.fullNameLabel")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
-                  placeholder="John Doe"
+                  placeholder={t("enquiry.namePlaceholder")}
                   className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                     errors.full_name ? "border-red-500" : "border-white/10"
                   } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -214,14 +216,14 @@ export default function EnquiryModal({ isOpen, onClose }) {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email <span className="text-red-400">*</span>
+                  {t("enquiry.emailLabel")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="john@example.com"
+                  placeholder={t("enquiry.emailPlaceholder")}
                   className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                     errors.email ? "border-red-500" : "border-white/10"
                   } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -232,14 +234,14 @@ export default function EnquiryModal({ isOpen, onClose }) {
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Phone <span className="text-red-400">*</span>
+                  {t("enquiry.phoneLabel")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+91 98765 43210"
+                  placeholder={t("enquiry.phonePlaceholder")}
                   className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                     errors.phone ? "border-red-500" : "border-white/10"
                   } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -251,7 +253,7 @@ export default function EnquiryModal({ isOpen, onClose }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Preferred Date <span className="text-red-400">*</span>
+                    {t("enquiry.preferredDateLabel")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="date"
@@ -266,7 +268,7 @@ export default function EnquiryModal({ isOpen, onClose }) {
                   {errors.preferred_date && <p className="mt-1 text-sm text-red-400">{errors.preferred_date}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Time</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">{t("enquiry.preferredTimeLabel")}</label>
                   <input
                     type="time"
                     name="preferred_time"
@@ -280,14 +282,14 @@ export default function EnquiryModal({ isOpen, onClose }) {
               {/* Message */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Message <span className="text-gray-500">(optional)</span>
+                  {t("enquiry.messageLabel")} <span className="text-gray-500">{t("enquiry.optional")}</span>
                 </label>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   rows={3}
-                  placeholder="Tell us about your requirements..."
+                  placeholder={t("enquiry.messagePlaceholder")}
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none"
                 />
               </div>
@@ -301,12 +303,12 @@ export default function EnquiryModal({ isOpen, onClose }) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Submitting...
+                    {t("enquiry.submitting")}
                   </>
                 ) : (
                   <>
                     <Send className="w-5 h-5" />
-                    Submit Enquiry
+                    {t("enquiry.submitEnquiry")}
                   </>
                 )}
               </button>

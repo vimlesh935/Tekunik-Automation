@@ -152,7 +152,7 @@ export default function HomeProducts({ featuredProducts, loading, handleAddToCar
                     </div>
                     {hasDiscount(product) && (
                       <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-md">
-                        {Math.round(product.discount_percent)}% OFF
+                        {t('coupon.percentOff', { percent: Math.round(product.discount_percent) })}
                       </span>
                     )}
                   </div>

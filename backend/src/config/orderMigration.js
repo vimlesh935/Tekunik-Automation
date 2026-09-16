@@ -3,7 +3,7 @@ const { query } = require("./db");
 const TRACKING_STEPS = [
   {
     status: "pending",
-    label: "Order Confirmed",
+    label: "Order Placed",
     description: "Your order has been placed and is awaiting confirmation",
   },
   {
@@ -19,22 +19,37 @@ const TRACKING_STEPS = [
   {
     status: "packed",
     label: "Packed",
-    description: "Your order has been packed",
+    description: "Your order has been packed and is ready for shipping",
   },
   {
     status: "shipped",
     label: "Shipped",
-    description: "Your order has been shipped",
+    description: "Your order has been shipped and is on its way",
+  },
+  {
+    status: "in_transit",
+    label: "In Transit",
+    description: "Your order is on the way to your location",
   },
   {
     status: "out_for_delivery",
     label: "Out for Delivery",
-    description: "Your order is out for delivery",
+    description: "Your order is out for delivery today",
   },
   {
     status: "delivered",
     label: "Delivered",
-    description: "Your order has been delivered",
+    description: "Your order has been delivered successfully",
+  },
+  {
+    status: "delivery_failed",
+    label: "Delivery Failed",
+    description: "Delivery attempt failed. We will retry or contact you",
+  },
+  {
+    status: "cancelled",
+    label: "Cancelled",
+    description: "Your order has been cancelled",
   },
 ];
 
@@ -167,6 +182,7 @@ const ensureRefundColumns = async () => {
     await ensureColumn("orders", "refund_status", "refund_status VARCHAR(50) NULL DEFAULT NULL AFTER paid_at");
     await ensureColumn("orders", "refunded_at", "refunded_at DATETIME NULL AFTER refund_status");
     await ensureColumn("orders", "refunded_by", "refunded_by VARCHAR(100) NULL AFTER refunded_at");
+    await ensureColumn("orders", "refund_reference", "refund_reference VARCHAR(255) NULL DEFAULT NULL AFTER refunded_by");
     console.log("✅ [MIGRATE] Refund columns ready");
   } catch (error) {
     console.warn("⚠️ [MIGRATE] Could not ensure refund columns:", error.message);

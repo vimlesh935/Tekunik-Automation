@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function AuthInput({
   label,
@@ -17,6 +18,7 @@ export default function AuthInput({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef(null);
+  const { t } = useTranslation();
 
   const isPassword = type === "password";
   const inputType = isPassword && showPasswordToggle ? (showPassword ? "text" : "password") : type;
@@ -74,7 +76,7 @@ export default function AuthInput({
           <button
             type="button"
             onClick={handlePasswordToggle}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? t('password.hidePassword') : t('password.showPassword')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors duration-300 z-10 flex items-center justify-center w-8 h-8 rounded-md hover:bg-slate-800/60 cursor-pointer"
           >
             {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}

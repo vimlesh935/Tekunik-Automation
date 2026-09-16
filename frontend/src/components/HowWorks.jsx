@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { PackageSearch, Wrench, SmartphoneNfc, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Signature concept
@@ -18,31 +19,31 @@ import { PackageSearch, Wrench, SmartphoneNfc, Sparkles } from "lucide-react";
 const steps = [
   {
     id: 1,
-    title: "Choose Device",
-    desc: "Select from our premium range.",
+    titleKey: "howWorks.step1.title",
+    descKey: "howWorks.step1.desc",
     icon: PackageSearch,
-    accent: "56, 189, 248", // sky
+    accent: "56, 189, 248",
   },
   {
     id: 2,
-    title: "Professional Installation",
-    desc: "Expert setup with zero damage.",
+    titleKey: "howWorks.step2.title",
+    descKey: "howWorks.step2.desc",
     icon: Wrench,
-    accent: "139, 92, 246", // violet
+    accent: "139, 92, 246",
   },
   {
     id: 3,
-    title: "Connect Mobile App",
-    desc: "Sync devices seamlessly.",
+    titleKey: "howWorks.step3.title",
+    descKey: "howWorks.step3.desc",
     icon: SmartphoneNfc,
-    accent: "217, 70, 239", // fuchsia
+    accent: "217, 70, 239",
   },
   {
     id: 4,
-    title: "Enjoy Smart Living",
-    desc: "Experience true automation.",
+    titleKey: "howWorks.step4.title",
+    descKey: "howWorks.step4.desc",
     icon: Sparkles,
-    accent: "251, 191, 36", // amber
+    accent: "251, 191, 36",
   },
 ];
 
@@ -57,6 +58,7 @@ const item = {
 };
 
 export default function HowItWorksSection() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden py-16 sm:py-24">
       {/* Ambient board glow, sweeping cool to warm behind the trace */}
@@ -79,11 +81,11 @@ export default function HowItWorksSection() {
         >
           <span className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-text-secondary/70">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-            Installation Path
+            {t("howWorks.installationPath")}
           </span>
-          <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-4xl">How It Works</h2>
+          <h2 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-4xl">{t("howWorks.title")}</h2>
           <p className="px-4 text-sm text-text-secondary sm:text-base">
-            Four simple steps to transform your home.
+            {t("howWorks.subtitle")}
           </p>
         </motion.div>
 
@@ -190,10 +192,10 @@ export default function HowItWorksSection() {
 
                 <div className="min-w-0 pt-0.5 lg:pt-0">
                   <h3 className="mb-1 text-base font-bold sm:mb-2 sm:text-lg lg:text-xl">
-                    {step.title}
+                    {t(step.titleKey)}
                   </h3>
                   <p className="max-w-[240px] text-xs text-text-secondary sm:text-sm lg:mx-auto">
-                    {step.desc}
+                    {t(step.descKey)}
                   </p>
                 </div>
               </motion.div>

@@ -1,13 +1,14 @@
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useEmailValidation } from "../hooks/useEmailValidation";
+import { useTranslation } from "react-i18next";
 
 export default function ValidatedEmailInput({
-  label = "Email",
+  label: labelProp,
   name,
   value,
   onChange,
   onBlur,
-  placeholder = "you@example.com",
+  placeholder: placeholderProp,
   disabled = false,
   required = true,
   className = "",
@@ -17,6 +18,9 @@ export default function ValidatedEmailInput({
   validateOnBlur = true,
   requireValidForSubmit = true,
 }) {
+  const { t } = useTranslation();
+  const label = labelProp ?? t('common.email');
+  const placeholder = placeholderProp ?? t('checkout.emailPlaceholder');
   const {
     isFormatValid,
     isValid,

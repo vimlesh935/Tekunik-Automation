@@ -31,13 +31,13 @@ export default function ComparisonBar() {
       {ids.length > 0 && (
         <motion.aside initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }} className="fixed bottom-5 left-1/2 z-50 w-[min(760px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border border-indigo-400/30 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-white"><GitCompareArrows size={18} className="text-cyan-400" /> {t('compare.title')} <span className="text-cyan-300">{ids.length} selected</span></div>
+            <div className="flex items-center gap-2 text-sm font-bold text-white"><GitCompareArrows size={18} className="text-cyan-400" /> {t('compare.title')} <span className="text-cyan-300">{t('compare.selectedCount', { count: ids.length })}</span></div>
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
               {products.map((product) => (
                 <div key={product.id} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs text-slate-200">
                   <SafeImage src={product.image_url} alt="" className="h-7 w-7 rounded object-cover" />
                   <span className="max-w-24 truncate">{product.name}</span>
-                  <button type="button" onClick={() => removeProduct(product.id)} aria-label={`Remove ${product.name}`} className="text-slate-500 hover:text-rose-400"><X size={13} /></button>
+                   <button type="button" onClick={() => removeProduct(product.id)} aria-label={t('common.remove')} className="text-slate-500 hover:text-rose-400"><X size={13} /></button>
                 </div>
               ))}
             </div>

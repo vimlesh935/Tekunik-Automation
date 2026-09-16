@@ -39,6 +39,18 @@ const SECTION_GROUPS = [
       { key: "company_address", label: "Company Address" },
       { key: "footer_about", label: "Footer Description" },
     ],
+    localizedTextareas: [
+      { key: "hero_heading_hi", label: "Hero Heading (Hindi)" },
+      { key: "hero_heading_mr", label: "Hero Heading (Marathi)" },
+      { key: "company_tagline_hi", label: "Company Tagline (Hindi)" },
+      { key: "company_tagline_mr", label: "Company Tagline (Marathi)" },
+    ],
+    localizedLongTextareas: [
+      { key: "company_description_hi", label: "Company Description (Hindi)" },
+      { key: "company_description_mr", label: "Company Description (Marathi)" },
+      { key: "footer_about_hi", label: "Footer Description (Hindi)" },
+      { key: "footer_about_mr", label: "Footer Description (Marathi)" },
+    ],
   },
   {
     id: "social-media",
@@ -257,6 +269,36 @@ export default function AdminFrontendSettings() {
               {group.textareas?.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 max-w-4xl">
                   {group.textareas.map((ta) => (
+                    <label key={ta.key} className="block">
+                      <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{ta.label}</span>
+                      <textarea
+                        rows={3}
+                        value={frontendSettings[ta.key] || ""}
+                        onChange={(e) => updateField(ta.key, e.target.value)}
+                        className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 outline-none transition resize-none"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {(group.localizedTextareas?.length > 0 || group.localizedLongTextareas?.length > 0) && (
+                <div className="grid grid-cols-1 gap-4 max-w-4xl">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-1">
+                    Localized Content
+                  </p>
+                  {group.localizedTextareas?.map((ta) => (
+                    <label key={ta.key} className="block">
+                      <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{ta.label}</span>
+                      <textarea
+                        rows={2}
+                        value={frontendSettings[ta.key] || ""}
+                        onChange={(e) => updateField(ta.key, e.target.value)}
+                        className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 outline-none transition resize-none"
+                      />
+                    </label>
+                  ))}
+                  {group.localizedLongTextareas?.map((ta) => (
                     <label key={ta.key} className="block">
                       <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{ta.label}</span>
                       <textarea

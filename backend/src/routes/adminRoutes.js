@@ -16,4 +16,7 @@ router.post("/api/admin/login", adminController.adminLogin);
 // Update current admin login identity (email / password)
 router.put("/api/admin/account", requireAdmin, adminController.updateAdminAccount);
 
+// Current admin profile (session validation after refresh)
+router.get("/api/admin/me", requireAdmin, adminController.getAdminMe);
+
 module.exports = router;

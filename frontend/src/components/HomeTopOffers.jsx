@@ -4,13 +4,13 @@ import { Tag, ArrowRight, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { offerService } from "../services/api";
 
-const formatDiscount = (offer) => {
+const formatDiscount = (offer, t) => {
   if (offer?.type === "percentage") {
     const value = Math.round(Number(offer.value) || 0);
-    if (value > 0) return `${value}% OFF`;
+    if (value > 0) return t("coupon.percentOff", { percent: value });
   }
-  if (offer?.type === "fixed") return `₹${Number(offer.value) || 0} OFF`;
-  return offer?.title || offer?.name || "Special Offer";
+  if (offer?.type === "fixed") return t("coupon.amountOff", { amount: `₹${Number(offer.value) || 0}` });
+  return offer?.title || offer?.name || t("offers.specialOffer");
 };
 
 export default function HomeTopOffers() {
@@ -56,11 +56,11 @@ export default function HomeTopOffers() {
     return !best || value > (Number(best.value) || 0) ? offer : best;
   }, null);
 
-  const discountLabel = formatDiscount(bestOffer);
+  const discountLabel = formatDiscount(bestOffer, t);
   const offerMessage =
     bestOffer?.title ||
     bestOffer?.description ||
-    "Limited time offer. Shop now!";
+    t("home.limitedTimeShopNow");
 
   return (
     <aside className="relative z-40 w-full overflow-hidden border-b border-white/10 bg-gradient-to-r from-cyan-950 via-slate-900 to-slate-950">
@@ -91,7 +91,7 @@ export default function HomeTopOffers() {
           to="/offers"
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-slate-900 shadow-sm transition hover:bg-cyan-100 active:scale-[0.98] md:text-sm"
         >
-          View All <ArrowRight size={14} />
+          {t('common.viewAll')} <ArrowRight size={14} />
         </Link>
       </div>
 

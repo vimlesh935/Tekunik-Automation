@@ -1,3 +1,6 @@
+import i18n from "../i18n";
+import { getTranslationKey } from "../utils/backendMessageMapper";
+
 const RAW_API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
@@ -78,12 +81,25 @@ const readResponseBody = async (response) => {
   }
 };
 
-const normalizeApiError = async (response, payload) => {
+const shouldTranslateApiMessage = (endpoint) => {
+  const normalized = normalizeEndpoint(endpoint);
+  return !normalized.startsWith("/api/admin") && !normalized.startsWith("/admin");
+};
+
+const normalizeApiError = async (response, payload, endpoint) => {
   const details = payload?.data || payload?.details || null;
+  const translate = shouldTranslateApiMessage(endpoint);
+  const translationKey = translate
+    ? payload?.translationKey || getTranslationKey(payload?.messageCode || payload?.code)
+    : null;
   const error = {
     status: response.status,
-    message: payload?.message || "Something went wrong. Please try again.",
+    message: translationKey
+      ? i18n.t(translationKey)
+      : payload?.message || (translate ? i18n.t("common.somethingWentWrong") : "Something went wrong. Please try again."),
     code: payload?.code || "API_ERROR",
+    messageCode: payload?.messageCode || null,
+    translationKey,
     details,
   };
   if (response.status === 401) {
@@ -122,7 +138,7 @@ const apiCall = async (endpoint, options = {}) => {
       const payload = await readResponseBody(response);
 
       if (!response.ok) {
-        const apiError = await normalizeApiError(response, payload || {});
+        const apiError = await normalizeApiError(response, payload || {}, endpoint);
         apiError.requestUrl = requestUrl;
         if (response.status === 404) {
           console.error("[API] Route not found", {
@@ -138,6 +154,18 @@ const apiCall = async (endpoint, options = {}) => {
         console.warn(
           `[API] Recovered using fallback base URL: ${baseUrl || "(same-origin /api proxy)"}`
         );
+      }
+
+      if (shouldTranslateApiMessage(endpoint) && (payload?.translationKey || payload?.messageCode)) {
+        const translationKey =
+          payload.translationKey || getTranslationKey(payload.messageCode);
+        if (translationKey) {
+          return {
+            ...payload,
+            message: i18n.t(translationKey),
+            translationKey,
+          };
+        }
       }
 
       return payload || { success: true, data: null };
@@ -161,9 +189,9 @@ const apiCall = async (endpoint, options = {}) => {
 
   throw {
     status: 0,
-    message:
-      "Unable to connect to the server. Please refresh the page or try again later.",
+    message: i18n.t("common.networkError"),
     code: "NETWORK_ERROR",
+    translationKey: "common.networkError",
     requestUrl: lastNetworkError?.requestUrl || getApiUrl(endpoint),
     details: {
       attemptedBaseUrls: buildApiBaseCandidates().map(
@@ -206,16 +234,10 @@ export const authService = {
 
 // ─────────────────────────────────────────────────────────────
 // PASSWORD SERVICES (Change Password — Profile / Settings)
-// Method 1: current password          → changeWithCurrentPassword
-// Method 2: email OTP                 → sendOtp → verifyOtp → resetAfterOtp
+// Method: email OTP → sendOtp → verifyOtp → resetAfterOtp
 // ─────────────────────────────────────────────────────────────
 
 export const passwordService = {
-  changeWithCurrentPassword: (currentPassword, newPassword, confirmPassword) =>
-    apiCall("/api/user/change-password", {
-      method: "POST",
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
-    }),
   sendOtp: () =>
     apiCall("/api/user/change-password/send-otp", { method: "POST" }),
   verifyOtp: (otp) =>
@@ -488,10 +510,21 @@ export const orderService = {
     return apiCall(`/api/user/orders?${params.toString()}`);
   },
   getOrder: (orderId) => apiCall(`/api/user/orders/${orderId}`),
+  getReturnRequest: (orderId) => apiCall(`/api/user/orders/${orderId}/return-request`),
+  requestReturn: (orderId, data) =>
+    apiCall(`/api/user/orders/${orderId}/return-request`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   cancelOrder: (orderId) =>
     apiCall(`/api/user/orders/${orderId}/cancel`, { method: "POST" }),
   markPaymentFailed: (orderId) =>
     apiCall(`/api/user/orders/${orderId}/payment-failed`, { method: "POST" }),
+  submitCodRefundDetails: (orderId, data) =>
+    apiCall(`/api/user/orders/${orderId}/cod-refund-details`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   downloadUserInvoice: (orderId) =>
     fetch(getApiUrl(`/api/user/orders/${orderId}/download-invoice`), {
       headers: {
@@ -557,6 +590,50 @@ export const adminOrderService = {
   downloadInvoice: (orderId) => apiCall(`/api/admin/orders/${orderId}/invoice`),
   regenerateInvoice: (orderId) =>
     apiCall(`/api/admin/orders/${orderId}/invoice`, { method: "POST" }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN RETURN & REFUND SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const adminReturnService = {
+  list: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.search) query.set("search", params.search);
+    if (params.status) query.set("status", params.status);
+    if (params.tab) query.set("tab", params.tab);
+    if (params.request_type) query.set("request_type", params.request_type);
+    if (params.date_from) query.set("date_from", params.date_from);
+    if (params.date_to) query.set("date_to", params.date_to);
+    const qs = query.toString();
+    return apiCall(`/api/admin/order-returns${qs ? `?${qs}` : ""}`);
+  },
+  get: (id) => apiCall(`/api/admin/order-returns/${id}`),
+  approve: (id, { approved_amount, notes } = {}) =>
+    apiCall(`/api/admin/order-returns/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ approved_amount, notes }),
+    }),
+  reject: (id, rejectionReason) =>
+    apiCall(`/api/admin/order-returns/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ rejection_reason: rejectionReason }),
+    }),
+  startRefund: (id, { notes, refund_reference } = {}) =>
+    apiCall(`/api/admin/order-returns/${id}/start-refund`, {
+      method: "POST",
+      body: JSON.stringify({ notes, refund_reference }),
+    }),
+  completeRefund: (id, { refund_reference, notes } = {}) =>
+    apiCall(`/api/admin/order-returns/${id}/complete-refund`, {
+      method: "POST",
+      body: JSON.stringify({ refund_reference, notes }),
+    }),
+  getCodRefundDetails: (id) => apiCall(`/api/admin/order-returns/${id}/cod-refund-details`),
+  processCodRefund: (id) =>
+    apiCall(`/api/admin/order-returns/${id}/process-cod-refund`, { method: "POST" }),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -851,6 +928,74 @@ export const emailTemplateService = {
     apiCall(`/api/admin/email-templates/${encodeURIComponent(key)}/send-test`, {
       method: "POST",
       body: JSON.stringify({ to, subject, body }),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// SHIPPING SERVICES
+// ─────────────────────────────────────────────────────────────
+
+export const shippingService = {
+  // Admin
+  getSummary: () => apiCall("/api/admin/shipping/summary"),
+  getShipments: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.status) query.set("status", params.status);
+    if (params.search) query.set("search", params.search);
+    return apiCall(`/api/admin/shipping?${query.toString()}`);
+  },
+  getShipment: (id) => apiCall(`/api/admin/shipping/${id}`),
+  updateStatus: (id, data) =>
+    apiCall(`/api/admin/shipping/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  getSettings: () => apiCall("/api/admin/shipping/settings"),
+  updateSettings: (data) =>
+    apiCall("/api/admin/shipping/settings", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  getMethods: () => apiCall("/api/admin/shipping/methods"),
+  createMethod: (data) =>
+    apiCall("/api/admin/shipping/methods", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateMethod: (id, data) =>
+    apiCall(`/api/admin/shipping/methods/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteMethod: (id) =>
+    apiCall(`/api/admin/shipping/methods/${id}`, { method: "DELETE" }),
+  getZones: () => apiCall("/api/admin/shipping/zones"),
+  getEnabledZones: () => apiCall("/api/admin/shipping/zones/enabled"),
+  createZone: (data) =>
+    apiCall("/api/admin/shipping/zones", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateZone: (id, data) =>
+    apiCall(`/api/admin/shipping/zones/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteZone: (id) =>
+    apiCall(`/api/admin/shipping/zones/${id}`, { method: "DELETE" }),
+
+  // Public (for checkout)
+  checkPincode: (pincode) =>
+    apiCall("/api/shipping/check-pincode", {
+      method: "POST",
+      body: JSON.stringify({ pincode }),
+    }),
+  calculate: (data) =>
+    apiCall("/api/shipping/calculate", {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
 };
 

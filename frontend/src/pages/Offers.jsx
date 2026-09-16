@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { offerService } from "../services/api";
 import { getImageUrl } from "../utils/imageUrl.js";
 import { formatOfferDiscount, getOfferCta } from "../components/HomeOfferCarousel.jsx";
+import { localizedField } from "../utils/i18nContent.js";
 import { Tag, Clock, ChevronRight } from "lucide-react";
 
 export default function Offers() {
+  const { t, i18n } = useTranslation();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +40,7 @@ export default function Offers() {
     };
   }, []);
 
-  const formatDiscount = (offer) => formatOfferDiscount(offer);
+  const formatDiscount = (offer) => formatOfferDiscount(offer, t);
 
   const formatExpiry = (date) => {
     if (!date) return null;
@@ -49,8 +52,8 @@ export default function Offers() {
     <div className="min-h-screen bg-page text-primary px-4 py-12">
       <div className="max-w-6xl mx-auto">
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-white">Offers & Promotions</h1>
-          <p className="text-gray-400 mt-2 text-sm">Exclusive deals on smart home products</p>
+          <h1 className="text-3xl font-bold text-white">{t("offersPage.title")}</h1>
+          <p className="text-gray-400 mt-2 text-sm">{t("offersPage.subtitle")}</p>
         </div>
 
         {loading ? (
@@ -60,45 +63,49 @@ export default function Offers() {
         ) : offers.length === 0 ? (
           <div className="text-center py-24 text-gray-500">
             <Tag size={40} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">No active offers right now</p>
-            <p className="text-sm mt-1">Check back soon for exciting deals!</p>
+            <p className="text-lg font-medium">{t("offersPage.noOffers")}</p>
+            <p className="text-sm mt-1">{t("offersPage.checkBackSoon")}</p>
             <Link to="/shop" className="inline-block mt-6 px-6 py-2.5 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition text-sm">
-              Browse Products
+              {t("offersPage.browseProducts")}
             </Link>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {offers.map((offer) => (
+            {offers.map((offer) => {
+              const title = localizedField(offer, "title", i18n.language) || offer.name;
+              const description = localizedField(offer, "description", i18n.language);
+              return (
               <div key={offer.id} className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-hidden hover:border-cyan-500/40 transition group">
                 {offer.banner_image && (
                   <div className="h-36 overflow-hidden">
-                    <img src={getImageUrl(offer.banner_image)} alt={offer.title || offer.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                    <img src={getImageUrl(offer.banner_image)} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                   </div>
                 )}
                 <div className="p-5">
                   <span className="inline-block px-2.5 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-md text-xs font-bold mb-3">
                     {formatDiscount(offer)}
                   </span>
-                  <h3 className="text-white font-bold text-base leading-snug">{offer.title || offer.name}</h3>
-                  {offer.description && (
-                    <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">{offer.description}</p>
+                  <h3 className="text-white font-bold text-base leading-snug">{title}</h3>
+                  {description && (
+                    <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">{description}</p>
                   )}
                   {offer.min_order_value > 0 && (
-                    <p className="text-gray-500 text-xs mt-2">Min. order: ₹{offer.min_order_value}</p>
+                    <p className="text-gray-500 text-xs mt-2">{t("offersPage.minOrder", { value: offer.min_order_value })}</p>
                   )}
                   {offer.expires_at && (
                     <p className="flex items-center gap-1 text-amber-400/80 text-xs mt-2">
-                      <Clock size={11} /> Expires {formatExpiry(offer.expires_at)}
+                      <Clock size={11} /> {t("offersPage.expires", { date: formatExpiry(offer.expires_at) })}
                     </p>
                   )}
-                  {(() => { const cta = getOfferCta(offer); return (
+                  {(() => { const cta = getOfferCta(offer, t); return (
                     <Link to={cta.to} className="mt-4 flex items-center gap-1 text-cyan-400 text-xs font-semibold hover:gap-2 transition-all">
                       {offer.cta_text || cta.label} <ChevronRight size={14} />
                     </Link>
                   ); })()}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

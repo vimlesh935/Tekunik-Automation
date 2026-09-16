@@ -13,6 +13,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useTranslation } from "react-i18next";
 import { authService } from "../services/api";
+import { getErrorMessage } from "../utils/backendMessageMapper";
 import AuthInput from "../components/AuthInput.jsx";
 
 /* ── Brand tokens ── */
@@ -142,7 +143,7 @@ export default function Login() {
       setSuccess(true);
       setTimeout(() => navigate("/dashboard", { replace: true }), 1600);
     } catch (err) {
-      setError(err.message || t("auth.loginFailed"));
+      setError(getErrorMessage(err, t, "auth.loginFailed"));
     } finally { setLoading(false); }
   };
 

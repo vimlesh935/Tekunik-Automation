@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { orderService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
+import { useTranslation } from "react-i18next";
+import { getStatusKey } from "../utils/statusTranslations.js";
 import { 
   Search, Mail, Phone, Package, ArrowLeft, MapPin, Clock, 
   CreditCard, CheckCircle, Loader2, Truck, Copy, Check, Star, Hash, ShieldCheck
@@ -24,6 +26,7 @@ function formatIndianPrice(amount) {
 }
 
 export default function TrackOrder() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
@@ -59,12 +62,12 @@ export default function TrackOrder() {
     
     if (mode === "tracking") {
       if (!trackingNum) {
-        addToast("Please provide your tracking number.", "warning");
+        addToast(t("trackOrder.provideTrackingNumber"), "warning");
         return;
       }
     } else {
       if (!orderNum || !contact.trim()) {
-        addToast("Please provide your order number and email/phone.", "warning");
+        addToast(t("trackOrder.provideOrderAndContact"), "warning");
         return;
       }
     }
@@ -80,12 +83,12 @@ export default function TrackOrder() {
       
       const response = await orderService.trackOrder(payload);
       const orderData = response.data?.order;
-      if (!orderData) throw new Error("Order not found.");
+      if (!orderData) throw new Error(t("trackOrder.orderNotFound"));
       setOrder(orderData);
       setSearched(true);
-      addToast("Order found successfully!", "success");
+      addToast(t("trackOrder.orderFound"), "success");
     } catch (error) {
-      addToast(error?.message || "Unable to track the order. Please check your details.", "error");
+      addToast(error?.message || t("trackOrder.unableToTrack"), "error");
       setSearched(true);
     } finally {
       setLoading(false);
@@ -102,9 +105,9 @@ export default function TrackOrder() {
       const response = await orderService.trackOrder(payload);
       const updated = response.data?.order;
       if (updated) setOrder(updated);
-      addToast("Status refreshed!", "success");
+      addToast(t("trackOrder.statusRefreshed"), "success");
     } catch {
-      addToast("Could not refresh status. Try again.", "error");
+      addToast(t("trackOrder.refreshFailed"), "error");
     } finally {
       setRefreshing(false);
     }
@@ -122,9 +125,12 @@ export default function TrackOrder() {
       pending: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       confirmed: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
       processing: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+      packed: "text-teal-400 bg-teal-500/10 border-teal-500/20",
       shipped: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+      in_transit: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
       out_for_delivery: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       delivered: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+      delivery_failed: "text-red-400 bg-red-500/10 border-red-500/20",
       cancelled: "text-red-400 bg-red-500/10 border-red-500/20",
     };
     return colors[s] || colors.pending;
@@ -135,9 +141,12 @@ export default function TrackOrder() {
       pending: Clock,
       confirmed: CheckCircle,
       processing: Package,
+      packed: Package,
       shipped: Truck,
+      in_transit: Truck,
       out_for_delivery: Truck,
       delivered: CheckCircle,
+      delivery_failed: Package,
       cancelled: Package,
     };
     const Icon = icons[s] || Clock;
@@ -156,19 +165,21 @@ export default function TrackOrder() {
   };
 
   const trackingSteps = [
-    { key: "pending", label: "Order Confirmed", icon: CheckCircle, desc: "Your order has been placed" },
-    { key: "confirmed", label: "Confirmed", icon: CheckCircle, desc: "Order has been confirmed" },
-    { key: "processing", label: "Processing", icon: Package, desc: "Items are being processed" },
-    { key: "packed", label: "Packed", icon: Package, desc: "Items are packed and ready" },
-    { key: "shipped", label: "Shipped", icon: Truck, desc: "Package is on its way" },
-    { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, desc: "Out for delivery today" },
-    { key: "delivered", label: "Delivered", icon: CheckCircle, desc: "Package delivered" },
+    { key: "pending", labelKey: "trackOrder.stepOrderConfirmed", icon: CheckCircle, descKey: "trackOrder.stepOrderConfirmedDesc" },
+    { key: "confirmed", labelKey: "trackOrder.stepConfirmed", icon: CheckCircle, descKey: "trackOrder.stepConfirmedDesc" },
+    { key: "processing", labelKey: "trackOrder.stepProcessing", icon: Package, descKey: "trackOrder.stepProcessingDesc" },
+    { key: "packed", labelKey: "trackOrder.stepPacked", icon: Package, descKey: "trackOrder.stepPackedDesc" },
+    { key: "shipped", labelKey: "trackOrder.stepShipped", icon: Truck, descKey: "trackOrder.stepShippedDesc" },
+    { key: "in_transit", labelKey: "trackOrder.stepInTransit", icon: Truck, descKey: "trackOrder.stepInTransitDesc" },
+    { key: "out_for_delivery", labelKey: "trackOrder.stepOutForDelivery", icon: Truck, descKey: "trackOrder.stepOutForDeliveryDesc" },
+    { key: "delivered", labelKey: "trackOrder.stepDelivered", icon: CheckCircle, descKey: "trackOrder.stepDeliveredDesc" },
   ];
 
   const getCurrentStepIndex = () => {
     if (!order) return 0;
     if (order.status === "cancelled") return -1;
-    const statusOrder = ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered"];
+    if (order.status === "delivery_failed") return trackingSteps.length;
+    const statusOrder = ["pending", "confirmed", "processing", "packed", "shipped", "in_transit", "out_for_delivery", "delivered"];
     return statusOrder.indexOf(order.status);
   };
 
@@ -183,13 +194,13 @@ export default function TrackOrder() {
         
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <span className="inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold px-3 py-1 rounded-full text-xs tracking-wider uppercase mb-4 backdrop-blur-sm">
-            <ShieldCheck size={12} className="text-amber-400" /> Secure Verification
+            <ShieldCheck size={12} className="text-amber-400" /> {t("trackOrder.secureVerification")}
           </span>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
-            Track Shipment Status
+            {t("trackOrder.trackShipmentStatus")}
           </h1>
           <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Track your order status in real time. Enter your tracking or order number below.
+            {t("trackOrder.intro")}
           </p>
         </div>
       </section>
@@ -205,9 +216,9 @@ export default function TrackOrder() {
             {/* Input System */}
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Track Order</h2>
+                <h2 className="text-lg font-bold text-white tracking-tight">{t("common.trackOrder")}</h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Enter your tracking number or order number to check the current status.
+                  {t("trackOrder.subIntro")}
                 </p>
               </div>
               
@@ -222,7 +233,7 @@ export default function TrackOrder() {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Hash size={12} className="inline mr-1" /> Tracking Number
+                  <Hash size={12} className="inline mr-1" /> {t("trackOrder.trackingNumber")}
                 </button>
                 <button
                   type="button"
@@ -233,7 +244,7 @@ export default function TrackOrder() {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Search size={12} className="inline mr-1" /> Order Number
+                  <Search size={12} className="inline mr-1" /> {t("trackOrder.orderNumber")}
                 </button>
               </div>
               
@@ -241,7 +252,7 @@ export default function TrackOrder() {
                 {mode === "tracking" ? (
                   <div className="space-y-2">
                     <label className="text-[11px] font-bold uppercase tracking-widest text-indigo-400 block">
-                      Tracking Number
+                      {t("trackOrder.trackingNumber")}
                     </label>
                     <div className="relative group">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors">
@@ -250,23 +261,23 @@ export default function TrackOrder() {
                       <input
                         value={trackingNumber}
                         onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="e.g., TRK-2026-874521"
+                        placeholder={t("trackOrder.trackingPlaceholder")}
                         className="w-full rounded-xl border border-slate-800 bg-slate-950/60 pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-mono tracking-wider"
                       />
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">Enter your unique tracking number. No contact details needed.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">{t("trackOrder.trackingHint")}</p>
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">
-                        Order Number
+                        {t("trackOrder.orderNumber")}
                       </label>
                       <div className="relative">
                         <input
                           value={orderNumber}
                           onChange={(e) => setOrderNumber(e.target.value)}
-                          placeholder="e.g., ORD-12345"
+                          placeholder={t("trackOrder.orderPlaceholder")}
                           className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
                         />
                       </div>
@@ -274,12 +285,12 @@ export default function TrackOrder() {
 
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">
-                        Associated Contact
+                        {t("trackOrder.associatedContact")}
                       </label>
                       <input
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
-                        placeholder="Email or phone endpoint"
+                        placeholder={t("trackOrder.contactPlaceholder")}
                         className="w-full rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
                       />
                     </div>
@@ -292,9 +303,9 @@ export default function TrackOrder() {
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98]"
                 >
                   {loading ? (
-                    <><Loader2 size={16} className="animate-spin text-amber-400" /> Searching...</>
+                    <><Loader2 size={16} className="animate-spin text-amber-400" /> {t("trackOrder.searching")}</>
                   ) : (
-                    <><Search size={16} className="text-amber-400" /> Track Order</>
+                    <><Search size={16} className="text-amber-400" /> {t("common.trackOrder")}</>
                   )}
                 </button>
               </form>
@@ -305,17 +316,17 @@ export default function TrackOrder() {
               <div>
                 <div className="flex items-center gap-2 text-indigo-400">
                   <Package size={16} className="text-amber-400" />
-                  <p className="text-[11px] font-bold uppercase tracking-widest">How to Track</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest">{t("trackOrder.howToTrack")}</p>
                 </div>
                 <p className="mt-3 text-slate-400 text-xs leading-relaxed">
-                  Use your tracking number for instant updates, or enter your order number with the registered email or phone number.
+                  {t("trackOrder.howToTrackDesc")}
                 </p>
               </div>
 
               <div className="mt-6 pt-4 border-t border-slate-800/60 space-y-2 text-xs font-medium text-slate-400">
-                <div className="flex items-center gap-2.5"><Hash size={13} className="text-amber-400" /> Use tracking number for instant lookup</div>
-                <div className="flex items-center gap-2.5"><Mail size={13} className="text-indigo-400" /> Order number requires email or phone verification</div>
-                <div className="flex items-center gap-2.5"><MapPin size={13} className="text-indigo-400" /> Status updates from the warehouse</div>
+                <div className="flex items-center gap-2.5"><Hash size={13} className="text-amber-400" /> {t("trackOrder.useTrackingNumber")}</div>
+                <div className="flex items-center gap-2.5"><Mail size={13} className="text-indigo-400" /> {t("trackOrder.orderRequiresVerification")}</div>
+                <div className="flex items-center gap-2.5"><MapPin size={13} className="text-indigo-400" /> {t("trackOrder.statusFromWarehouse")}</div>
               </div>
             </div>
           </div>
@@ -329,14 +340,14 @@ export default function TrackOrder() {
                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800/60 pb-5">
                    <div>
                      <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block mb-1">
-                       Order Number
+                       {t("trackOrder.orderNumber")}
                      </span>
                      <div className="flex items-center gap-2">
                        <h2 className="text-lg font-bold text-white tracking-tight font-mono">{order.order_number}</h2>
                        <button
                          onClick={copyOrderNumber}
                          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all"
-                         title="Copy order number"
+                         title={t("trackOrder.copyOrderNumber")}
                        >
                          {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                        </button>
@@ -345,7 +356,7 @@ export default function TrackOrder() {
                   
                   <span className={`self-start sm:self-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border ${getStatusColor(order.status)}`}>
                     {getStatusIcon(order.status)}
-                    {order.status?.charAt(0).toUpperCase() + order.status?.slice(1).replace(/_/g, " ")}
+                    {t(getStatusKey(order.status, "order"))}
                   </span>
 
                   <button
@@ -355,8 +366,8 @@ export default function TrackOrder() {
                     className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition-all disabled:opacity-50"
                   >
                     {refreshing
-                      ? <><Loader2 size={12} className="animate-spin" /> Refreshing...</>
-                      : <><Search size={12} /> Refresh Status</>
+                      ? <><Loader2 size={12} className="animate-spin" /> {t("trackOrder.refreshing")}</>
+                      : <><Search size={12} /> {t("trackOrder.refreshStatus")}</>
                     }
                   </button>
                 </div>
@@ -364,14 +375,14 @@ export default function TrackOrder() {
                  {/* Order Summary Grid */}
                  <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                    <div className="rounded-xl bg-slate-900 border border-slate-800/80 p-4 text-xs">
-                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Customer</p>
-                     <p className="text-slate-200 font-bold">{order.guest_name || "Guest"}</p>
+                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">{t("trackOrder.customer")}</p>
+                     <p className="text-slate-200 font-bold">{order.guest_name || t("trackOrder.guest")}</p>
                      <p className="text-slate-400 mt-1 truncate">{order.guest_email || ""}</p>
                      <p className="text-indigo-400 font-mono mt-0.5">{order.guest_phone || ""}</p>
                    </div>
 
                    <div className="rounded-xl bg-slate-900 border border-slate-800/80 p-4 text-xs">
-                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Delivery Address</p>
+                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">{t("trackOrder.deliveryAddress")}</p>
                      <p className="text-slate-300 font-medium line-clamp-2">{order.delivery_address}</p>
                      <p className="text-slate-400 mt-1">
                        {order.guest_city}{order.guest_state ? `, ${order.guest_state}` : ""} <span className="font-mono text-slate-500">{order.guest_pincode || ""}</span>
@@ -379,23 +390,23 @@ export default function TrackOrder() {
                    </div>
 
                    <div className="rounded-xl bg-slate-900 border border-slate-800/80 p-4 text-xs">
-                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Payment</p>
-                     <p className="text-slate-200 font-bold">{order.payment_method === "online" ? "Online Payment" : "Cash on Delivery"}</p>
+                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">{t("trackOrder.payment")}</p>
+                     <p className="text-slate-200 font-bold">{order.payment_method === "online" ? t("trackOrder.onlinePayment") : t("trackOrder.cashOnDelivery")}</p>
                      <p className={`text-[10px] uppercase font-mono font-bold tracking-wider mt-2 inline-block px-2 py-0.5 rounded ${
                        order.payment_status === "paid" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                      }`}>
-                       {order.payment_status}
+                       {t(getStatusKey(order.payment_status, "payment"))}
                      </p>
                    </div>
 
                    <div className="rounded-xl bg-slate-900 border border-slate-800/80 p-4 text-xs flex flex-col justify-between">
                      <div>
-                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Amount</p>
+                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{t("orders.totalAmount")}</p>
                        <p className="text-lg font-extrabold text-white tracking-tight">{formatIndianPrice(order.total_amount)}</p>
                      </div>
                      {order.estimated_delivery && (
                        <p className="text-[10px] text-indigo-400 font-medium mt-2">
-                         Est. Delivery: <span className="text-white font-semibold">{new Date(order.estimated_delivery).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                         {t("trackOrder.estDelivery")} <span className="text-white font-semibold">{new Date(order.estimated_delivery).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                        </p>
                      )}
                    </div>
@@ -410,28 +421,28 @@ export default function TrackOrder() {
                        <Hash size={16} />
                      </div>
                      <div>
-                       <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Tracking Number</p>
+                       <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{t("trackOrder.trackingNumber")}</p>
                        <p className="text-sm font-bold text-white tracking-wider font-mono">{order.tracking_number}</p>
                      </div>
                    </div>
-                   <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10">Active</span>
+                   <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10">{t("trackOrder.active")}</span>
                  </div>
                )}
 
                {/* Order Timeline */}
                <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
                  <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-8">
-                   <Truck size={14} className="text-indigo-400" />
-                   Order Timeline
-                 </h3>
+<Truck size={14} className="text-indigo-400" />
+                    {t("trackOrder.orderTimeline")}
+                  </h3>
 
                  {order.status === "cancelled" ? (
                    <div className="text-center py-8">
                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 mb-3">
                        <Package size={20} className="text-red-400" />
                      </div>
-                     <p className="text-sm font-bold text-slate-200">Order Cancelled</p>
-                     <p className="text-xs text-slate-500 mt-1">This order has been cancelled.</p>
+<p className="text-sm font-bold text-slate-200">{t("trackOrder.orderCancelled")}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t("trackOrder.orderCancelledMsg")}</p>
                    </div>
                  ) : (
                   <div className="relative">
@@ -447,7 +458,7 @@ export default function TrackOrder() {
                           const isCurrent = currentStep === index;
                           
                           const trackingEntry = order.trackingHistory?.find(
-                            t => t.status === step.key
+                            (entry) => entry.status === step.key
                           );
 
                           return (
@@ -467,7 +478,7 @@ export default function TrackOrder() {
                               <div className="flex-1 min-w-0 pt-1.5">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                   <p className={`text-xs font-bold uppercase tracking-wider ${isCompleted ? "text-white" : "text-slate-500"}`}>
-                                    {step.label}
+                                    {t(step.labelKey)}
                                   </p>
                                   {trackingEntry && (
                                     <span className="text-[10px] font-mono text-slate-500">
@@ -476,7 +487,7 @@ export default function TrackOrder() {
                                   )}
                                 </div>
                                 <p className={`text-xs mt-1 leading-relaxed ${isCompleted ? "text-slate-400" : "text-slate-600"}`}>
-                                  {trackingEntry?.description || step.desc}
+                                  {trackingEntry?.description || t(step.descKey)}
                                 </p>
                               </div>
                             </div>
@@ -488,7 +499,7 @@ export default function TrackOrder() {
                     {/* Estimated Delivery */}
                     {order.estimated_delivery && getCurrentStepIndex() >= 0 && getCurrentStepIndex() < 5 && (
                       <div className="mt-8 rounded-xl bg-slate-950/60 border border-slate-800/80 p-4 text-center">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block mb-0.5">Estimated Delivery</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block mb-0.5">{t("trackOrder.estimatedDelivery")}</span>
                         <p className="text-sm font-bold text-white font-mono">
                           {new Date(order.estimated_delivery).toLocaleDateString("en-US", {
                             weekday: "long", month: "long", day: "numeric"
@@ -503,7 +514,7 @@ export default function TrackOrder() {
                {/* Order Items */}
                {order.items && order.items.length > 0 && (
                  <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Order Items</p>
+                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">{t("trackOrder.orderItems")}</p>
                   <div className="space-y-2.5">
                     {order.items.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 bg-slate-950/40 border border-slate-800/60 rounded-xl p-3">
@@ -513,14 +524,14 @@ export default function TrackOrder() {
                               src={item.product_image}
                               alt={item.product_name}
                               className="h-full w-full object-cover opacity-85 hover:opacity-100 transition-opacity"
-                              fallback={<div className="flex h-full items-center justify-center text-slate-700 text-[9px] font-bold bg-slate-950">NULL</div>}
+                              fallback={<div className="flex h-full items-center justify-center text-slate-700 text-[9px] font-bold bg-slate-950">{t("trackOrder.null")}</div>}
                             />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-slate-200 truncate tracking-tight">{item.product_name}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                            Units: {item.quantity} <span className="text-slate-700 px-1">/</span> {formatIndianPrice(item.price)}
+                            {t("trackOrder.units", { qty: item.quantity })} <span className="text-slate-700 px-1">/</span> {formatIndianPrice(item.price)}
                           </p>
                         </div>
                         <p className="text-xs font-bold font-mono text-white tracking-tight">
@@ -538,7 +549,7 @@ export default function TrackOrder() {
           {searched && !order && (
             <div className="mt-8 border border-dashed border-slate-800 rounded-xl p-8 text-center bg-slate-950/40">
           <p className="text-xs font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">
-                 No order found matching the provided details. Please check and try again.
+                 {t("trackOrder.noOrderFound")}
                </p>
             </div>
           )}

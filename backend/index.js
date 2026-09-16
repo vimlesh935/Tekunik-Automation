@@ -13,9 +13,9 @@ const {
 } = require("./src/config/migrate");
 const { ensureProductUpgradeTables } = require("./src/config/productMigration");
 const { ensureDemoEnquiriesTable } = require("./src/config/ensureDemoEnquiries");
-const { ensurePaymentColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
+const { ensurePaymentColumns, ensureOrderItemDiscountColumns, ensureRefundColumns } = require("./src/config/orderMigration");
 const { ensureWebsiteFrontendInformationTable, ensureOffersTable, ensureSystemSettingsTable, ensureWishlistTable } = require("./src/config/migrate");
-const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables, ensureCouponTables, ensureEmailTemplatesTable, ensureEmailSendLogsTable, ensureOrderReturnsTable, ensureCustomEmailTables, ensureRecoveryTables } = require("./src/config/migrate");
+const { ensureRecentlyViewedTable, ensureNotificationsTable, ensureAdminActivityTable, ensureProductPriceHistoryTable, ensureBackInStockTables, ensureCouponTables, ensureEmailTemplatesTable, ensureEmailSendLogsTable, ensureOrderReturnsTable, ensureCustomEmailTables, ensureRecoveryTables, seedLocalizedContent, ensureOrderShippingColumns, ensureShippingZonesTable, ensureShippingMethodsTable } = require("./src/config/migrate");
 const { runRecoveryCycle } = require("./src/services/abandonedRecoveryService");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -60,6 +60,7 @@ const adminActivityRoutes = require("./src/routes/adminActivityRoutes");
 const backInStockRoutes = require("./src/routes/backInStockRoutes");
 const emailTemplateRoutes = require("./src/routes/emailTemplateRoutes");
 const customEmailRoutes = require("./src/routes/customEmailRoutes");
+const shippingRoutes = require("./src/routes/shippingRoutes");
 
 let cors, cookieParser, compression, helmet;
 
@@ -208,6 +209,7 @@ app.use(adminActivityRoutes);
 app.use(backInStockRoutes);
 app.use(emailTemplateRoutes);
 app.use(customEmailRoutes);
+app.use(shippingRoutes);
 
 // Website mode settings
 const settingsPath = path.join(__dirname, "website-mode.json");
@@ -292,8 +294,10 @@ const startServer = async () => {
     await ensureProductUpgradeTables();
     await ensurePaymentColumns();
     await ensureOrderItemDiscountColumns();
+    await ensureRefundColumns();
 await ensureOffersTable();
     await ensureWebsiteFrontendInformationTable();
+    await seedLocalizedContent();
     await ensureSystemSettingsTable();
     await ensureWishlistTable();
     await ensureRecentlyViewedTable();
@@ -307,6 +311,9 @@ await ensureOffersTable();
     await ensureOrderReturnsTable();
     await ensureCustomEmailTables();
     await ensureRecoveryTables();
+    await ensureOrderShippingColumns();
+    await ensureShippingZonesTable();
+    await ensureShippingMethodsTable();
     console.log("✅ Database schema verified\n");
   } catch (error) {
     console.error("❌ Schema check failed:", error.message);

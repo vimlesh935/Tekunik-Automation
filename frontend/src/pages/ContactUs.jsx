@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
+import { useTranslation } from "react-i18next";
 
 const VIOLET = "#7C3AED";
 const CYAN = "#06B6D4";
@@ -217,6 +218,7 @@ function FloatingInput({ label, name, type = "text", value, onChange, placeholde
 }
 
 function SubmitButton({ submitting }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -260,7 +262,7 @@ function SubmitButton({ submitting }) {
         }} />
       ) : (
         <>
-          <span>Send Message</span>
+          <span>{t("contact.sendMessageBtn")}</span>
           <span style={{ fontSize: 18 }}>→</span>
         </>
       )}
@@ -308,6 +310,7 @@ function InfoRow({ icon, label, children }) {
 
 export default function ContactUs() {
   const { settings } = useWebsiteSettings();
+  const { t } = useTranslation();
   const companyName = settings.company_name || "Tekunik Automation";
   const companyLogo = settings.company_logo ? getImageUrl(settings.company_logo) : "/assest/logo.png";
   const contactPhone = settings.company_phone || "+91 9322475209";
@@ -324,7 +327,7 @@ export default function ContactUs() {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 50);
+    const id = setInterval(() => setTick(prev => prev + 1), 50);
     return () => clearInterval(id);
   }, []);
 
@@ -342,12 +345,12 @@ export default function ContactUs() {
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d?.message || "Failed to send message");
+        throw new Error(d?.message || t("contact.failedToSend"));
       }
       setSubmitted(true);
       setFormData({ full_name: "", email: "", phone: "", message: "" });
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(err.message || t("contact.genericError"));
     } finally {
       setSubmitting(false);
     }
@@ -446,9 +449,9 @@ export default function ContactUs() {
                   color: "var(--text)",
                 }}
               >
-                Let's Build
+                {t("contact.letsBuild")}
                 <br />
-                <AnimatedGradientText>Something Great</AnimatedGradientText>
+                <AnimatedGradientText>{t("contact.somethingGreat")}</AnimatedGradientText>
               </h1>
             </FadeIn>
 
@@ -461,7 +464,7 @@ export default function ContactUs() {
                 lineHeight: 1.7,
                 fontWeight: 400,
               }}>
-                We're ready to automate your workflows. Reach out and we'll get back within one business day.
+                {t("contact.intro")}
               </p>
             </FadeIn>
 
@@ -474,8 +477,8 @@ export default function ContactUs() {
                 gap: 0,
                 marginTop: 48,
               }}>
-                {["Phone", "Email", "WhatsApp"].map((t, i) => (
-                  <div key={t} style={{ display: "flex", alignItems: "center" }}>
+                {["Phone", "Email", "WhatsApp"].map((chip, i) => (
+                  <div key={chip} style={{ display: "flex", alignItems: "center" }}>
                     <div style={{
                       padding: "6px 16px",
                       borderRadius: 100,
@@ -485,7 +488,7 @@ export default function ContactUs() {
                       fontSize: 11,
             color: "var(--text-muted)",
                       letterSpacing: "0.1em",
-                    }}>{t}</div>
+                    }}>{t(`contact.${chip.toLowerCase()}`)}</div>
                     {i < 2 && (
                       <div style={{
                         width: 32, height: 1,
@@ -509,9 +512,9 @@ export default function ContactUs() {
               gap: 16,
             }}
           >
-            <ContactCard icon="📞" label="Phone" value={contactPhone} href={`tel:${contactPhone}`} delay={0.1} />
-            <ContactCard icon="✉️" label="Email" value={contactEmail} href={`mailto:${contactEmail}`} delay={0.2} />
-            <ContactCard icon="💬" label="WhatsApp" value="Chat with us" href={`https://wa.me/${contactWhatsapp.replace(/[^0-9]/g, "")}`} delay={0.3} />
+            <ContactCard icon="📞" label={t("contact.phone")} value={contactPhone} href={`tel:${contactPhone}`} delay={0.1} />
+            <ContactCard icon="✉️" label={t("contact.email")} value={contactEmail} href={`mailto:${contactEmail}`} delay={0.2} />
+            <ContactCard icon="💬" label={t("contact.whatsapp")} value={t("contact.chatWithUs")} href={`https://wa.me/${contactWhatsapp.replace(/[^0-9]/g, "")}`} delay={0.3} />
           </div>
         </section>
 
@@ -572,10 +575,10 @@ export default function ContactUs() {
                       fontWeight: 700, fontSize: 24,
                       color: "var(--text)", marginBottom: 10,
                     }}>
-                      Message Sent!
+                      {t("contact.messageSent")}
                     </h3>
                     <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 28 }}>
-                      We'll get back to you within one business day.
+                      {t("contact.getBackWithin")}
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
@@ -591,7 +594,7 @@ export default function ContactUs() {
                         transition: "all 0.2s ease",
                       }}
                     >
-                      Send Another
+                      {t("contact.sendAnother")}
                     </button>
                   </div>
                 ) : (
@@ -602,34 +605,34 @@ export default function ContactUs() {
                         fontWeight: 700, fontSize: 24,
                         color: "var(--text)", marginBottom: 6,
                       }}>
-                        Send a Message
+                        {t("contact.sendMessage")}
                       </h2>
                       <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-                        Tell us about your automation requirements.
+                        {t("contact.sendMessageSub")}
                       </p>
                     </div>
 
                     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                       <FloatingInput
-                        label="Full Name" name="full_name" value={formData.full_name}
-                        onChange={handleChange} placeholder="Your full name" required
+                        label={t("contact.fullName")} name="full_name" value={formData.full_name}
+                        onChange={handleChange} placeholder={t("contact.fullNamePlaceholder")} required
                       />
                       <ValidatedEmailInput
-                        label="Email"
+label={t("contact.email")}
                         name="email"
                         value={formData.email}
                         onChange={(e) => handleChange(e)}
-                        placeholder="your@email.com"
+                        placeholder={t("contact.emailPlaceholder")}
                         required
                         validateOnChange={false}
                       />
                       <FloatingInput
-                        label="Phone" name="phone" type="tel" value={formData.phone}
+                        label={t("contact.phone")} name="phone" type="tel" value={formData.phone}
                         onChange={handleChange} placeholder={contactPhone}
                       />
                       <FloatingInput
-                        label="Message" name="message" value={formData.message}
-                        onChange={handleChange} placeholder="Describe your project or requirements..." required rows={5}
+                        label={t("contact.message")} name="message" value={formData.message}
+                        onChange={handleChange} placeholder={t("contact.messagePlaceholder")} required rows={5}
                       />
 
                       {error && (
@@ -697,22 +700,22 @@ export default function ContactUs() {
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                    <InfoRow icon="📞" label="Phone">
+                    <InfoRow icon="📞" label={t("contact.phone")}>
                       <a href={`tel:${contactPhone}`} style={{ color: "var(--text)", textDecoration: "none" }}>
                         {contactPhone}
                       </a>
                     </InfoRow>
-                    <InfoRow icon="✉️" label="Email">
+                    <InfoRow icon="✉️" label={t("contact.email")}>
                       <a href={`mailto:${contactEmail}`} style={{ color: "var(--text)", textDecoration: "none" }}>
                         {contactEmail}
                       </a>
                     </InfoRow>
-                    <InfoRow icon="💬" label="WhatsApp">
+                    <InfoRow icon="💬" label={t("contact.whatsapp")}>
                       <a href={`https://wa.me/${contactWhatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text)", textDecoration: "none" }}>
-                        Chat with us instantly
+                        {t("contact.chatInstantly")}
                       </a>
                     </InfoRow>
-                    <InfoRow icon="🕐" label="Business Hours">
+                    <InfoRow icon="🕐" label={t("contact.businessHours")}>
                       {businessHours}
                     </InfoRow>
                   </div>
@@ -740,7 +743,7 @@ export default function ContactUs() {
                       fontSize: 11, letterSpacing: "0.12em",
                       color: CYAN_LIGHT,
                     }}>
-                      Currently accepting projects
+                      {t("contact.currentlyAccepting")}
                     </span>
                   </div>
                 </div>
@@ -769,10 +772,10 @@ export default function ContactUs() {
                     textTransform: "uppercase",
                     color: CYAN_LIGHT,
                   }}>
-                    📍 Location
+                    📍 {t("contact.location")}
                   </div>
                   <iframe
-                    title="Tek Node Location"
+                    title={t("contact.mapTitle")}
                     src={googleMapsLink || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3671.8!2d72.5!3d23.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDAwJzAwLjAiTiA3MsKwMzQnMjAuMCJF!5e0!3m2!1sen!2sin!4v1"}
                     width="100%"
                     height="100%"
@@ -800,9 +803,9 @@ export default function ContactUs() {
           margin: "0 auto",
         }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)" }}>
-            {settings.copyright_text
-              ? settings.copyright_text.replace("{year}", new Date().getFullYear())
-              : `\u00A9 ${new Date().getFullYear()} ${companyName} \u00B7 All rights reserved`
+{settings.copyright_text
+                ? settings.copyright_text.replace("{year}", new Date().getFullYear())
+                : t("contact.copyrightFallback", { year: new Date().getFullYear(), name: companyName })
             }
           </div>
           <div style={{
@@ -811,9 +814,9 @@ export default function ContactUs() {
             fontSize: 11, letterSpacing: "0.1em",
           }}>
             {[
-              { label: "Privacy", url: settings.privacy_policy_url },
-              { label: "Terms", url: settings.terms_url },
-              { label: "Support", url: `mailto:${settings.support_email || settings.company_email || ""}` },
+              { label: t("contact.privacy"), url: settings.privacy_policy_url },
+              { label: t("contact.terms"), url: settings.terms_url },
+              { label: t("contact.support"), url: `mailto:${settings.support_email || settings.company_email || ""}` },
             ].filter(l => l.url).map(l => (
               <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", cursor: "pointer", textDecoration: "none", transition: "color 0.2s" }}
                 onMouseEnter={(e) => e.target.style.color = "#A78BFA"}

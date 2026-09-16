@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
+import { useTranslation } from "react-i18next";
 
 export default function CtaSection() {
+  const { t } = useTranslation();
   const { settings } = useWebsiteSettings();
   const companyName = settings?.company_name || "Tekunik Automation";
   const whatsappNumber = settings?.company_whatsapp?.replace(/[^0-9]/g, "") || "919322475209";
@@ -30,14 +32,14 @@ export default function CtaSection() {
           transition={{ duration: 0.8 }}
         >
           <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-            Ready to Transform <br/>
+            {t("readyHome.title")} <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-              Your Home?
+              {t("readyHome.titleHighlight")}
             </span>
           </h2>
           
           <p className="text-xl text-text-secondary mb-12 max-w-2xl mx-auto">
-            Book your free smart home consultation today. Experience the ultimate comfort, security, and convenience with Automate.
+            {t("readyHome.description")}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -45,13 +47,13 @@ export default function CtaSection() {
               to="/enquiry"
               className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-white text-black font-bold text-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2 group shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             >
-              Book Free Demo
+              {t("common.bookFreeDemo")}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             
-            <button onClick={() => window.open(`https://wa.me/${whatsappNumber}?text=Hello%20${encodeURIComponent(companyName)},%20I%20am%20interested%20in%20your%20smart%20automation%20solutions.`, '_blank')} className="w-full sm:w-auto px-8 py-5 rounded-2xl glass border border-white/20 text-white font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-3 cursor-pointer">
+            <button onClick={() => window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(t('readyHome.whatsappMessage', { company: companyName }))}`, '_blank')} className="w-full sm:w-auto px-8 py-5 rounded-2xl glass border border-white/20 text-white font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-3 cursor-pointer">
               <MessageCircle className="w-5 h-5" />
-              Chat on WhatsApp
+              {t("common.chatOnWhatsApp")}
             </button>
           </div>
         </motion.div>

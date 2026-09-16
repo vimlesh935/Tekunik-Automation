@@ -17,6 +17,8 @@ const updateFrontendSettings = async (req, res, next) => {
   try {
     const allowedFields = [
       "company_name", "hero_heading", "hero_image", "company_tagline", "company_description", "company_logo", "company_favicon",
+      "hero_heading_hi", "hero_heading_mr", "company_tagline_hi", "company_tagline_mr",
+      "company_description_hi", "company_description_mr", "footer_about_hi", "footer_about_mr",
       "company_email", "company_phone", "company_whatsapp", "company_address", "city", "state",
       "country", "postal_code", "google_maps_url", "google_maps_link", "support_email",
       "sales_email", "website_url", "facebook_url", "instagram_url", "linkedin_url", "youtube_url",

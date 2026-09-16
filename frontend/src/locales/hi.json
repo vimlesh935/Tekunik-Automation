@@ -71,7 +71,24 @@
     "loginRequired": "लॉग इन आवश्यक है",
     "somethingWentWrong": "कुछ गलत हो गया",
     "invalidInput": "अमान्य इनपुट",
-    "products": "उत्पाद"
+    "products": "उत्पाद",
+    "networkError": "सर्वर से कनेक्ट नहीं हो सका। कृपया पेज रीफ्रेश करें या बाद में फिर कोशिश करें।",
+    "review": "समीक्षा",
+    "checkingWebsiteStatus": "वेबसाइट की स्थिति जाँच की जा रही है...",
+    "selectLanguage": "भाषा चुनें",
+    "noLanguagesFound": "कोई भाषा नहीं मिली",
+    "searchLanguages": "भाषाएँ खोजें...",
+    "bookFreeDemo": "मुफ्त डेमो बुक करें",
+    "chatOnWhatsApp": "व्हाट्सऐप पर चैट करें",
+    "getStarted": "शुरू करें",
+    "learnMore": "और जानें",
+    "contactUs": "संपर्क करें",
+    "validationError": "Please check your input and try again",
+    "unauthorized": "Please login to continue",
+    "forbidden": "You don't have permission to perform this action",
+    "notFound": "The requested resource was not found",
+    "serverError": "Something went wrong. Please try again later.",
+    "explore": "Explore"
   },
   "nav": {
     "home": "होम",
@@ -108,7 +125,9 @@
     "loadingNotifications": "सूचनाएं लोड हो रही हैं...",
     "loadFailed": "सूचनाएं लोड नहीं हो सकीं।",
     "allCaughtUp": "आप सभी अपडेट हैं",
-    "willLetYouKnow": "हम आपको तब सूचित करेंगे जब कुछ महत्वपूर्ण होगा।"
+    "willLetYouKnow": "हम आपको तब सूचित करेंगे जब कुछ महत्वपूर्ण होगा।",
+    "logo": "लोगो",
+    "notificationsLabel": "सूचनाएँ, {{count}} अनपढ़ी"
   },
   "footer": {
     "quickLinks": "त्वरित लिंक",
@@ -132,7 +151,8 @@
     "shop": "दुकान",
     "aboutUs": "हमारे बारे में",
     "contactUs": "संपर्क करें",
-    "trackOrder": "ऑर्डर ट्रैक करें"
+    "trackOrder": "ऑर्डर ट्रैक करें",
+    "taglineFallback": "{{company}} — आधुनिक रहने और काम करने की जगहों के लिए प्रीमियम ऑटोमेशन समाधान।"
   },
   "home": {
     "welcome": "आपका स्वागत है",
@@ -179,7 +199,28 @@
     "whereCanYouUse": "टेक नोड का उपयोग कहां करें?",
     "shopByCategory": "श्रेणी के अनुसार खरीदें",
     "selectProduct": "उत्पाद चुनें",
-    "newArrivalBanner": "नया: ऑटोमेट हब प्रो उपलब्ध"
+    "newArrivalBanner": "नया: ऑटोमेट हब प्रो उपलब्ध",
+    "loadFailed": "स्टोर डेटा सिंक नहीं हो सका। कृपया फिर लोड करें।",
+    "openWhatsappSupport": "व्हाट्सऐप सहायता चैट खोलें",
+    "flipToDayMode": "दिन मोड पर जाएँ",
+    "flipToNightMode": "रात मोड पर जाएँ",
+    "roomSecurity": "सुरक्षा",
+    "roomSecurityDetail": "सभी सिस्टम सक्रिय और सुरक्षित हैं।",
+    "roomLighting": "रोशनी",
+    "roomLightingDetail": "12 फिक्स्चर 40% तक मंद किए गए।",
+    "roomClimate": "जलवायु",
+    "roomClimateDetail": "लिविंग रूम 72°F पर बना हुआ है।",
+    "roomCameras": "कैमरे",
+    "roomCamerasDetail": "4 फीड लाइव हैं, कोई हलचल नहीं।",
+    "showRoom": "{{name}} दिखाएँ",
+    "smartLivingStartsHere": "स्मार्ट लिविंग यहीं से शुरू होती है",
+    "limitedTimeShopNow": "सीमित समय का ऑफर। अभी खरीदें!",
+    "customerReviews": "ग्राहक समीक्षाएँ",
+    "noApprovedReviews": "अभी तक कोई अनुमोदित समीक्षा नहीं। प्रशासन की मंज़ूरी के बाद वेरिफ़ाइड खरीदारों की समीक्षाएँ यहाँ दिखेंगी।",
+    "verifiedCustomer": "वेरिफ़ाइड ग्राहक",
+    "purchased": "खरीदा: {{product}}",
+    "whatsappPrefill": "नमस्ते, मुझे आपके ऑटोमेशन उत्पादों के बारे में जानकारी चाहिए।",
+    "trustedByIndustryLeaders": "उद्योग जगत के नेताओं द्वारा विश्वसनीय"
   },
   "shop": {
     "allProducts": "सभी उत्पाद",
@@ -192,7 +233,13 @@
     "noProductsFound": "कोई उत्पाद नहीं मिला",
     "tryAdjustingFilters": "अपने फ़िल्टर बदलकर देखें",
     "resultsFound": "परिणाम मिले",
-    "featured": "विशेष"
+    "featured": "विशेष",
+    "compilingInventories": "सिस्टम इन्वेंटरीज़ तैयार हो रही हैं...",
+    "loadingPayload": "स्टोरेज ब्लॉक्स से डेटा लोड हो रहा है",
+    "allocationEmpty": "आवंटन खाली",
+    "iotHardware": "IoT हार्डवेयर",
+    "index": "इंडेक्स",
+    "nextNode": "अगला नोड"
   },
   "cart": {
     "title": "कार्ट",
@@ -217,7 +264,15 @@
     "cartEmpty": "आपकी कार्ट खाली है। चेकआउट करने से पहले आइटम जोड़ें।",
     "couponSelected": "कूपन {{code}} चयनित किया गया",
     "couponAutoApplied": "यह चेकआउट करते समय स्वतः लागू हो जाएगा।",
-    "limit": "सीमा {{count}}"
+    "limit": "सीमा {{count}}",
+    "fetched": "Cart fetched",
+    "itemAdded": "Product added to cart",
+    "itemUpdated": "Cart updated",
+    "cleared": "Cart cleared",
+    "insufficientStock": "Insufficient stock available",
+    "productUnavailable": "Product is no longer available",
+    "removePendingCoupon": "लंबित कूपन हटाएँ",
+    "addedToBasket": "{{name}} को बास्केट में जोड़ा गया"
   },
   "checkout": {
     "title": "चेकआउट",
@@ -386,7 +441,25 @@
     "automations": "ऑटोमेशन",
     "encryption": "एन्क्रिप्शन",
     "recovery": "पुनर्प्राप्ति",
-    "support": "सहायता"
+    "support": "सहायता",
+    "registeredSuccess": "Registration successful! Welcome to Tek Node.",
+    "loggedInSuccess": "Logged in successfully",
+    "loggedOutSuccess": "Logged out successfully",
+    "passwordChanged": "Password changed successfully",
+    "passwordMismatch": "Passwords do not match",
+    "otpSent": "OTP sent to your email",
+    "otpVerified": "OTP verified successfully",
+    "otpExpired": "OTP has expired. Please request a new one.",
+    "profileFetched": "Profile fetched",
+    "profileUpdated": "Profile updated successfully",
+    "verificationRequired": "Verification is required to change the password",
+    "verificationExpired": "Verification expired or invalid. Please request a new OTP.",
+    "weakPassword": "Password must be at least 8 characters",
+    "invalidEmail": "Invalid email address",
+    "invalidPassword": "Invalid password",
+    "invalidSession": "Invalid or expired session",
+    "userNotFound": "User not found",
+    "emailExists": "Email already registered"
   },
   "dashboard": {
     "welcome": "स्वागत है",
@@ -458,7 +531,13 @@
     "confirmCancelOrder": "ऑर्डर {{orderNumber}} रद्द करें? यह वापस नहीं किया जा सकता।",
     "orderCancelled": "ऑर्डर सफलतापूर्वक रद्द हो गया",
     "failedToCancel": "ऑर्डर रद्द करने में विफल",
-    "failedToLoadDashboard": "डैशबोर्ड लोड करने में विफल"
+    "failedToLoadDashboard": "डैशबोर्ड लोड करने में विफल",
+    "failedToUpdateProfile": "प्रोफ़ाइल अपडेट करने में विफल",
+    "notifyActive": "✓ सूचना सक्रिय",
+    "notifyMeWhenAvailable": "🔔 उपलब्ध होने पर मुझे सूचित करें",
+    "priceDropped": "कीमत घटी",
+    "wishlistEmpty": "आपकी विशलिस्ट खाली है",
+    "wishlistEmptyDescription": "अपने पसंदीदा आइटम बाद में खरीदने के लिए यहाँ सहेजें।"
   },
   "product": {
     "inStock": "स्टॉक में है",
@@ -492,7 +571,49 @@
     "sale": "सेल",
     "sampleReview": "बढ़िया उत्पाद!",
     "reviewMessage": "रिव्यू संदेश",
-    "reviewPlaceholder": "इस उत्पाद के बारे में अपना अनुभव साझा करें..."
+    "reviewPlaceholder": "इस उत्पाद के बारे में अपना अनुभव साझा करें...",
+    "lowStock": "कम स्टॉक",
+    "colorVariants": "रंग विविधताएँ",
+    "fetched": "उत्पाद प्राप्त हुए",
+    "singleFetched": "उत्पाद प्राप्त हुआ",
+    "notFound": "उत्पाद नहीं मिला",
+    "unableToLoad": "उत्पाद लोड करने में असमर्थ",
+    "unavailable": "यह उत्पाद अभी उपलब्ध नहीं है।",
+    "signInToNotify": "जब यह उत्पाद स्टॉक में वापस आए तो सूचित होने के लिए साइन इन करें।",
+    "systemIndex": "सिस्टम इंडेक्स //",
+    "noDiagram": "[ कोई डायग्राम संलग्न नहीं ]",
+    "thumbnail": "{{name}} थंबनेल {{index}}",
+    "imgFallback": "छवि",
+    "frameInventory": "फ़्रेम इन्वेंटरी: {{current}} / {{total}}",
+    "reviewCount_one": "{{count}} समीक्षा",
+    "reviewCount_other": "{{count}} समीक्षाएँ",
+    "descriptionFallback": "स्वचालित नेटवर्क इन्फ्रास्ट्रक्चर और लचीली सेंसर तैनाती के लिए निर्मित उच्च-प्रदर्शन सॉलिड-स्टेट इंजीनियरिंग मॉड्यूल।",
+    "unitCostMatrix": "यूनिट लागत मैट्रिक्स",
+    "originalPrice": "मूल: {{price}}",
+    "youSave": "आप बचाते हैं: {{price}} ({{percent}}% OFF)",
+    "incGstLogistics": "GST लॉजिस्टिक्स सहित",
+    "defaultArray": "डिफ़ॉल्ट ऐरे",
+    "registering": "पंजीकरण हो रहा है...",
+    "weWillNotifyYou": "हम आपको सूचित करेंगे",
+    "notificationActive": "सूचना सक्रिय",
+    "notifyMe": "मुझे सूचित करें",
+    "deployingNode": "नोड तैनात हो रहा है...",
+    "genuineTech": "100% प्रमाणित तकनीक",
+    "expressDelivery": "एक्सप्रेस डिलीवरी",
+    "returnGrid": "7-दिन रिटर्न",
+    "notFoundBody": "लक्षित इन्वेंटरी नोड सिग्नेचर नेटवर्क क्लस्टर में नहीं मिल सका। आइटम संभवतः हटा दिया गया या स्थानांतरित कर दिया गया।",
+    "returnToCatalog": "नेटवर्क कैटलॉग पर लौटें",
+    "verifiedReview_one": "{{count}} वेरिफ़ाइड समीक्षा",
+    "verifiedReview_other": "{{count}} वेरिफ़ाइड समीक्षाएँ",
+    "basedOnReview_one": "{{count}} समीक्षा के आधार पर",
+    "basedOnReview_other": "{{count}} समीक्षाओं के आधार पर",
+    "verifiedCustomer": "वेरिफ़ाइड ग्राहक",
+    "moreFrom": "{{category}} से अधिक",
+    "thisCategory": "इस श्रेणी में",
+    "categoryFallback": "IoT घटक",
+    "purchaseRequired": "समीक्षा लिखने के लिए आपको यह उत्पाद खरीदना होगा।",
+    "itemFallback": "उत्पाद #{{id}}",
+    "imagePreview": "पूर्वावलोकन"
   },
   "orders": {
     "myOrders": "मेरे ऑर्डर",
@@ -542,7 +663,12 @@
     "invoice": "चालान",
     "loadingDetails": "आदेश विवरण लोड हो रहा है...",
     "notFound": "आदेश नहीं मिला",
-    "loadFailed": "आदेश विवरण लोड करने में विफल"
+    "loadFailed": "आदेश विवरण लोड करने में विफल",
+    "productCount_one": "{{count}} उत्पाद",
+    "productCount_other": "{{count}} उत्पाद",
+    "keepOrder": "ऑर्डर रखें",
+    "inTransit": "पारगमन में",
+    "deliveryFailed": "डिलीवरी विफल"
   },
   "returns": {
     "requestReturn": "वापसी का अनुरोध करें",
@@ -580,10 +706,8 @@
     "otpFailure": "यह OTP समाप्त हो गया है। कृपया नया OTP प्राप्त करें।",
     "otpWait": "कृपया दूसरा OTP प्राप्त करने से पहले प्रतीक्षा करें।",
     "invalidOtp": "अमान्य OTP। कृपया पुनः प्रयास करें।",
-    "currentShort": "वर्तमान पासवर्ड आवश्यक है।",
     "mismatch": "नए पासवर्ड मेल नहीं खाते।",
     "newMin8": "नया पासवर्ड कम से कम 8 अक्षरों का होना चाहिए।",
-    "sameAsCurrent": "नया पासवर्ड आपके वर्तमान पासवर्ड से अलग होना चाहिए।",
     "changed": "पासवर्ड सफलतापूर्वक बदल दिया गया।",
     "changeFailed": "पासवर्ड बदलने में विफल।",
     "otpSent": "OTP आपके ईमेल पते पर भेज दिया गया है।",
@@ -591,14 +715,10 @@
     "enter6Digit": "कृपया 6 अंकों का OTP दर्ज करें।",
     "tooManyAttempts": "बहुत अधिक प्रयास। कृपया OTP पुनः भेजें।",
     "verifyFailed": "OTP सत्यापन विफल। कृपया पुनः प्रयास करें।",
-    "tabCurrent": "वर्तमान पासवर्ड",
     "tabOtp": "ईमेल OTP",
-    "currentPlaceholder": "अपना वर्तमान पासवर्ड दर्ज करें",
     "newPassword": "नया पासवर्ड",
     "confirmNew": "नए पासवर्ड की पुष्टि करें",
     "hint": "कम से कम 8 अक्षर",
-    "differentFromCurrent": "वर्तमान से अलग",
-    "mustDiffer": "आपके वर्तमान पासवर्ड से अलग होना चाहिए।",
     "changing": "बदल रहे हैं...",
     "changePasswordBtn": "पासवर्ड बदलें",
     "otpWillBeSentTo": "एक OTP भेजा जाएगा",
@@ -616,7 +736,6 @@
     "verifyOtpBtn": "OTP सत्यापित करें",
     "didntReceiveOtp": "OTP प्राप्त नहीं हुआ?",
     "resendBtn": "पुनः भेजें",
-    "backToCurrent": "वर्तमान पासवर्ड पर वापस जाएं",
     "otpExpiredBanner": "यह OTP समाप्त हो गया है। जारी रखने के लिए नया OTP प्राप्त करें।",
     "freshOtp": "एक नया OTP आपके ईमेल पर भेजा जाएगा।",
     "requestNewOtp": "नया OTP प्राप्त करें",
@@ -738,7 +857,40 @@
     "faqQ7": "क्या मैं अपना ऑर्डर रद्द कर सकता हूँ?",
     "faqA7": "हाँ। शिपमेंट से पहले ऑर्डर रद्द किए जा सकते हैं। योग्य प्रीपेड ऑर्डर की वापसी हमारी वापसी नीति के अनुसार संसाधित की जाती है।",
     "faqQ8": "मैं आपसे कैसे संपर्क कर सकता हूँ?",
-    "faqA8": "आप संपर्क पेज, WhatsApp, ईमेल या फ़ोन सहायता के माध्यम से हमसे संपर्क कर सकते हैं।"
+    "faqA8": "आप संपर्क पेज, WhatsApp, ईमेल या फ़ोन सहायता के माध्यम से हमसे संपर्क कर सकते हैं।",
+    "heroTitle": "Powering India's Smart Spaces",
+    "heroSubtitle": "From homes to hotels, offices to industries — we design and deliver intelligent automation that just works.",
+    "whoWeAreTitle": "Who We Are",
+    "missionTitle": "Our Mission",
+    "productsTitle": "What We Build",
+    "whyChooseUsTitle": "Why Choose Us",
+    "timelineTitle": "Our Journey",
+    "statsTitle": "By The Numbers",
+    "testimonialsTitle": "What People Say",
+    "faqTitle": "Frequently Asked Questions",
+    "ctaTitle": "Ready to Automate Your Space?",
+    "ctaText": "Join thousands of customers who've made the switch to smarter living.",
+    "ctaPrimary": "Explore Products",
+    "ctaSecondary": "Contact Us",
+    "premiumQuality": "Premium Quality",
+    "premiumQualityDesc": "Rigorously tested components engineered to outlast industry standards.",
+    "advancedAutomation": "Advanced Automation",
+    "advancedAutomationDesc": "Cutting-edge AI-ready tech that evolves with your space.",
+    "enterpriseSecurity": "Enterprise Security",
+    "enterpriseSecurityDesc": "Military-grade encryption on every connected device.",
+    "alwaysOnSupport": "Always-On Support",
+    "alwaysOnSupportDesc": "Dedicated engineers available around the clock, every day.",
+    "expertGuidance": "Expert Guidance",
+    "expertGuidanceDesc": "White-glove installation and post-setup maintenance support.",
+    "community": "10K+ Community",
+    "communityDesc": "A growing family of homes and businesses that trust Tek Node.",
+    "products": "Products",
+    "homes": "Homes",
+    "offices": "Offices",
+    "hotels": "Hotels",
+    "education": "Education",
+    "industrial": "Industrial",
+    "healthcare": "Healthcare"
   },
   "contact": {
     "letsBuild": "आओ बनाएं",
@@ -831,7 +983,9 @@
     "addedToCart": "{{name}} कार्ट में जोड़ दिया गया",
     "unableToAddToCart": "कार्ट में जोड़ने में असमर्थ",
     "unableToLoadComparison": "तुलना लोड करने में असमर्थ",
-    "unableToLoadProducts": "उत्पाद लोड करने में असमर्थ। कृपया पुनः प्रयास करें।"
+    "unableToLoadProducts": "उत्पाद लोड करने में असमर्थ। कृपया पुनः प्रयास करें।",
+    "selectedCount": "{{count}} चयनित",
+    "removeProduct": "{{name}} हटाएँ"
   },
   "enquiry": {
     "backHome": "होम पर वापस जाएँ",
@@ -857,7 +1011,15 @@
     "phoneLabel": "फ़ोन",
     "preferredTimeLabel": "पसंदीदा समय",
     "messageLabel": "संदेश",
-    "requirementsPlaceholder": "अपनी आवश्यकताओं के बारे में बताएं..."
+    "requirementsPlaceholder": "अपनी आवश्यकताओं के बारे में बताएं...",
+    "preferredTime": "पसंदीदा समय",
+    "messagePlaceholder": "अपनी आवश्यकताओं के बारे में बताएं...",
+    "teamWillContact": "हमारी टीम शीघ्र ही आपसे संपर्क करेगी।",
+    "preferredDateLabel": "पसंदीदा तिथि",
+    "namePlaceholder": "राहुल शर्मा",
+    "emailPlaceholder": "rahul@example.com",
+    "phonePlaceholder": "+91 98765 43210",
+    "unableToConnect": "सर्वर से कनेक्ट करने में असमर्थ।"
   },
   "offers": {
     "title": "ऑफ़र और प्रचार",
@@ -866,7 +1028,13 @@
     "checkBackSoon": "रोमांचक डील के लिए जल्द ही वापस आएँ!",
     "browseProducts": "उत्पाद देखें",
     "minOrder": "न्यूनतम ऑर्डर: ₹{{value}}",
-    "expires": "{{date}} को समाप्त"
+    "expires": "{{date}} को समाप्त",
+    "fetched": "Offers fetched",
+    "specialOffer": "विशेष ऑफर",
+    "limitedTimeOffer": "सीमित समय का ऑफर",
+    "shopDeal": "डील देखें",
+    "shopCategory": "श्रेणी देखें",
+    "viewOffer": "ऑफर देखें"
   },
   "orderConfirmation": {
     "thankYou": "आपके ऑर्डर के लिए धन्यवाद",
@@ -910,7 +1078,11 @@
     "statusShipped": "ट्रांज़िट मार्ग पर",
     "statusOutForDelivery": "अंतिम-मील वितरण",
     "statusDelivered": "पूर्ति पूरी हो गई",
-    "statusCancelled": "पाइपलाइन समाप्त"
+    "statusCancelled": "पाइपलाइन समाप्त",
+    "trackOrder": "Track Order",
+    "continueShopping": "Continue Shopping",
+    "statusInTransit": "पारगमन में",
+    "statusDeliveryFailed": "डिलीवरी विफल"
   },
   "trackOrder": {
     "secureVerification": "सुरक्षित सत्यापन",
@@ -970,7 +1142,11 @@
     "stepOutForDelivery": "डिलीवरी के लिए भेजा गया",
     "stepOutForDeliveryDesc": "आज डिलीवरी के लिए भेजा गया",
     "stepDelivered": "डिलीवर हो गया",
-    "stepDeliveredDesc": "पैकेज डिलीवर हो गया"
+    "stepDeliveredDesc": "पैकेज डिलीवर हो गया",
+    "stepInTransit": "पारगमन में",
+    "stepInTransitDesc": "पैकेज अगले हब की ओर बढ़ रहा है",
+    "stepDeliveryFailed": "डिलीवरी विफल",
+    "stepDeliveryFailedDesc": "डिलीवरी पूरी नहीं हो सकी"
   },
   "thankYou": {
     "title": "धन्यवाद",
@@ -1098,6 +1274,628 @@
     "devMotionSensor": "गति सेंसर",
     "devSmokeSensor": "धुआँ सेंसर",
     "devCamera": "कैमरा",
-    "devWifiAp": "Wi-Fi AP"
+    "devWifiAp": "Wi-Fi AP",
+    "sessionFound": "सत्र मिला"
+  },
+  "language": {
+    "availableLanguages": "उपलब्ध भाषाएँ",
+    "closeSelector": "भाषा चयन बंद करें"
+  },
+  "homeApplications": {
+    "smartHome": {
+      "title": "स्मार्ट होम",
+      "desc": "आधुनिक घरों के लिए स्मार्ट स्विच, डिजिटल लॉक, गेटवे, सेंसर और ऑटोमेशन डिवाइस।"
+    },
+    "office": {
+      "title": "ऑफिस ऑटोमेशन",
+      "desc": "लाइटिंग, एक्सेस और ऊर्जा उपयोग को कुशलता से नियंत्रित कर उत्पादकता बढ़ाएँ।"
+    },
+    "hotel": {
+      "title": "होटल समाधान",
+      "desc": "स्मार्ट रूम नियंत्रण, एक्सेस प्रबंधन और अतिथि सुविधा ऑटोमेशन सिस्टम।"
+    },
+    "hospital": {
+      "title": "अस्पताल ऑटोमेशन",
+      "desc": "स्वास्थ्य सुविधाओं और स्मार्ट इंफ्रास्ट्रक्चर के लिए भरोसेमंद ऑटोमेशन समाधान।"
+    },
+    "school": {
+      "title": "स्कूल और कॉलेज समाधान",
+      "desc": "स्मार्ट क्लासरूम, ऊर्जा-कुशल नियंत्रण प्रणाली और सुरक्षित एक्सेस प्रबंधन।"
+    },
+    "industrial": {
+      "title": "औद्योगिक ऑटोमेशन",
+      "desc": "औद्योगिक वातावरण के लिए उन्नत नियंत्रण प्रणाली, निगरानी डिवाइस और ऑटोमेशन समाधान।"
+    },
+    "availableCount": "{{count}} {{productLabel}} उपलब्ध"
+  },
+  "homeApp": {
+    "tapCards": "फोन पर कार्ड टैप करें, यहाँ हर कार्रवाई लाइव है।",
+    "deviceState": "{{device}} {{state}}",
+    "cameraStreaming": "4K · स्ट्रीमिंग",
+    "feedPaused": "फीड रुकी हुई है",
+    "states": {
+      "on": "चालू",
+      "off": "बंद",
+      "locked": "लॉक",
+      "unlocked": "अनलॉक"
+    },
+    "controls": {
+      "lights": {
+        "label": "लाइट्स",
+        "on": "लाइट्स चालू हो गईं",
+        "off": "लाइट्स बंद हो गईं"
+      },
+      "doors": {
+        "label": "मुख्य दरवाज़ा",
+        "on": "मुख्य दरवाज़ा लॉक हो गया",
+        "off": "मुख्य दरवाज़ा अनलॉक हो गया"
+      },
+      "camera": {
+        "label": "लिविंग रूम कैमरा",
+        "on": "कैमरा फीड फिर शुरू हुई",
+        "off": "कैमरा फीड रोक दी गई"
+      }
+    }
+  },
+  "homeCounter": {
+    "homesAutomated": "ऑटोमेटेड घर",
+    "projects": "प्रोजेक्ट",
+    "products": "उत्पाद",
+    "customerSatisfaction": "ग्राहक संतुष्टि"
+  },
+  "homeScenes": {
+    "active": "सक्रिय",
+    "activeScene": "सक्रिय - {{scene}}",
+    "morning": {
+      "title": "मॉर्निंग मोड",
+      "desc": "पर्दे खुलते हैं, कॉफी मशीन शुरू होती है और हल्की लाइटें चालू होती हैं।",
+      "step1": "पर्दे खुलते हैं",
+      "step2": "कॉफी बनती है",
+      "step3": "लाइट धीरे चालू होती है"
+    },
+    "goodNight": {
+      "title": "गुड नाइट",
+      "desc": "दरवाज़े लॉक होते हैं, लाइट धीमी होती है और AC नींद के तापमान पर सेट होता है।",
+      "step1": "दरवाज़े लॉक",
+      "step2": "लाइट धीमी",
+      "step3": "AC स्लीप तापमान पर"
+    },
+    "vacation": {
+      "title": "वेकेशन मोड",
+      "desc": "मन की शांति के लिए रैंडम लाइटिंग और सक्रिय सुरक्षा कैमरे।",
+      "step1": "लाइटिंग रैंडम",
+      "step2": "कैमरे सक्रिय",
+      "step3": "अलर्ट चालू"
+    },
+    "movie": {
+      "title": "मूवी मोड",
+      "desc": "पर्दे बंद, लाइट 10% तक धीमी और टीवी तुरंत चालू।",
+      "step1": "पर्दे बंद",
+      "step2": "लाइट 10% तक धीमी",
+      "step3": "टीवी चालू"
+    }
+  },
+  "homeFaq": {
+    "title": "अक्सर पूछे जाने वाले प्रश्न",
+    "subtitle": "हमारे स्मार्ट होम इकोसिस्टम के बारे में जरूरी जानकारी।",
+    "wiring": {
+      "question": "क्या Automate स्विच के लिए विशेष वायरिंग चाहिए?",
+      "answer": "नहीं, Automate स्विच आपके मौजूदा स्विचबोर्ड में बिना न्यूट्रल वायर या री-वायरिंग के फिट होने के लिए बने हैं।"
+    },
+    "security": {
+      "question": "क्या मेरा डेटा सुरक्षित है?",
+      "answer": "हाँ। हम बैंक-स्तर AES-256 एन्क्रिप्शन उपयोग करते हैं। आपके वीडियो फीड और डेटा सुरक्षित क्लाउड में रहते हैं।"
+    },
+    "internet": {
+      "question": "इंटरनेट बंद हो जाए तो क्या होगा?",
+      "answer": "आपके स्मार्ट डिवाइस फिजिकल स्विच या लोकल नेटवर्क कंट्रोल से सामान्य रूप से काम करते रहेंगे।"
+    },
+    "installation": {
+      "question": "क्या आप प्रोफेशनल इंस्टॉलेशन देते हैं?",
+      "answer": "बिल्कुल। हमारे प्रमाणित प्रोफेशनल कुछ घंटों में आपका स्मार्ट होम इंस्टॉल और कॉन्फिगर कर सकते हैं।"
+    },
+    "subscription": {
+      "question": "क्या मासिक सब्सक्रिप्शन शुल्क है?",
+      "answer": "बेसिक ऐप उपयोग और डिवाइस कंट्रोल मुफ्त है। कैमरा फीड के लिए वैकल्पिक प्रीमियम प्लान उपलब्ध हैं।"
+    }
+  },
+  "smartHome": {
+    "liveFeed": "लाइव फीड",
+    "liveStatus": "लाइव स्थिति",
+    "status": {
+      "on": "चालू",
+      "temperature": "24°C",
+      "openPercent": "60%",
+      "locked": "लॉक",
+      "live": "लाइव",
+      "automationCount": "3"
+    },
+    "meta": {
+      "brightness": "78% चमक",
+      "autoMode": "ऑटो मोड",
+      "openEast": "खुला · पूर्व दिशा",
+      "frontDoorSecure": "मुख्य दरवाज़ा सुरक्षित",
+      "camerasStreaming": "4 कैमरे स्ट्रीम कर रहे हैं",
+      "automationsActive": "ऑटोमेशन सक्रिय"
+    },
+    "planSubmitted": "आपका स्मार्ट होम प्लान सफलतापूर्वक सबमिट हो गया है!",
+    "planFetched": "प्लान प्राप्त हुआ",
+    "experienceTitle": "स्मार्ट होम अनुभव",
+    "experienceDesc": "अपने पूरे घर को एक ही सहज इंटरफ़ेस से प्रबंधित करें। Automate ऐप आपको अपने रहने की जगह पर अभूतपूर्व नियंत्रण और जानकारी देता है।",
+    "theAutomateApp": "Automate ऐप",
+    "controlLights": "रोशनी नियंत्रित करें",
+    "controlAc": "AC नियंत्रित करें",
+    "controlCurtains": "पर्दे नियंत्रित करें",
+    "controlDoorLocks": "दरवाज़े के ताले नियंत्रित करें",
+    "monitorCameras": "कैमरे मॉनिटर करें",
+    "scheduleAutomation": "ऑटोमेशन शेड्यूल करें"
+  },
+  "whyTeknode": {
+    "climate": {
+      "engine": "क्लाइमेट इंजन",
+      "temperature": "तापमान",
+      "cold": "ठंडा",
+      "mild": "मध्यम",
+      "hot": "गर्म",
+      "cooling": "ज़ोन-B कूलिंग",
+      "balanced": "ज़ोन-A संतुलित",
+      "heating": "ज़ोन-C हीटिंग",
+      "winter": "सर्दी",
+      "ember": "गरम"
+    },
+    "title": "Automate क्यों चुनें?",
+    "subtitle": "विश्वसनीयता, सुरक्षा और सुंदरता के लिए इंजीनियर्ड।",
+    "support24x7": {
+      "title": "24x7 सपोर्ट",
+      "desc": "जब भी आपको ज़रूरत हो, हम यहाँ हैं।",
+      "longDesc": "हमारी समर्पित वैश्विक सपोर्ट टीम किसी भी प्रश्न, समस्या निवारण या कॉन्फ़िगरेशन सहायता के लिए चौबीसों घंटे उपलब्ध है। आप किसी भी समय लाइव चैट, फ़ोन या ईमेल से हमसे संपर्क कर सकते हैं।"
+    },
+    "voiceAssistant": {
+      "title": "वॉयस असिस्टेंट",
+      "desc": "Alexa और Google के साथ काम करता है।",
+      "longDesc": "अपने स्मार्ट इकोसिस्टम को प्रमुख वॉयस कंट्रोलर से सहज रूप से जोड़ें। रोशनी समायोजित करने, अपनी संपत्ति की सुरक्षा करने या दैनिक मल्टी-डिवाइस ऑटोमेशन रूटीन प्रबंधित करने के लिए वॉयस कमांड दें।"
+    },
+    "mobileApp": {
+      "title": "मोबाइल ऐप नियंत्रण",
+      "desc": "सब कुछ अपने फ़ोन से प्रबंधित करें।",
+      "longDesc": "हमारे सहज नेटिव iOS और Android ऐप से अपने वातावरण पर पूर्ण नियंत्रण लें। एक यूनिफाइड UI में डैशबोर्ड शॉर्टकट अनुकूलित करें, सिस्टम पैरामीटर मॉनिटर करें और सेटिंग्स बदलें।"
+    },
+    "remoteAccess": {
+      "title": "रिमोट एक्सेस",
+      "desc": "कहीं से भी डिवाइस नियंत्रित करें।",
+      "longDesc": "चाहे आप कार्यालय में हों या विदेश में, एन्क्रिप्टेड नेटवर्क टनल के माध्यम से सुरक्षित रूप से रीयल-टाइम डिवाइस लॉग देखें, पावर ग्रिड टॉगल करें और महत्वपूर्ण पुश अलर्ट तुरंत प्राप्त करें।"
+    },
+    "cloudConnectivity": {
+      "title": "क्लाउड कनेक्टिविटी",
+      "desc": "सुरक्षित और तेज़ डेटा सिंक।",
+      "longDesc": "एज कंप्यूटिंग क्लस्टर द्वारा संचालित, डिवाइस स्थितियाँ मिलीसेकंड की देरी से तुरंत सिंक होती हैं। निरंतर अपटाइम के लिए सभी क्लाउड मेट्रिक्स विकेंद्रीकृत नोड सिस्टम में मिरर होती हैं।"
+    },
+    "energySaving": {
+      "title": "ऊर्जा बचत",
+      "desc": "आसानी से बिजली बिल कम करें।",
+      "longDesc": "व्यापक ऐतिहासिक उपयोगिता मेट्रिक्स प्राप्त करें। हमारे स्मार्ट एल्गोरिदम उच्च-खपत नोड्स को अलग करते हैं और अपशिष्ट और उपयोगिता खर्च कम करने के लिए स्वचालित कस्टम शेड्यूल की सलाह देते हैं।"
+    },
+    "easyInstallation": {
+      "title": "आसान इंस्टॉलेशन",
+      "desc": "शून्य नुकसान, त्वरित सेटअप।",
+      "longDesc": "शून्य-आक्रामक माउंटिंग इंटरफ़ेस के आसपास इंजीनियर्ड। हमारे प्लग-एंड-प्ले आर्किटेक्चरल घटक महंगे रीवायरिंग ओवरहाल के बिना मौजूदा दीवार मैट्रिक्स में सीधे फिट होते हैं।"
+    },
+    "advancedSecurity": {
+      "title": "उन्नत सुरक्षा",
+      "desc": "बैंक-स्तरीय एन्क्रिप्शन मानक।",
+      "longDesc": "AES-256 बिट एंड-टू-एंड डेटा ट्रांसपोर्ट क्रिप्टोग्राफी से सुसज्जित। स्थानीय प्रमाणीकरण हैंडशेक सुनिश्चित करते हैं कि बाहरी नेटवर्क घुसपैठ आपके घर की परिधि सुरक्षा से समझौता नहीं कर सकती।"
+    }
+  },
+  "coupon": {
+    "label": "कूपन",
+    "availableCoupons": "उपलब्ध कूपन और ऑफर",
+    "percentOff": "{{percent}}% OFF",
+    "amountOff": "{{amount}} OFF",
+    "minOrderShort": "न्यून. {{amount}}",
+    "locked": "लॉक",
+    "addMoreToUnlock": "अनलॉक करने के लिए {{amount}} और जोड़ें",
+    "validOnOrder": "इस ऑर्डर पर मान्य।",
+    "showDetails": "विवरण दिखाएँ",
+    "upToOff": "{{amount}} तक की छूट",
+    "applyCoupon": "कूपन {{code}} लागू करें",
+    "copyCoupon": "कूपन कोड {{code}} कॉपी करें",
+    "applied": "कूपन सफलतापूर्वक लागू हुआ",
+    "removed": "कूपन हटा दिया गया",
+    "fetched": "कूपन प्राप्त हुए",
+    "availableFetched": "उपलब्ध कूपन प्राप्त हुए",
+    "validated": "कूपन सत्यापित हुआ",
+    "cartTotals": "कार्ट कुल की गणना हो गई",
+    "invalid": "अमान्य कूपन कोड",
+    "expired": "कूपन समाप्त हो गया है",
+    "minimumNotMet": "न्यूनतम ऑर्डर मूल्य पूरा नहीं हुआ",
+    "myOffersAndCoupons": "मेरे ऑफर और कूपन",
+    "subtitle": "चेकआउट पर अपने कूपन रिडीम करें और विशेष ऑफर अनलॉक करें।",
+    "activeOffers": "सक्रिय ऑफर",
+    "specialOffer": "विशेष ऑफर",
+    "allProducts": "सभी उत्पाद",
+    "selectedProducts": "चयनित उत्पाद",
+    "selectedCategory": "चयनित श्रेणी",
+    "selectedProduct": "चयनित उत्पाद",
+    "maxSavings": "अधिकतम बचत: ₹{{value}}",
+    "appliesTo": "लागू होता है: {{value}}",
+    "validTill": "मान्य: {{date}} तक",
+    "applyCouponButton": "कूपन लागू करें",
+    "myCoupons": "मेरे कूपन",
+    "myCouponsSubtitle": "आपके खाते में उपलब्ध कूपन, रिडेम्पशन इतिहास सहित।",
+    "totalCount": "कुल {{count}}",
+    "filterAvailable": "उपलब्ध",
+    "filterExpiringSoon": "जल्द समाप्त होने वाले",
+    "searchPlaceholder": "कूपन कोड खोजें…",
+    "checkBackSoon": "नए ऑफर के लिए जल्द देखें।",
+    "expiresInDays_one": "{{count}} दिन में समाप्त",
+    "expiresInDays_other": "{{count}} दिनों में समाप्त",
+    "minimumOrder": "न्यूनतम ऑर्डर",
+    "maxDiscountLabel": "अधिकतम छूट",
+    "appliesToScope": "{{value}} पर लागू",
+    "productCount_one": "{{count}} उत्पाद",
+    "productCount_other": "{{count}} उत्पाद",
+    "categoryCount_one": "{{count}} श्रेणी",
+    "categoryCount_other": "{{count}} श्रेणियाँ",
+    "allProductsScope": "सभी उत्पाद",
+    "usedCount_one": "{{count}} बार उपयोग किया गया",
+    "usedCount_other": "{{count}} बार उपयोग किया गया",
+    "copied": "कॉपी हो गया",
+    "copyCode": "कोड कॉपी करें",
+    "details": "विवरण",
+    "detailsTitle": "कूपन विवरण",
+    "detailsSubtitle": "कूपन की शर्तें और पात्रता देखें।",
+    "minimumCart": "न्यूनतम कार्ट",
+    "noMinimum": "कोई न्यूनतम नहीं",
+    "maximumDiscount": "अधिकतम छूट",
+    "noLimit": "कोई सीमा नहीं",
+    "validFrom": "मान्य से",
+    "immediately": "तुरंत",
+    "expiryDateLabel": "समाप्ति तिथि",
+    "eligibleCategories": "पात्र श्रेणियाँ",
+    "allCategories": "सभी श्रेणियाँ",
+    "eligibleProducts": "पात्र उत्पाद",
+    "userEligibility": "उपयोगकर्ता पात्रता",
+    "availableForYou": "आपके लिए उपलब्ध",
+    "usageLimitLabel": "उपयोग सीमा",
+    "leftOfPerUser": "प्रति उपयोगकर्ता {{limit}} में से {{left}} शेष",
+    "usesPerUserUnlimited_one": "प्रति उपयोगकर्ता {{count}} उपयोग · असीमित कुल",
+    "usesPerUserUnlimited_other": "प्रति उपयोगकर्ता {{count}} उपयोग · असीमित कुल",
+    "tcMinOrder": "यह कूपन केवल ₹{{amount}} से अधिक के ऑर्डर पर मान्य है।",
+    "tcMaxDiscount": "अधिकतम लागू छूट ₹{{amount}} है।",
+    "tcNoStack": "इसे किसी अन्य कूपन या ऑफर के साथ संयोजित नहीं किया जा सकता।",
+    "tcStackable": "इसे पात्र उत्पाद ऑफर के साथ संयोजित किया जा सकता है।",
+    "tcEligibility": "उपलब्धता और चेकआउट पर पूर्ण पात्रता के अधीन।",
+    "emptyCheckBack": "नई छूट और विशेष ऑफर के लिए जल्द देखें।"
+  },
+  "order": {
+    "placedSuccess": "ऑर्डर सफलतापूर्वक प्लेस हुआ",
+    "fetched": "ऑर्डर प्राप्त हुआ",
+    "updated": "ऑर्डर अपडेट हुआ",
+    "cancelled": "ऑर्डर रद्द हुआ",
+    "notFound": "ऑर्डर नहीं मिला",
+    "tracked": "ऑर्डर ट्रैक हुआ",
+    "returnRequested": "वापसी अनुरोध किया गया",
+    "refunded": "ऑर्डर का रिफंड हुआ"
+  },
+  "payment": {
+    "orderCreated": "भुगतान ऑर्डर बनाया गया",
+    "verified": "भुगतान सफलतापूर्वक सत्यापित हुआ",
+    "alreadyVerified": "भुगतान पहले से सत्यापित है",
+    "detailsFetched": "भुगतान विवरण प्राप्त हुए",
+    "failed": "भुगतान विफल"
+  },
+  "wishlist": {
+    "fetched": "विशलिस्ट प्राप्त हुई",
+    "itemAdded": "विशलिस्ट में जोड़ा गया",
+    "itemRemoved": "विशलिस्ट से हटाया गया"
+  },
+  "notifications": {
+    "fetched": "सूचनाएँ प्राप्त हुईं",
+    "markedRead": "सूचना पढ़ी गई चिह्नित हुई",
+    "allMarkedRead": "सभी सूचनाएँ पढ़ी गईं चिह्नित",
+    "deleted": "सूचना हटा दी गई",
+    "cleared": "सभी सूचनाएँ साफ़ कर दी गईं",
+    "unreadCountFetched": "अनपढ़ी सूचनाओं की संख्या प्राप्त हुई"
+  },
+  "review": {
+    "submitted": "समीक्षा सफलतापूर्वक सबमिट की गई",
+    "websiteSubmitted": "वेबसाइट समीक्षा सफलतापूर्वक सबमिट हुई। प्रशासन की मंज़ूरी की प्रतीक्षा है।",
+    "fetched": "समीक्षाएँ प्राप्त हुईं",
+    "countsFetched": "समीक्षा गणनाएँ प्राप्त हुईं",
+    "failedToSubmit": "समीक्षा सबमिट करने में विफल",
+    "rateYourExperience": "अपने अनुभव को रेट करें",
+    "selectProduct": "उत्पाद चुनें",
+    "noProductsFound": "इस ऑर्डर के लिए कोई समीक्षा-योग्य उत्पाद नहीं मिला।",
+    "submittedSuccess": "समीक्षा सफलतापूर्वक सबमिट की गई",
+    "submittingReview": "समीक्षा सबमिट हो रही है..."
+  },
+  "category": {
+    "fetched": "श्रेणियाँ प्राप्त हुईं"
+  },
+  "demo": {
+    "submitted": "आपका डेमो पूछताछ सफलतापूर्वक सबमिट हो गया है! हम जल्द ही आपसे संपर्क करेंगे।"
+  },
+  "backInStock": {
+    "subscribed": "जब यह उत्पाद स्टॉक में वापस आएगा, हम आपको सूचित करेंगे",
+    "alreadyAvailable": "उत्पाद पहले से स्टॉक में है",
+    "cancelled": "सूचना रद्द कर दी गई"
+  },
+  "recentlyViewed": {
+    "fetched": "हाल में देखे गए उत्पाद प्राप्त हुए",
+    "recorded": "हाल में देखा गया उत्पाद दर्ज हुआ",
+    "removed": "हाल में देखा गया उत्पाद हटाया गया",
+    "cleared": "हाल में देखे गए उत्पाद साफ़ किए गए",
+    "heading": "जहाँ छोड़ा था वहीं से शुरू करें",
+    "compactTitle": "आपके द्वारा हाल में देखे गए उत्पाद।",
+    "emptyDescription": "आपके द्वारा देखे गए उत्पाद यहाँ दिखेंगे ताकि आप उन्हें फिर से आसानी से पा सकें।",
+    "removeAria": "{{name}} को हाल में देखे गए से हटाएँ"
+  },
+  "status": {
+    "order": {
+      "pending": "लंबित",
+      "confirmed": "पुष्टि हो गई",
+      "processing": "प्रोसेस हो रहा है",
+      "packed": "पैक हो गया",
+      "shipped": "भेज दिया गया",
+      "outForDelivery": "डिलीवरी के लिए भेजा गया",
+      "delivered": "डिलीवर हो गया",
+      "cancelled": "रद्द हो गया",
+      "returned": "Returned",
+      "refunded": "वापसी हो गई",
+      "partiallyRefunded": "आंशिक वापसी हो गई",
+      "inTransit": "पारगमन में",
+      "deliveryFailed": "डिलीवरी विफल"
+    },
+    "payment": {
+      "pending": "लंबित",
+      "paid": "भुगतान किया गया",
+      "failed": "Failed",
+      "refunded": "वापसी हो गई",
+      "refundPending": "Refund Pending"
+    },
+    "product": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "outOfStock": "स्टॉक में नहीं है",
+      "inStock": "स्टॉक में है",
+      "lowStock": "Low stock"
+    },
+    "return": {
+      "pending": "लंबित",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "processing": "प्रोसेस हो रहा है",
+      "completed": "Completed"
+    },
+    "review": {
+      "pending": "लंबित",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "refund": {
+      "pending": "लंबित",
+      "processed": "वापसी हो गई",
+      "failed": "Failed"
+    },
+    "coupon": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "expired": "समाप्त",
+      "used": "प्रयुक्त"
+    }
+  },
+  "notificationTypes": {
+    "orderPlaced": "Order Placed",
+    "orderConfirmed": "पुष्टि हो गई",
+    "orderProcessing": "प्रोसेस हो रहा है",
+    "orderShipped": "भेज दिया गया",
+    "orderOutForDelivery": "डिलीवरी के लिए भेजा गया",
+    "orderDelivered": "डिलीवर हो गया",
+    "orderCancelled": "रद्द हो गया",
+    "wishlist": "मेरी विशलिस्ट",
+    "offers": "ऑफ़र और कूपन",
+    "priceDrops": "Price Drops",
+    "backInStock": "Back in Stock",
+    "system": "System",
+    "products": "उत्पाद",
+    "smartHome": "स्मार्ट होम",
+    "all": "सभी",
+    "unread": "अपठित",
+    "orderPacked": "पैक किया गया",
+    "orderInTransit": "पारगमन में",
+    "orderDeliveryFailed": "डिलीवरी विफल"
+  },
+  "return": {
+    "submitted": "वापसी अनुरोध सबमिट हुआ"
+  },
+  "refund": {
+    "processed": "रिफंड सफलतापूर्वक संसाधित हुआ"
+  },
+  "contactPage": {
+    "title": "संपर्क करें",
+    "subtitle": "हमें आपसे सुनकर खुशी होगी। हमें संदेश भेजें और हम जल्द से जल्द जवाब देंगे।",
+    "formName": "पूरा नाम",
+    "formEmail": "ईमेल पता",
+    "formPhone": "फ़ोन नंबर",
+    "formMessage": "संदेश",
+    "formSubmit": "संदेश भेजें",
+    "emailUs": "हमें ईमेल करें",
+    "callUs": "हमें कॉल करें",
+    "visitUs": "हमसे मिलें",
+    "followUs": "हमें फ़ॉलो करें",
+    "faqTitle": "सामान्य प्रश्न",
+    "messageSent": "संदेश सफलतापूर्वक भेजा गया!",
+    "nameRequired": "पूरा नाम आवश्यक है",
+    "emailRequired": "ईमेल आवश्यक है",
+    "emailInvalid": "कृपया एक मान्य ईमेल पता दें",
+    "messageRequired": "संदेश आवश्यक है",
+    "sending": "भेजा जा रहा है..."
+  },
+  "offersPage": {
+    "title": "ऑफर और प्रचार",
+    "subtitle": "स्मार्ट होम उत्पादों पर विशेष डील",
+    "noOffers": "अभी कोई सक्रिय ऑफर नहीं",
+    "checkBackSoon": "रोमांचक डील के लिए जल्द देखें!",
+    "browseProducts": "उत्पाद देखें",
+    "minOrder": "न्यून. ऑर्डर: ₹{{value}}",
+    "expires": "समाप्त: {{date}}"
+  },
+  "howWorks": {
+    "installationPath": "इंस्टॉलेशन पथ",
+    "title": "यह कैसे काम करता है",
+    "subtitle": "अपने घर को बदलने के चार सरल चरण।",
+    "step1": {
+      "title": "डिवाइस चुनें",
+      "desc": "हमारी प्रीमियम रेंज से चुनें।"
+    },
+    "step2": {
+      "title": "पेशेवर इंस्टॉलेशन",
+      "desc": "शून्य नुकसान के साथ विशेषज्ञ सेटअप।"
+    },
+    "step3": {
+      "title": "मोबाइल ऐप कनेक्ट करें",
+      "desc": "डिवाइस को सहजता से सिंक करें।"
+    },
+    "step4": {
+      "title": "स्मार्ट लिविंग का आनंद लें",
+      "desc": "सच्चे ऑटोमेशन का अनुभव करें।"
+    }
+  },
+  "readyHome": {
+    "title": "बदलने के लिए तैयार",
+    "titleHighlight": "आपका घर?",
+    "description": "आज ही अपना मुफ़्त स्मार्ट होम परामर्श बुक करें। Automate के साथ अत्यधिक आराम, सुरक्षा और सुविधा का अनुभव करें।",
+    "whatsappMessage": "नमस्ते {{company}}, मुझे आपके स्मार्ट ऑटोमेशन समाधानों में रुचि है।"
+  },
+  "cancelSuccess": {
+    "title": "ऑर्डर सफलतापूर्वक रद्द",
+    "orderCancelled": "आपका ऑर्डर सफलतापूर्वक रद्द कर दिया गया है।",
+    "refundInitiated": "आपका रिफंड शुरू कर दिया गया है और {{days}} कार्य दिवसों के भीतर आपके मूल भुगतान विधि में जमा कर दिया जाएगा, आपके बैंक पर निर्भर करता है।",
+    "refundConfirmation": "रिफंड संसाधित होने पर आपको एक पुष्टिकरण प्राप्त होगा।",
+    "noRefundRequired": "चूंकि यह ऑर्डर पूर्व-भुगतान नहीं था, इसलिए कोई रिफंड आवश्यक नहीं है।",
+    "hopeToServeAgain": "हमें उम्मीद है कि आपको जल्द ही फिर से सेवा देने का मौका मिलेगा।",
+    "thanksForChoosing": "{{brand}} को चुनने के लिए धन्यवाद।"
+  },
+  "smartSearch": {
+    "trySearching": "कुछ और खोजने का प्रयास करें",
+    "viewAllResults": "सभी परिणाम देखें ({{total}})",
+    "recentSearches": "हाल की खोजें",
+    "clearHistory": "साफ़ करें",
+    "popularSearches": "लोकप्रिय खोजें",
+    "popularSmartSwitch": "स्मार्ट स्विच",
+    "popularDigitalLock": "डिजिटल लॉक",
+    "popularSmartGateway": "स्मार्ट गेटवे",
+    "popularWifiSwitch": "वाईफाई स्विच",
+    "popularMotionSensor": "मोशन सेंसर",
+    "popularSmartHome": "स्मार्ट होम"
+  },
+  "pincode": {
+    "invalid": "अमान्य पिनकोड",
+    "unableToFetch": "स्थान प्राप्त करने में असमर्थ। कृपया पुनः प्रयास करें।"
+  },
+  "proposals": {
+    "title": "स्मार्ट होम प्रस्ताव",
+    "subtitle": "ग्राहक स्मार्ट होम प्रस्ताव प्रबंधित करें · कुल {{total}}",
+    "backToDashboard": "डैशबोर्ड पर वापस",
+    "allStatuses": "सभी स्थितियाँ",
+    "statusNew": "नया",
+    "statusContacted": "संपर्क किया गया",
+    "statusUnderReview": "समीक्षा में",
+    "statusQuotationPrepared": "कोटेशन तैयार",
+    "statusQuotationSent": "कोटेशन भेजा गया",
+    "statusSiteVisitScheduled": "साइट विज़िट निर्धारित",
+    "statusAwaitingApproval": "ग्राहक अनुमोदन की प्रतीक्षा",
+    "statusApproved": "अनुमोदित",
+    "statusConvertedToOrder": "ऑर्डर में परिवर्तित",
+    "statusCompleted": "पूर्ण",
+    "statusCancelled": "रद्द",
+    "searchPlaceholder": "प्रस्ताव / नाम / ईमेल / फ़ोन / शहर",
+    "allTypes": "सभी प्रकार",
+    "sort": "क्रमबद्ध करें",
+    "sortLatest": "नवीनतम पहले",
+    "sortOldest": "सबसे पुराना पहले",
+    "sortProposalNumber": "प्रस्ताव संख्या",
+    "fromDate": "से",
+    "toDate": "तक",
+    "colProposal": "प्रस्ताव",
+    "colCustomer": "ग्राहक",
+    "colContact": "संपर्क",
+    "colStep": "चरण",
+    "colCost": "लागत",
+    "colDate": "तिथि",
+    "colActions": "क्रियाएँ",
+    "loading": "प्रस्ताव लोड हो रहे हैं...",
+    "empty": "कोई प्रस्ताव नहीं मिला",
+    "loadFailed": "प्रस्ताव लोड करने में विफल",
+    "updateStatusFailed": "स्थिति अपडेट करने में विफल",
+    "view": "देखें",
+    "pageOf": "पृष्ठ {{page}} / {{totalPages}} (कुल {{total}})"
+  },
+  "proposalDetail": {
+    "loadFailed": "विवरण लोड करने में विफल",
+    "loading": "लोड हो रहा है...",
+    "notFound": "प्रस्ताव नहीं मिला",
+    "backToProposals": "प्रस्तावों पर वापस",
+    "createdAt": "बनाया गया: {{date}}",
+    "fieldUpdated": "{{field}} सफलतापूर्वक अपडेट हुआ",
+    "updateFailed": "अपडेट करने में विफल",
+    "statusChangedTo": "स्थिति बदली गई: {{status}}",
+    "statusUpdateFailed": "स्थिति अपडेट विफल",
+    "confirmConvert": "ऑर्डर में परिवर्तित करने की पुष्टि करें",
+    "convertedSuccess": "सफलतापूर्वक परिवर्तित हुआ",
+    "conversionFailed": "परिवर्तन विफल",
+    "confirmDelete": "हटाने की पुष्टि करें",
+    "deleteFailed": "हटाने में विफल",
+    "converting": "परिवर्तित हो रहा है...",
+    "convertToOrder": "ऑर्डर में परिवर्तित करें",
+    "deleting": "हटाया जा रहा है...",
+    "convertedOrder": "ऑर्डर #{{id}} में परिवर्तित",
+    "wizardNew": "नया",
+    "wizardInProgress": "प्रगति में",
+    "wizardPending": "लंबित",
+    "wizardCompleted": "पूर्ण",
+    "wizardSubmitted": "सबमिट",
+    "wizardDraft": "ड्राफ्ट",
+    "progress": "प्रगति:",
+    "stepsCount": "{{count}}/5 चरण",
+    "completed": "पूर्ण",
+    "customerDetails": "ग्राहक विवरण",
+    "fullName": "पूरा नाम",
+    "state": "राज्य",
+    "address": "पता",
+    "quickActions": "त्वरित क्रियाएँ",
+    "contactCustomer": "ग्राहक से संपर्क करें",
+    "addNotes": "नोट जोड़ें",
+    "assignAdmin": "प्रशासक निर्धारित करें",
+    "scheduleSiteVisit": "साइट विज़िट निर्धारित करें",
+    "uploadQuotation": "कोटेशन अपलोड करें",
+    "markApproved": "अनुमोदित चिह्नित करें",
+    "homeDetails": "घर का विवरण",
+    "totalRooms": "कुल कमरे",
+    "estBudget": "अनुमानित बजट",
+    "quotation": "कोटेशन",
+    "selectedRooms": "चयनित कमरे",
+    "selectedDevices": "चयनित डिवाइस",
+    "devicesCount": "{{count}} डिवाइस",
+    "homeConfiguration": "घर की कॉन्फ़िगरेशन",
+    "adminNotes": "प्रशासक नोट",
+    "customerNotes": "ग्राहक नोट",
+    "statusTimeline": "स्थिति समयरेखा",
+    "fromStatus": "{{status}} से",
+    "noHistory": "कोई इतिहास नहीं",
+    "nameLabel": "नाम",
+    "notProvided": "उपलब्ध नहीं",
+    "notesPlaceholder": "नोट दर्ज करें...",
+    "saveNotes": "नोट सहेजें",
+    "selectVisitDate": "विज़िट तिथि चुनें",
+    "saveAndUpdateStatus": "सहेजें और स्थिति अपडेट करें",
+    "setQuotation": "कोटेशन सेट करें",
+    "enterQuotation": "कोटेशन राशि दर्ज करें",
+    "enterAmount": "राशि दर्ज करें",
+    "saveAndMarkPrepared": "सहेजें और तैयार चिह्नित करें",
+    "assignAdminHint": "इस प्रस्ताव के लिए प्रशासक निर्धारित करें",
+    "assignAdminPlaceholder": "प्रशासक चुनें...",
+    "assign": "निर्धारित करें",
+    "selectedRoomsAndDevices": "चयनित कमरे और डिवाइस"
   }
 }

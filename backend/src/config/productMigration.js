@@ -99,6 +99,12 @@ const ensureProductUpgradeTables = async () => {
     await addColumnIfMissing("product_categories", "banner_image VARCHAR(500) NULL AFTER thumbnail_image", "banner_image");
     await addColumnIfMissing("product_categories", "icon_image VARCHAR(500) NULL AFTER banner_image", "icon_image");
 
+    // 7. Category localization columns
+    await addColumnIfMissing("product_categories", "name_hi VARCHAR(100) NULL AFTER name", "name_hi");
+    await addColumnIfMissing("product_categories", "name_mr VARCHAR(100) NULL AFTER name_hi", "name_mr");
+    await addColumnIfMissing("product_categories", "description_hi TEXT NULL AFTER description", "description_hi");
+    await addColumnIfMissing("product_categories", "description_mr TEXT NULL AFTER description_hi", "description_mr");
+
     console.log("✅ Product upgrade migration completed");
   } catch (error) {
     console.error("❌ Product migration error:", error.message);

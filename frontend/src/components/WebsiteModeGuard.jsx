@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import apiCall from "../services/api";
 import LoadingSpinner from "./LoadingSpinner.jsx";
 
@@ -46,6 +47,7 @@ const writeCachedMode = (mode) => {
  * Admin routes are declared OUTSIDE this guard and stay unaffected.
  */
 export default function WebsiteModeGuard() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState(readCachedMode);
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function WebsiteModeGuard() {
       <div className="flex min-h-screen items-center justify-center bg-page text-primary">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          <p className="text-sm font-medium text-text-secondary">Checking website status...</p>
+          <p className="text-sm font-medium text-text-secondary">{t("common.checkingWebsiteStatus")}</p>
         </div>
       </div>
     );

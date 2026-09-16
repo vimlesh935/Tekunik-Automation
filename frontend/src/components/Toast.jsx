@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { CheckCircle, XCircle, AlertTriangle, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const ToastContext = createContext(null);
 
@@ -35,6 +36,7 @@ const toastVariants = {
 let toastId = 0;
 
 export function ToastProvider({ children }) {
+  const { t } = useTranslation();
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((message, type = "success", duration = 4000) => {
@@ -70,6 +72,7 @@ export function ToastProvider({ children }) {
               <button
                 onClick={() => removeToast(toast.id)}
                 className="text-gray-500 hover:text-gray-300 transition flex-shrink-0"
+                aria-label={t('common.close')}
               >
                 <X size={16} />
               </button>

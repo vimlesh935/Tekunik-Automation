@@ -15,8 +15,8 @@ const applications = [
   {
     key: "Smart Home",
     icon: HomeIcon,
-    title: "Smart Home",
-    desc: "Smart switches, digital locks, gateways, sensors and automation devices designed for modern homes.",
+    titleKey: "homeApplications.smartHome.title",
+    descKey: "homeApplications.smartHome.desc",
     border: "border-indigo-500/20 hover:border-indigo-500/50",
     iconBg: "bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20",
     glow: "shadow-indigo-500/10",
@@ -24,8 +24,8 @@ const applications = [
   {
     key: "Office Automation",
     icon: Building2,
-    title: "Office Automation",
-    desc: "Improve productivity and control lighting, access, and energy usage efficiently.",
+    titleKey: "homeApplications.office.title",
+    descKey: "homeApplications.office.desc",
     border: "border-emerald-500/20 hover:border-emerald-500/50",
     iconBg: "bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20",
     glow: "shadow-emerald-500/10",
@@ -33,8 +33,8 @@ const applications = [
   {
     key: "Hotel Solutions",
     icon: Hotel,
-    title: "Hotel Solutions",
-    desc: "Smart room control, access management and guest convenience automation systems.",
+    titleKey: "homeApplications.hotel.title",
+    descKey: "homeApplications.hotel.desc",
     border: "border-amber-500/20 hover:border-amber-500/50",
     iconBg: "bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20",
     glow: "shadow-amber-500/10",
@@ -42,8 +42,8 @@ const applications = [
   {
     key: "Hospital Automation",
     icon: Stethoscope,
-    title: "Hospital Automation",
-    desc: "Reliable automation solutions for healthcare facilities and smart infrastructure management.",
+    titleKey: "homeApplications.hospital.title",
+    descKey: "homeApplications.hospital.desc",
     border: "border-rose-500/20 hover:border-rose-500/50",
     iconBg: "bg-rose-500/10 text-rose-400 group-hover:bg-rose-500/20",
     glow: "shadow-rose-500/10",
@@ -51,8 +51,8 @@ const applications = [
   {
     key: "School & College Solutions",
     icon: GraduationCap,
-    title: "School & College Solutions",
-    desc: "Smart classrooms, energy-efficient control systems and secure access management.",
+    titleKey: "homeApplications.school.title",
+    descKey: "homeApplications.school.desc",
     border: "border-cyan-500/20 hover:border-cyan-500/50",
     iconBg: "bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20",
     glow: "shadow-cyan-500/10",
@@ -60,8 +60,8 @@ const applications = [
   {
     key: "Industrial Automation",
     icon: Factory,
-    title: "Industrial Automation",
-    desc: "Advanced control systems, monitoring devices and automation solutions for industrial environments.",
+    titleKey: "homeApplications.industrial.title",
+    descKey: "homeApplications.industrial.desc",
     border: "border-violet-500/20 hover:border-violet-500/50",
     iconBg: "bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20",
     glow: "shadow-violet-500/10",
@@ -103,19 +103,22 @@ export default function HomeApplications({ applicationCounts, loadingApps }) {
                     <app.icon size={28} />
                   </div>
                   <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors duration-200 mb-3">
-                    {app.title}
+                    {t(app.titleKey)}
                   </h3>
                   <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-grow">
-                    {app.desc}
+                    {t(app.descKey)}
                   </p>
                   <div className="flex items-center justify-between pt-2">
                     {count !== undefined && (
                       <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-                        {count} {count === 1 ? "Product" : "Products"} Available
+                        {t("homeApplications.availableCount", {
+                          count,
+                          productLabel: count === 1 ? t("common.item") : t("common.items"),
+                        })}
                       </span>
                     )}
                     {loadingApps && (
-                      <span className="text-xs text-slate-500 animate-pulse">Loading...</span>
+                      <span className="text-xs text-slate-500 animate-pulse">{t("common.loadingDots")}</span>
                     )}
                     <span className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-700/60 bg-slate-800/40 text-xs font-bold text-indigo-400 group-hover:text-white group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all duration-300 uppercase tracking-wider ml-auto">
                       {t('home.explore')} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />

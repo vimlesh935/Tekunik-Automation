@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { localizedField } from "../utils/i18nContent.js";
+import { useTranslation } from "react-i18next";
 import {
   Zap, Shield, Headphones, Award, Users, Package,
   Truck, Clock, ChevronLeft, ChevronRight, Star,
@@ -15,85 +17,86 @@ import {
 const TESTIMONIALS = [
   {
     name: "Rajesh Mehta",
-    role: "Facility Manager, ITC Hotels",
-    text: "Tek Node transformed our hotel's energy management. Smart switches and sensors cut our electricity costs by 32% in the first quarter.",
+    roleKey: "about.t1Role",
+    textKey: "about.t1Text",
     rating: 5,
     avatar: "RM",
   },
   {
     name: "Priya Sharma",
-    role: "Homeowner, Pune",
-    text: "The digital locks and smart knobs gave our home a premium feel at a very reasonable price. Installation was seamless with their guidance.",
+    roleKey: "about.t2Role",
+    textKey: "about.t2Text",
     rating: 5,
     avatar: "PS",
   },
   {
     name: "Aditya Kulkarni",
-    role: "IT Head, Symbiosis University",
-    text: "We deployed Tek Node's gateway systems across 3 campuses. Reliability and support have been outstanding — zero downtime in 18 months.",
+    roleKey: "about.t3Role",
+    textKey: "about.t3Text",
     rating: 5,
     avatar: "AK",
   },
   {
     name: "Sneha Iyer",
-    role: "Interior Designer, Mumbai",
-    text: "My clients love the smart knobs and switches. The sleek design integrates perfectly with modern interiors. My go-to automation partner.",
+    roleKey: "about.t4Role",
+    textKey: "about.t4Text",
     rating: 5,
     avatar: "SI",
   },
   {
     name: "Vikram Nair",
-    role: "Operations Director, Motherson Group",
-    text: "Industrial-grade reliability with consumer-friendly controls. Tek Node's automation solutions streamlined our factory floor operations remarkably.",
+    roleKey: "about.t5Role",
+    textKey: "about.t5Text",
     rating: 5,
     avatar: "VN",
   },
 ];
 
 const PRODUCTS = [
-  { icon: Zap, label: "Smart Switches", desc: "Touch-enabled, app-controlled" },
-  { icon: Lock, label: "Digital Locks", desc: "Fingerprint, PIN & card access" },
-  { icon: Wifi, label: "Gateways", desc: "Unified home network hubs" },
-  { icon: Thermometer, label: "Sensors", desc: "Motion, temp & humidity" },
-  { icon: SlidersHorizontal, label: "Smart Knobs", desc: "Rotary dimmer controls" },
-  { icon: Cpu, label: "Control Systems", desc: "Central intelligence units" },
+  { icon: Zap, labelKey: "about.prodSmartSwitches", descKey: "about.prodSmartSwitchesDesc" },
+  { icon: Lock, labelKey: "about.prodDigitalLocks", descKey: "about.prodDigitalLocksDesc" },
+  { icon: Wifi, labelKey: "about.prodGateways", descKey: "about.prodGatewaysDesc" },
+  { icon: Thermometer, labelKey: "about.prodSensors", descKey: "about.prodSensorsDesc" },
+  { icon: SlidersHorizontal, labelKey: "about.prodSmartKnobs", descKey: "about.prodSmartKnobsDesc" },
+  { icon: Cpu, labelKey: "about.prodControlSystems", descKey: "about.prodControlSystemsDesc" },
 ];
 
 const MARKETS = [
-  { icon: Home, label: "Homes" },
-  { icon: Building2, label: "Offices" },
-  { icon: Hotel, label: "Hotels" },
-  { icon: GraduationCap, label: "Education" },
-  { icon: Factory, label: "Industrial" },
-  { icon: Shield, label: "Healthcare" },
+  { icon: Home, labelKey: "about.marketHomes" },
+  { icon: Building2, labelKey: "about.marketOffices" },
+  { icon: Hotel, labelKey: "about.marketHotels" },
+  { icon: GraduationCap, labelKey: "about.marketEducation" },
+  { icon: Factory, labelKey: "about.marketIndustrial" },
+  { icon: Shield, labelKey: "about.marketHealthcare" },
 ];
 
 const WHY_US = [
-  { icon: Package, title: "Premium Quality", desc: "Rigorously tested components engineered to outlast industry standards." },
-  { icon: Zap, title: "Advanced Automation", desc: "Cutting-edge AI-ready tech that evolves with your space." },
-  { icon: Shield, title: "Enterprise Security", desc: "Military-grade encryption on every connected device." },
-  { icon: Headphones, title: "Always-On Support", desc: "Dedicated engineers available around the clock, every day." },
-  { icon: Award, title: "Expert Guidance", desc: "White-glove installation and post-setup maintenance support." },
-  { icon: Users, title: "10K+ Community", desc: "A growing family of homes and businesses that trust Tek Node." },
+  { icon: Package, titleKey: "about.whyPremiumQuality", descKey: "about.whyPremiumQualityDesc" },
+  { icon: Zap, titleKey: "about.whyAdvancedAutomation", descKey: "about.whyAdvancedAutomationDesc" },
+  { icon: Shield, titleKey: "about.whyEnterpriseSecurity", descKey: "about.whyEnterpriseSecurityDesc" },
+  { icon: Headphones, titleKey: "about.whyAlwaysOnSupport", descKey: "about.whyAlwaysOnSupportDesc" },
+  { icon: Award, titleKey: "about.whyExpertGuidance", descKey: "about.whyExpertGuidanceDesc" },
+  { icon: Users, titleKey: "about.whyCommunity", descKey: "about.whyCommunityDesc" },
 ];
 
 const STATS = [
-  { icon: Package, value: "500+", label: "Products" },
-  { icon: Users, value: "10K+", label: "Customers" },
-  { icon: Truck, value: "25K+", label: "Deliveries" },
-  { icon: Clock, value: "24/7", label: "Support" },
+  { icon: Package, value: "500+", labelKey: "about.statProducts" },
+  { icon: Users, value: "10K+", labelKey: "about.statCustomers" },
+  { icon: Truck, value: "25K+", labelKey: "about.statDeliveries" },
+  { icon: Clock, value: "24/7", labelKey: "about.statSupport" },
 ];
 
 const TIMELINE = [
-  { year: "2018", title: "Founded", desc: "Started with a vision to make smart homes accessible to every Indian household." },
-  { year: "2020", title: "Expanded", desc: "Launched B2B vertical serving hotels, hospitals, and campuses across India." },
-  { year: "2022", title: "10K Milestone", desc: "Crossed 10,000 happy customers and 25,000 successful deployments." },
-  { year: "2024", title: "Next Gen", desc: "Introduced AI-powered control systems and entered international markets." },
+  { year: "2018", titleKey: "about.timelineFounded", descKey: "about.timelineFoundedDesc" },
+  { year: "2020", titleKey: "about.timelineExpanded", descKey: "about.timelineExpandedDesc" },
+  { year: "2022", titleKey: "about.timeline10K", descKey: "about.timeline10KDesc" },
+  { year: "2024", titleKey: "about.timelineNextGen", descKey: "about.timelineNextGenDesc" },
 ];
 
 // ─── TESTIMONIAL CAROUSEL ─────────────────────────────────────────────────────
 
 function TestimonialCarousel() {
+  const { t } = useTranslation();
   const [active, setActive] = useState(0);
   const [dir, setDir] = useState(1);
   const total = TESTIMONIALS.length;
@@ -114,14 +117,14 @@ function TestimonialCarousel() {
     exit: (d) => ({ x: d > 0 ? -80 : 80, opacity: 0 }),
   };
 
-  const t = TESTIMONIALS[active];
+  const testimonial = TESTIMONIALS[active];
 
   return (
     <section className="py-24 bg-slate-950 overflow-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">Testimonials</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">What Our Clients Say</h2>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">{t("about.testimonials")}</span>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t("about.whatClientsSay")}</h2>
         </div>
 
         <div className="relative bg-slate-900 border border-slate-800 rounded-3xl p-8 md:p-12 overflow-hidden">
@@ -141,22 +144,22 @@ function TestimonialCarousel() {
             >
               {/* Stars */}
               <div className="flex gap-1 mb-6">
-                {Array(t.rating).fill(0).map((_, i) => (
+                {Array(testimonial.rating).fill(0).map((_, i) => (
                   <Star key={i} size={16} className="fill-amber-400 text-amber-400" />
                 ))}
               </div>
 
               <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-8 italic">
-                "{t.text}"
+                "{t(testimonial.textKey)}"
               </p>
 
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-sm shrink-0">
-                  {t.avatar}
+                  {testimonial.avatar}
                 </div>
                 <div>
-                  <p className="font-black text-white text-sm">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.role}</p>
+                  <p className="font-black text-white text-sm">{testimonial.name}</p>
+                  <p className="text-xs text-slate-500">{t(testimonial.roleKey)}</p>
                 </div>
               </div>
             </motion.div>
@@ -195,6 +198,7 @@ function TestimonialCarousel() {
 // ─── PRODUCT CAROUSEL ─────────────────────────────────────────────────────────
 
 function ProductCarousel() {
+  const { t } = useTranslation();
   const trackRef = useRef(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(true);
@@ -216,8 +220,8 @@ function ProductCarousel() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
           <div>
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">Product Range</span>
-            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">Built for Every Space</h2>
+            <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">{t("about.productRange")}</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t("about.builtForEverySpace")}</h2>
           </div>
           <div className="flex gap-2">
             <button
@@ -257,11 +261,11 @@ function ProductCarousel() {
                 <p.icon size={24} className="text-indigo-400" />
               </div>
               <div>
-                <h3 className="font-black text-white text-sm mb-1">{p.label}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{p.desc}</p>
+                <h3 className="font-black text-white text-sm mb-1">{t(p.labelKey)}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{t(p.descKey)}</p>
               </div>
               <div className="flex items-center gap-1 text-indigo-400 text-xs font-bold mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                Learn more <ArrowRight size={12} />
+                {t("about.learnMore")} <ArrowRight size={12} />
               </div>
             </motion.div>
           ))}
@@ -274,6 +278,7 @@ function ProductCarousel() {
 // ─── PARALLAX HERO ────────────────────────────────────────────────────────────
 
 function Hero() {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
@@ -282,7 +287,7 @@ function Hero() {
 
   const companyName = settings.company_name || "Tekunik Automation";
   const companyLogo = settings.company_logo ? getImageUrl(settings.company_logo) : "/assest/logo.png";
-  const tagline = settings.company_tagline || "Empowering Homes and Businesses with Smart Automation Solutions across India and beyond.";
+  const tagline = settings.company_tagline || t("about.taglineFallback");
 
   return (
     <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -321,9 +326,8 @@ function Hero() {
           transition={{ duration: 0.8, delay: 0.15 }}
           className="text-5xl sm:text-6xl md:text-8xl font-black text-white mb-6 tracking-tight leading-none"
         >
-          About{" "}
           <span className="relative inline-block">
-            <span className="text-indigo-400">{companyName}</span>
+            <span className="text-indigo-400">{t("about.heroAbout", { name: companyName })}</span>
             <motion.span
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
@@ -352,7 +356,7 @@ function Hero() {
           {STATS.map((s, i) => (
             <div key={i} className="text-center">
               <p className="text-xl font-black text-white">{s.value}</p>
-              <p className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">{t(s.labelKey)}</p>
             </div>
           ))}
         </motion.div>
@@ -364,7 +368,7 @@ function Hero() {
         transition={{ duration: 2, repeat: Infinity }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600"
       >
-        <span className="text-xs uppercase tracking-widest">Scroll</span>
+        <span className="text-xs uppercase tracking-widest">{t("about.scroll")}</span>
         <div className="w-px h-8 bg-gradient-to-b from-slate-600 to-transparent" />
       </motion.div>
     </section>
@@ -374,12 +378,13 @@ function Hero() {
 // ─── TIMELINE ─────────────────────────────────────────────────────────────────
 
 function Timeline() {
+  const { t } = useTranslation();
   return (
     <section className="py-24 bg-slate-950">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">Our Journey</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">How We Got Here</h2>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-3">{t("about.ourJourney")}</span>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t("about.howWeGotHere")}</h2>
         </div>
 
         <div className="relative">
@@ -399,8 +404,8 @@ function Timeline() {
                 {/* Card */}
                 <div className={`w-full md:w-5/12 bg-slate-900 border border-slate-800 hover:border-indigo-500/30 rounded-2xl p-6 transition-all ${i % 2 === 0 ? "md:text-right" : "md:text-left"}`}>
                   <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2">{item.year}</p>
-                  <h3 className="text-base font-black text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+                  <h3 className="text-base font-black text-white mb-2">{t(item.titleKey)}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">{t(item.descKey)}</p>
                 </div>
 
                 {/* Dot */}
@@ -421,9 +426,10 @@ function Timeline() {
 // ─── WHO WE ARE ───────────────────────────────────────────────────────────────
 
 function WhoWeAre() {
+  const { t, i18n } = useTranslation();
   const { settings } = useWebsiteSettings();
   const companyName = settings.company_name || "Tekunik Automation";
-  const description = settings.company_description || `${companyName} specializes in smart automation products — smart switches, digital locks, gateways, sensors, smart knobs, and intelligent control systems — designed for homes, offices, hotels, hospitals, educational institutions, and industrial environments.`;
+  const description = localizedField(settings, "company_description", i18n.language) || t("about.descriptionFallback", { name: companyName });
 
   return (
     <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
@@ -435,15 +441,15 @@ function WhoWeAre() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">Who We Are</span>
+            <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">{t("about.whoWeAre")}</span>
             <h2 className="text-3xl md:text-4xl font-black text-white mb-6 tracking-tight leading-tight">
-              Innovating the Future<br />of Smart Living
+              {t("about.innovatingFuture")}<br />{t("about.ofSmartLiving")}
             </h2>
             <p className="text-slate-400 leading-relaxed mb-5">
               {description}
             </p>
             <p className="text-slate-400 leading-relaxed mb-8">
-              Our commitment to quality and innovation has made us a trusted name in the automation industry, delivering solutions that genuinely transform how people live and work.
+              {t("about.commitment")}
             </p>
 
             {/* Market tags */}
@@ -458,7 +464,7 @@ function WhoWeAre() {
                   className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/40 transition-all text-xs text-slate-400 font-semibold"
                 >
                   <m.icon size={13} className="text-indigo-400" />
-                  {m.label}
+                  {t(m.labelKey)}
                 </motion.div>
               ))}
             </div>
@@ -472,10 +478,10 @@ function WhoWeAre() {
             className="grid grid-cols-2 gap-4"
           >
             {[
-              { icon: Zap, label: "Smart Tech", desc: "Advanced automation at every layer" },
-              { icon: Shield, label: "Secure", desc: "Encrypted, tamper-proof protection" },
-              { icon: Award, label: "Premium", desc: "Built to outlast the competition" },
-              { icon: Headphones, label: "Support", desc: "Engineers on call 24/7" },
+              { icon: Zap, labelKey: "about.smartTech", descKey: "about.smartTechDesc" },
+              { icon: Shield, labelKey: "about.secure", descKey: "about.secureDesc" },
+              { icon: Award, labelKey: "about.premium", descKey: "about.premiumDesc" },
+              { icon: Headphones, labelKey: "about.support", descKey: "about.supportDesc" },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -483,8 +489,8 @@ function WhoWeAre() {
                 className="bg-slate-900 border border-slate-800 hover:border-indigo-500/30 rounded-2xl p-6 text-center transition-all"
               >
                 <item.icon size={28} className="text-indigo-400 mx-auto mb-3" />
-                <h3 className="text-sm font-black text-white mb-1">{item.label}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                <h3 className="text-sm font-black text-white mb-1">{t(item.labelKey)}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{t(item.descKey)}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -497,6 +503,7 @@ function WhoWeAre() {
 // ─── MISSION ──────────────────────────────────────────────────────────────────
 
 function Mission() {
+  const { t } = useTranslation();
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/8 via-transparent to-transparent pointer-events-none" />
@@ -507,12 +514,12 @@ function Mission() {
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
         >
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">Our Mission</span>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">{t("about.ourMission")}</span>
           <h2 className="text-3xl md:text-5xl font-black text-white mb-8 tracking-tight leading-tight">
-            Making Smart Living<br />Accessible to All
+            {t("about.makingSmartLiving")}<br />{t("about.accessibleToAll")}
           </h2>
           <p className="text-lg md:text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            To provide innovative, secure, energy-efficient, and user-friendly automation solutions that improve everyday life for homes and businesses everywhere.
+            {t("about.missionDesc")}
           </p>
         </motion.div>
       </div>
@@ -523,14 +530,15 @@ function Mission() {
 // ─── WHY CHOOSE US ────────────────────────────────────────────────────────────
 
 function WhyChooseUs() {
+  const { t } = useTranslation();
   const { settings } = useWebsiteSettings();
   const companyName = settings.company_name || "Tekunik Automation";
   return (
     <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">Why Choose Us</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">The {companyName} Advantage</h2>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">{t("about.whyChooseUs")}</span>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t("about.advantage", { name: companyName })}</h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {WHY_US.map((item, i) => (
@@ -546,8 +554,8 @@ function WhyChooseUs() {
               <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-5 group-hover:bg-indigo-500/20 transition-all">
                 <item.icon size={22} className="text-indigo-400" />
               </div>
-              <h3 className="text-base font-black text-white mb-2">{item.title}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+              <h3 className="text-base font-black text-white mb-2">{t(item.titleKey)}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">{t(item.descKey)}</p>
             </motion.div>
           ))}
         </div>
@@ -559,6 +567,7 @@ function WhyChooseUs() {
 // ─── STATS BAND ───────────────────────────────────────────────────────────────
 
 function StatsBand() {
+  const { t } = useTranslation();
   return (
     <section className="py-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -574,7 +583,7 @@ function StatsBand() {
             >
               <s.icon size={28} className="text-indigo-400 mx-auto mb-3" />
               <div className="text-3xl font-black text-white mb-1">{s.value}</div>
-              <p className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">{t(s.labelKey)}</p>
             </motion.div>
           ))}
         </div>
@@ -587,40 +596,41 @@ function StatsBand() {
 
 const FAQ_DATA = [
   {
-    q: "What does Tekunik provide?",
-    a: "Tekunik provides smart home automation solutions including smart locks, sensors, cameras, switches, video door phones, and complete home automation systems for homes and businesses.",
+    qKey: "about.faqQ1",
+    aKey: "about.faqA1",
   },
   {
-    q: "Do you provide installation services?",
-    a: "Yes. Our expert technicians provide professional installation, setup, and configuration for all supported smart devices.",
+    qKey: "about.faqQ2",
+    aKey: "about.faqA2",
   },
   {
-    q: "Can I request a custom smart home solution?",
-    a: "Yes. You can submit an Installation Request through our website, and our team will prepare a customized automation proposal based on your requirements.",
+    qKey: "about.faqQ3",
+    aKey: "about.faqA3",
   },
   {
-    q: "Do your products come with a warranty?",
-    a: "Yes. All eligible products include manufacturer warranty. Warranty duration depends on the product category.",
+    qKey: "about.faqQ4",
+    aKey: "about.faqA4",
   },
   {
-    q: "How can I track my order?",
-    a: "After placing an order, you can track its status from your User Dashboard under My Orders.",
+    qKey: "about.faqQ5",
+    aKey: "about.faqA5",
   },
   {
-    q: "Which payment methods do you accept?",
-    a: "We support secure online payments as well as Cash on Delivery (where available).",
+    qKey: "about.faqQ6",
+    aKey: "about.faqA6",
   },
   {
-    q: "Can I cancel my order?",
-    a: "Yes. Orders can be cancelled before shipment. Refunds for eligible prepaid orders are processed according to our refund policy.",
+    qKey: "about.faqQ7",
+    aKey: "about.faqA7",
   },
   {
-    q: "How can I contact you?",
-    a: "You can contact us through the Contact page, WhatsApp, email, or phone support.",
+    qKey: "about.faqQ8",
+    aKey: "about.faqA8",
   },
 ];
 
 function FAQ() {
+  const { t } = useTranslation();
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggle = (i) => setOpenIndex(openIndex === i ? null : i);
@@ -629,10 +639,10 @@ function FAQ() {
     <section className="py-24 bg-slate-900/30 border-y border-slate-800/50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">FAQ</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">Frequently Asked Questions</h2>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">{t("about.faq")}</span>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t("about.frequentlyAsked")}</h2>
           <p className="text-slate-400 mt-4 max-w-xl mx-auto leading-relaxed">
-            Everything you need to know about our products, installation process, warranty, and smart automation services.
+            {t("about.faqDesc")}
           </p>
         </div>
         <div className="space-y-4">
@@ -647,7 +657,7 @@ function FAQ() {
                   onClick={() => toggle(i)}
                   className="w-full flex items-center justify-between gap-4 p-6 text-left cursor-pointer"
                 >
-                  <span className="text-white font-bold text-sm sm:text-base leading-snug flex-1">{item.q}</span>
+                  <span className="text-white font-bold text-sm sm:text-base leading-snug flex-1">{t(item.qKey)}</span>
                   <span className="shrink-0 text-indigo-400 transition-transform duration-300">
                     {isOpen ? <Minus size={20} /> : <Plus size={20} />}
                   </span>
@@ -663,7 +673,7 @@ function FAQ() {
                       className="overflow-hidden"
                     >
                       <div className="px-6 pb-6 pt-0">
-                        <p className="text-slate-400 text-sm leading-relaxed">{item.a}</p>
+                        <p className="text-slate-400 text-sm leading-relaxed">{t(item.aKey)}</p>
                       </div>
                     </motion.div>
                   )}
@@ -680,6 +690,7 @@ function FAQ() {
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 
 function CTA() {
+  const { t } = useTranslation();
   const { settings } = useWebsiteSettings();
   const companyName = settings.company_name || "Tekunik Automation";
   return (
@@ -692,20 +703,20 @@ function CTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
         >
-          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">Get Started</span>
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-400 block mb-4">{t("about.getStarted")}</span>
           <h2 className="text-3xl md:text-4xl font-black text-white mb-6 tracking-tight">
-            Ready to Automate Your Space?
+            {t("about.readyToAutomate")}
           </h2>
           <p className="text-slate-400 mb-10 text-lg">
-            Join thousands of customers who've made the switch to smarter living. Our team is ready to help you design the perfect solution.
+            {t("about.joinThousands")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="px-8 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 group text-sm">
-              Explore Products
+              {t("about.exploreProducts")}
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
             <button className="px-8 py-4 border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-white font-black rounded-2xl transition-all text-sm">
-              Contact Us
+              {t("about.contactUs")}
             </button>
           </div>
         </motion.div>

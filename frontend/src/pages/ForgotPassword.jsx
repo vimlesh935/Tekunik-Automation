@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "../services/api";
+import { getErrorMessage } from "../utils/backendMessageMapper";
 import AuthInput from "../components/AuthInput.jsx";
 
 /* ── Brand tokens (matches Login / Register) ── */
@@ -227,14 +228,14 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || t("auth.failedToSendOtp"));
+      if (!res.ok) throw Object.assign(new Error(data.message || t("auth.failedToSendOtp")), { code: data?.code });
       setMaskedEmail(data.data?.email || email);
       setStep("otp");
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } catch (err) {
       setError(err.message === "Failed to fetch"
         ? t("auth.cannotConnect")
-        : err.message);
+        : getErrorMessage(err, t, "auth.failedToSendOtp"));
     } finally { setLoading(false); }
   };
 
@@ -262,12 +263,12 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim(), otp: otpCode }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || t("auth.invalidOtp"));
+      if (!res.ok) throw Object.assign(new Error(data.message || t("auth.invalidOtp")), { code: data?.code });
       if (!data.data?.resetToken) throw new Error(t("auth.noResetToken"));
       setResetToken(data.data.resetToken);
       setStep("reset");
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, t, "auth.invalidOtp"));
     } finally { setLoading(false); }
   };
 
@@ -288,11 +289,11 @@ export default function ForgotPassword() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || t("auth.failedToReset"));
+      if (!res.ok) throw Object.assign(new Error(data.message || t("auth.failedToReset")), { code: data?.code });
       setSuccess(true);
       setTimeout(() => navigate("/login"), 1800);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, t, "auth.failedToReset"));
     } finally { setLoading(false); }
   };
 
@@ -305,11 +306,11 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || t("auth.failedToResend"));
+      if (!res.ok) throw Object.assign(new Error(data.message || t("auth.failedToResend")), { code: data?.code });
       setOtp(["", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, t, "auth.failedToResend"));
     } finally { setLoading(false); }
   };
 
@@ -601,14 +602,14 @@ export default function ForgotPassword() {
                       <Field label={t("auth.newPassword")} name="new_password"
                         type={showPassword ? "text" : "password"} value={newPassword}
                         onChange={(e) => { setNewPassword(e.target.value); setError(""); }}
-                        placeholder="Min 8 characters" icon={LockIcon} autoFocus
+                        placeholder={t("auth.passwordMin8")} icon={LockIcon} autoFocus
                         right={<EyeIcon open={showPassword} onClick={() => setShowPassword((p) => !p)} />} />
                     </Appear>
                     <Appear delay={380} style={{ marginBottom: 8 }}>
                       <Field label={t("auth.confirmNewPassword")} name="confirm_password"
                         type={showConfirmPassword ? "text" : "password"} value={confirmPassword}
                         onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
-                        placeholder="Re-enter password" icon={LockIcon}
+                        placeholder={t("auth.confirmNewPassword")} icon={LockIcon}
                         right={<EyeIcon open={showConfirmPassword} onClick={() => setShowConfirmPassword((p) => !p)} />} />
                     </Appear>
                     {error && (

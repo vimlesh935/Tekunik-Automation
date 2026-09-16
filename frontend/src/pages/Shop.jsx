@@ -1,3 +1,4 @@
+import { localizedField } from "../utils/i18nContent.js";
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatPrice, hasDiscount } from "../utils/discount.js";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 import CompareButton from "../components/CompareButton.jsx";
 
 /**
@@ -65,7 +67,7 @@ export default function Shop({ token }) {
   const { addToCart } = useCart();
   const { addToast } = useToast();
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -130,7 +132,7 @@ export default function Shop({ token }) {
       setTotalPages(data?.pagination?.pages || 1);
     } catch (error) {
       console.error("[Shop] fetchProducts error:", error);
-      setNotification(error?.message || "Unable to load products");
+      setNotification(getErrorMessage(error, t, "compare.unableToLoadProducts"));
       setTimeout(() => setNotification(""), 3000);
     } finally {
       if (loading !== false) setLoading(false);
@@ -158,7 +160,7 @@ export default function Shop({ token }) {
       await cartService.addToCart(product.id, 1);
       addToast(t("searchResults.addedToCart", { name: product.name }), "success");
     } catch (error) {
-      addToast(error.message || t("searchResults.unableToAddToCart"), "error");
+      addToast(getErrorMessage(error, t, "searchResults.unableToAddToCart"), "error");
     }
   };
 
@@ -185,7 +187,7 @@ export default function Shop({ token }) {
       await fetchWishlist();
     } catch (error) {
       console.warn("toggleWishlist error:", error);
-      addToast("Failed to update wishlist", "error");
+      addToast(getErrorMessage(error, t, "compare.unableToUpdateWishlist"), "error");
     } finally {
       setAddingToWishlist((prev) => {
         const next = new Map(prev);
@@ -246,7 +248,7 @@ export default function Shop({ token }) {
           <div className="flex items-end justify-between border-b border-slate-900 pb-6 mb-10">
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight sm:text-4xl">
-                {selectedApplication || products[0]?.category_name || "Category"}
+                {selectedApplication || localizedField(products[0], "category_name", i18n.language) || products[0]?.category_name || t("product.category")}
               </h1>
               <p className="text-sm text-slate-500 mt-1">
                 {totalProducts} {t("common.products")}
@@ -268,10 +270,10 @@ export default function Shop({ token }) {
             <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.2)]" />
             <div className="flex flex-col items-center gap-1.5 text-center">
               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                Compiling System Inventories...
+                {t("shop.compilingInventories")}
               </span>
               <p className="text-[11px] text-slate-600 font-mono">
-                Loading data payload from storage blocks
+                {t("shop.loadingPayload")}
               </p>
             </div>
           </div>
@@ -325,7 +327,7 @@ export default function Shop({ token }) {
                       {Number(product.stock_quantity) === 0
                         ? "❌ " + t("product.outOfStock")
                         : Number(product.stock_quantity) < Number(product.low_stock_limit || 5)
-                          ? "⚠ Low Stock"
+                          ? "⚠ " + t("product.lowStock")
                           : "✅ " + t("product.inStock")}
                     </span>
                   </div>
@@ -334,7 +336,7 @@ export default function Shop({ token }) {
                   {product.stock_quantity === 0 && (
                     <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                       <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-xl bg-slate-900 shadow-xl shadow-black/50">
-                        Allocation Empty
+                        {t("shop.allocationEmpty")}
                       </span>
                     </div>
                   )}
@@ -354,7 +356,7 @@ export default function Shop({ token }) {
                 <div className="flex-grow flex flex-col justify-between">
                   <div className="space-y-2">
                     <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">
-                      {product.category_name || "IoT Hardware"}
+                      {localizedField(product, "category_name", i18n.language) || product.category_name || t("shop.iotHardware")}
                     </span>
                     <div>
                       <h3 className="text-base font-bold text-slate-100 group-hover:text-indigo-400 line-clamp-1 transition-colors duration-150">
@@ -374,7 +376,7 @@ export default function Shop({ token }) {
                             />
                           </div>
                           <span className="text-[11px] text-slate-500 font-medium">
-                            ({product.reviews.totalReviews} Review{product.reviews.totalReviews > 1 ? "s" : ""})
+                            ({t("product.reviewCount", { count: product.reviews.totalReviews })})
                           </span>
                         </>
                       ) : (
@@ -469,12 +471,12 @@ export default function Shop({ token }) {
               disabled={page === 1}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-950 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:border-slate-700 disabled:opacity-20 disabled:border-slate-900 disabled:text-slate-600 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
             >
-              <ChevronLeft size={14} /> Prev
+              <ChevronLeft size={14} /> {t("common.previous")}
             </button>
 
             <div className="bg-slate-900/60 border border-slate-800 rounded-xl px-5 py-2.5 shadow-inner">
               <span className="text-xs font-bold text-slate-500 tracking-wide font-mono">
-                Index{" "}
+                {t("shop.index")}{" "}
                 <span className="text-indigo-400 font-black px-1">{page}</span>{" "}
                 / {totalPages}
               </span>
@@ -486,7 +488,7 @@ export default function Shop({ token }) {
               disabled={page === totalPages}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-950 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:border-slate-700 disabled:opacity-20 disabled:border-slate-900 disabled:text-slate-600 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
             >
-              Next Node <ChevronRight size={14} />
+              {t("shop.nextNode")} <ChevronRight size={14} />
             </button>
           </div>
         )}

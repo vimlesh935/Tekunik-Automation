@@ -18,6 +18,21 @@ export default function CategoryModal({ show, editingCategory, categoryForm, cat
           <div><label className="block text-sm font-semibold text-gray-300 mb-2">Description</label>
             <textarea value={categoryForm.description} onChange={(e) => onChange("description", e.target.value)}
               placeholder="Category description..." rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          <div className="space-y-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400">Localized Content (Hindi / Marathi)</p>
+            <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category Name (Hindi)</label>
+              <input type="text" value={categoryForm.name_hi || ""} onChange={(e) => onChange("name_hi", e.target.value)}
+                placeholder="e.g. होम ऑटोमेशन" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+            <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category Name (Marathi)</label>
+              <input type="text" value={categoryForm.name_mr || ""} onChange={(e) => onChange("name_mr", e.target.value)}
+                placeholder="e.g. होम ऑटोमेशन" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+            <div><label className="block text-sm font-semibold text-gray-300 mb-2">Description (Hindi)</label>
+              <textarea value={categoryForm.description_hi || ""} onChange={(e) => onChange("description_hi", e.target.value)}
+                placeholder="Category description (Hindi)..." rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+            <div><label className="block text-sm font-semibold text-gray-300 mb-2">Description (Marathi)</label>
+              <textarea value={categoryForm.description_mr || ""} onChange={(e) => onChange("description_mr", e.target.value)}
+                placeholder="Category description (Marathi)..." rows={3} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none" /></div>
+          </div>
           <div><label className="block text-sm font-semibold text-gray-300 mb-2">Category Image</label>
             <ImageUploadField target="category" currentUrl={categoryForm.image_url} previewUrl={categoryImagePreview} uploading={uploadingImage} uploadTarget={uploadTarget} onSelectFile={(file) => onSelectImage(file, "category")} onUploadFile={() => onUploadImage(categoryImageFile, "category")} onClearSelection={onClearImage} /></div>
           <div className="flex gap-3 pt-4">

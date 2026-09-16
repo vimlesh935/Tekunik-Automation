@@ -5,7 +5,7 @@ const env = require("./src/config/env");
 const { testConnection } = require("./src/config/db");
 const { ensureUsersOtpColumns, ensureAdminsTable, ensureEmailTemplatesTable } = require("./src/config/migrate");
 const { ensureAdminTables } = require("./src/config/migrate");
-const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable, ensureWishlistTable } = require("./src/config/migrate");
+const { ensureGuestOrderColumns, ensureEnquiriesTable, ensureSmartHomeProposalsTable, ensureOffersTable, ensureWishlistTable, ensureOrderShippingColumns, ensureShippingZonesTable, ensureShippingMethodsTable } = require("./src/config/migrate");
 const { ensureOrderTrackingTable, ensureOrderCancellationColumns, ensurePaymentColumns, ensureRefundColumns, ensureOrderItemDiscountColumns } = require("./src/config/orderMigration");
 const { verifyTransporter } = require("./src/services/mailService");
 const { ensureUploadsDir } = require("./src/utils/uploadPaths");
@@ -33,6 +33,7 @@ const smartHomeProposalRoutes = require("./src/routes/smartHomeProposalRoutes");
 const smartHomeStepRoutes = require("./src/routes/smartHomeStepRoutes");
 const wishlistRoutes = require("./src/routes/wishlistRoutes");
 const emailTemplateRoutes = require("./src/routes/emailTemplateRoutes");
+const shippingRoutes = require("./src/routes/shippingRoutes");
 
 const requestLogger = require("./src/middleware/requestLogger");
 const responseNormalizer = require("./src/middleware/responseNormalizer");
@@ -111,6 +112,7 @@ app.use(websiteReviewRoutes);
 app.use("/api/smart-home/proposals", smartHomeProposalRoutes);
 app.use("/api/smart-home/steps", smartHomeStepRoutes);
 app.use(emailTemplateRoutes);
+app.use(shippingRoutes);
 
 // Ensure uploads dir exists and serve static files
 const uploadDir = ensureUploadsDir();
@@ -247,6 +249,30 @@ const startServer = async () => {
     console.log("✅ [STARTUP] Wishlist table ready\n");
   } catch (error) {
     console.error("❌ [STARTUP] Wishlist table setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring order shipping columns...");
+    await ensureOrderShippingColumns();
+    console.log("✅ [STARTUP] Order shipping columns ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Order shipping columns setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring shipping zones table...");
+    await ensureShippingZonesTable();
+    console.log("✅ [STARTUP] Shipping zones table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Shipping zones table setup failed:", error.message, "\n");
+  }
+
+  try {
+    console.log("[STARTUP] Ensuring shipping methods table...");
+    await ensureShippingMethodsTable();
+    console.log("✅ [STARTUP] Shipping methods table ready\n");
+  } catch (error) {
+    console.error("❌ [STARTUP] Shipping methods table setup failed:", error.message, "\n");
   }
 
   try {

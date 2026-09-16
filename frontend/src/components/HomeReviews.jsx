@@ -37,7 +37,7 @@ export default function HomeReviews() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2">
-              Customer Reviews
+              {t('home.customerReviews')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               {t('home.whatCustomersSay')}
@@ -57,13 +57,13 @@ export default function HomeReviews() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2">
-              Customer Reviews
+              {t('home.customerReviews')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               {t('home.whatCustomersSay')}
             </h2>
             <p className="text-slate-400 text-sm mt-3">
-              No approved reviews yet. Reviews from verified buyers will appear here after admin approval.
+              {t('home.noApprovedReviews')}
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function HomeReviews() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2">
-            Customer Reviews
+            {t('home.customerReviews')}
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             {t('home.whatCustomersSay')}
@@ -129,7 +129,7 @@ export default function HomeReviews() {
                       {/* Customer Info */}
                       <div className="flex items-center gap-4 pt-5 border-t border-slate-800/60">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-indigo-600/20 flex-shrink-0">
-                          {(review.customer_name || "Customer")
+                          {(review.customer_name || t('orders.customer'))
                             .split(" ")
                             .map((n) => n[0])
                             .slice(0, 2)
@@ -138,7 +138,7 @@ export default function HomeReviews() {
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-sm font-bold text-white truncate">
-                            {review.customer_name || "Verified Customer"}
+                            {review.customer_name || t('home.verifiedCustomer')}
                           </h4>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full inline-flex items-center gap-1">
@@ -146,7 +146,7 @@ export default function HomeReviews() {
                               {t('home.verifiedBuyer')}
                             </span>
                             <span className="text-xs text-slate-500 truncate">
-                              {review.product_name ? `Purchased: ${review.product_name}` : ""}
+                              {review.product_name ? t('home.purchased', { product: review.product_name }) : ""}
                             </span>
                           </div>
                         </div>

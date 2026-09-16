@@ -7,40 +7,40 @@ import { Sunrise, MoonStar, Plane, Film, Play, Check, Zap } from "lucide-react";
 
 const scenes = [
   {
-    title: "Morning Mode",
-    desc: "Curtains open, coffee machine starts, and gentle lights turn on.",
+    titleKey: "homeScenes.morning.title",
+    descKey: "homeScenes.morning.desc",
     icon: Sunrise,
     gradient: "from-orange-500 to-yellow-500",
     accent: "249, 115, 22",   // orange-500
     accent2: "234, 179, 8",   // yellow-500
-    steps: ["Curtains open", "Coffee brews", "Lights fade in"],
+    stepKeys: ["homeScenes.morning.step1", "homeScenes.morning.step2", "homeScenes.morning.step3"],
   },
   {
-    title: "Good Night",
-    desc: "Doors lock, lights dim, and AC sets to optimal sleep temperature.",
+    titleKey: "homeScenes.goodNight.title",
+    descKey: "homeScenes.goodNight.desc",
     icon: MoonStar,
     gradient: "from-indigo-500 to-purple-500",
     accent: "99, 102, 241",   // indigo-500
     accent2: "168, 85, 247",  // purple-500
-    steps: ["Doors lock", "Lights dim", "AC sets to sleep temp"],
+    stepKeys: ["homeScenes.goodNight.step1", "homeScenes.goodNight.step2", "homeScenes.goodNight.step3"],
   },
   {
-    title: "Vacation Mode",
-    desc: "Randomized lighting and active security cameras for peace of mind.",
+    titleKey: "homeScenes.vacation.title",
+    descKey: "homeScenes.vacation.desc",
     icon: Plane,
     gradient: "from-emerald-500 to-teal-500",
     accent: "16, 185, 129",   // emerald-500
     accent2: "20, 184, 166",  // teal-500
-    steps: ["Lighting randomizes", "Cameras arm", "Alerts enabled"],
+    stepKeys: ["homeScenes.vacation.step1", "homeScenes.vacation.step2", "homeScenes.vacation.step3"],
   },
   {
-    title: "Movie Mode",
-    desc: "Curtains close, lights dim to 10%, and TV turns on instantly.",
+    titleKey: "homeScenes.movie.title",
+    descKey: "homeScenes.movie.desc",
     icon: Film,
     gradient: "from-rose-500 to-red-500",
     accent: "244, 63, 94",    // rose-500
     accent2: "239, 68, 68",   // red-500
-    steps: ["Curtains close", "Lights dim to 10%", "TV powers on"],
+    stepKeys: ["homeScenes.movie.step1", "homeScenes.movie.step2", "homeScenes.movie.step3"],
   },
 ];
 
@@ -238,7 +238,9 @@ export default function ScenesSection() {
               }}
             >
               <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="uppercase tracking-wide">Active — {active.title}</span>
+              <span className="uppercase tracking-wide">
+                {t("homeScenes.activeScene", { scene: t(active.titleKey) })}
+              </span>
             </motion.div>
           </AnimatePresence>
         </motion.div>
@@ -299,22 +301,22 @@ export default function ScenesSection() {
                         style={{ color: `rgb(${scene.accent})`, background: `rgba(${scene.accent}, 0.12)` }}
                       >
                         <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        Active
+                        {t("homeScenes.active")}
                       </motion.span>
                     )}
                   </AnimatePresence>
                 </div>
 
                 <h3 className="relative text-lg sm:text-xl font-bold mb-2 sm:mb-3">
-                  {scene.title}
+                  {t(scene.titleKey)}
                 </h3>
                 <p className="relative text-xs sm:text-sm text-text-secondary leading-relaxed mb-5 sm:mb-6">
-                  {scene.desc}
+                  {t(scene.descKey)}
                 </p>
 
                 {/* Automation execution chain */}
                 <div className="relative flex flex-col gap-2 mb-6 sm:mb-7">
-                  {scene.steps.map((step, stepIdx) => (
+                  {scene.stepKeys.map((stepKey, stepIdx) => (
                     <div key={stepIdx} className="flex items-center gap-2.5">
                       <span
                         className="flex items-center justify-center w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full shrink-0 transition-all duration-300"
@@ -337,7 +339,7 @@ export default function ScenesSection() {
                       <span
                         className={`text-[11px] sm:text-xs transition-colors duration-300 ${isActive ? "text-text-primary" : "text-text-secondary/70"}`}
                       >
-                        {step}
+                        {t(stepKey)}
                       </span>
                     </div>
                   ))}

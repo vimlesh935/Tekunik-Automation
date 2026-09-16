@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import apiCall, { setGlobalLogoutCallback, authService } from "../services/api";
+import { setGlobalLogoutCallback, authService, getApiUrl } from "../services/api";
+import i18n from "../i18n";
 
 const AuthContext = createContext(null);
 
@@ -50,6 +51,13 @@ export function AuthProvider({ children }) {
     }
     setToken(newToken);
     setUser(userData || null);
+    const preferredLanguage = userData?.language_preference || userData?.languagePreference;
+    if (preferredLanguage) {
+      i18n.changeLanguage(preferredLanguage);
+      try {
+        localStorage.setItem("teknode_lang", preferredLanguage);
+      } catch {}
+    }
     setValidated(true);
   }, []);
 
@@ -73,29 +81,75 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // Temporarily set token so API call includes Authorization header
-        setToken(savedToken);
+        let profileUser = null;
 
-        // Verify token by calling a protected endpoint
-        await apiCall("/api/user/profile");
+        // Use raw fetch to validate the token WITHOUT triggering the global
+        // 401 handler (api.js normalizeApiError calls triggerAuthClear on every
+        // 401). During validation we probe both admin and user endpoints; the
+        // "wrong" endpoint will legitimately return 401 and we must not wipe the
+        // token before we finish checking.
+        const rawFetch = async (endpoint) => {
+          const res = await fetch(getApiUrl(endpoint), {
+            headers: { Authorization: `Bearer ${savedToken}` },
+            credentials: "include",
+          });
+          if (!res.ok) return null;
+          return res.json();
+        };
 
-        // Token is valid - keep it
-        setValidated(true);
-
-        // Try to restore cached user data
+        // Try admin endpoint first (most likely for admin-panel visitors)
         try {
-          const cachedUser = localStorage.getItem("user");
-          if (cachedUser) {
-            setUser(JSON.parse(cachedUser));
+          const adminData = await rawFetch("/api/admin/me");
+          const adminInfo = adminData?.data?.admin || adminData?.admin || null;
+          if (adminInfo) {
+            profileUser = {
+              id: adminInfo.id,
+              email: adminInfo.email,
+              name: adminInfo.name || "",
+              first_name: adminInfo.name || "",
+              last_name: "",
+              role: adminInfo.role || "admin",
+              is_admin: true,
+              phone: "",
+              city: "",
+              address: "",
+            };
           }
         } catch (e) {
-          // Ignore parse errors for cached user
+          // Network error — continue to user endpoint
+        }
+
+        // If not admin, try user endpoint
+        if (!profileUser) {
+          try {
+            const userData = await rawFetch("/api/user/profile");
+            profileUser = userData?.data?.user || userData?.user || null;
+          } catch (e) {
+            // Network error
+          }
+        }
+
+        if (profileUser) {
+          // Token is valid — persist auth state
+          setToken(savedToken);
+          setUser(profileUser);
+          setValidated(true);
+          try {
+            localStorage.setItem("user", JSON.stringify(profileUser));
+            const preferredLanguage =
+              profileUser.language_preference || profileUser.languagePreference;
+            if (preferredLanguage) {
+              await i18n.changeLanguage(preferredLanguage);
+              localStorage.setItem("teknode_lang", preferredLanguage);
+            }
+          } catch (e) {
+            // Storage / i18n errors are non-fatal
+          }
+        } else {
+          // Neither endpoint accepted the token — it is invalid or expired
+          clearAllAuth();
         }
       } catch (error) {
-        // 🛡️ ANY error during validation means the token is not valid.
-        // This includes network errors - we must NOT keep the user logged in
-        // because the cookie/httpOnly token may have been cleared server-side.
-        // A network error is not a reason to assume the token is still valid.
         clearAllAuth();
       } finally {
         setLoading(false);

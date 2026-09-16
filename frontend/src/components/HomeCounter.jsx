@@ -19,28 +19,28 @@ import { Home, Layers, PackageCheck, ShieldCheck } from "lucide-react";
 const stats = [
   {
     value: 10000,
-    label: "Homes Automated",
+    labelKey: "homeCounter.homesAutomated",
     suffix: "+",
     icon: Home,
     accent: "56, 189, 248", // sky
   },
   {
     value: 500,
-    label: "Projects",
+    labelKey: "homeCounter.projects",
     suffix: "+",
     icon: Layers,
     accent: "139, 92, 246", // violet
   },
   {
     value: 25,
-    label: "Products",
+    labelKey: "homeCounter.products",
     suffix: "+",
     icon: PackageCheck,
     accent: "217, 70, 239", // fuchsia
   },
   {
     value: 99,
-    label: "Customer Satisfaction",
+    labelKey: "homeCounter.customerSatisfaction",
     suffix: "%",
     icon: ShieldCheck,
     accent: "251, 191, 36", // amber
@@ -188,7 +188,7 @@ export default function StatsSection() {
                 </div>
 
                 <p className="max-w-[120px] text-[11px] font-medium uppercase tracking-wider text-text-secondary sm:max-w-none sm:text-sm">
-                  {stat.label}
+                  {t(stat.labelKey)}
                 </p>
               </motion.div>
             ))}

@@ -45,7 +45,7 @@ const getCategory = asyncHandler(async (req, res) => {
 
 /** POST /api/admin/categories */
 const createCategory = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, name_hi, name_mr, description_hi, description_mr } = req.body;
   const image_url = normalizeImageUrl(req.body.image_url);
   const thumbnail_image = normalizeImageUrl(req.body.thumbnail_image);
   const banner_image = normalizeImageUrl(req.body.banner_image);
@@ -59,9 +59,9 @@ const createCategory = asyncHandler(async (req, res) => {
   if (existing.length) throw new AppError("A category with this name already exists", 409, "DUPLICATE_SLUG");
 
   const result = await query(
-    `INSERT INTO product_categories (name, slug, description, image_url, thumbnail_image, banner_image, icon_image)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name.trim(), slug, description || null, image_url, thumbnail_image, banner_image, icon_image]
+    `INSERT INTO product_categories (name, slug, description, name_hi, name_mr, description_hi, description_mr, image_url, thumbnail_image, banner_image, icon_image)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name.trim(), slug, description || null, name_hi?.trim() || null, name_mr?.trim() || null, description_hi?.trim() || null, description_mr?.trim() || null, image_url, thumbnail_image, banner_image, icon_image]
   );
 
   const [created] = await query("SELECT * FROM product_categories WHERE id = ?", [result.insertId]);
@@ -86,7 +86,7 @@ const createCategory = asyncHandler(async (req, res) => {
 /** PUT /api/admin/categories/:id */
 const updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, description } = req.body;
+  const { name, description, name_hi, name_mr, description_hi, description_mr } = req.body;
   const image_url = normalizeImageUrl(req.body.image_url);
   const thumbnail_image = normalizeImageUrl(req.body.thumbnail_image);
   const banner_image = normalizeImageUrl(req.body.banner_image);
@@ -101,10 +101,10 @@ const updateCategory = asyncHandler(async (req, res) => {
 
   await query(
     `UPDATE product_categories
-     SET name = ?, slug = ?, description = ?, image_url = ?,
+     SET name = ?, slug = ?, description = ?, name_hi = ?, name_mr = ?, description_hi = ?, description_mr = ?, image_url = ?,
          thumbnail_image = ?, banner_image = ?, icon_image = ?
      WHERE id = ?`,
-    [name.trim(), slug, description || null, image_url, thumbnail_image, banner_image, icon_image, id]
+    [name.trim(), slug, description || null, name_hi?.trim() || null, name_mr?.trim() || null, description_hi?.trim() || null, description_mr?.trim() || null, image_url, thumbnail_image, banner_image, icon_image, id]
   );
 
   const [updated] = await query("SELECT * FROM product_categories WHERE id = ?", [id]);

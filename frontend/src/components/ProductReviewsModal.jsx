@@ -3,6 +3,7 @@ import { Star, X, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { reviewService, userService } from "../services/api";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 
 const VIOLET = "#7C3AED";
 const CYAN = "#06B6D4";
@@ -111,11 +112,11 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
           setSuccess(false);
         }, 2000);
       } else {
-        throw new Error(response.message || t('product.submitReview'));
+        throw new Error(getErrorMessage({ message: response.message }, t, 'product.submitReview'));
       }
     } catch (err) {
       console.error("[ReviewModal] Submit error:", err);
-      setError(err.message || t('product.submitReview'));
+      setError(getErrorMessage(err, t, 'product.submitReview'));
     } finally {
       setSubmitting(false);
     }
@@ -176,6 +177,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
           <button
             type="button"
             onClick={onClose}
+            aria-label={t('common.close')}
             style={{
               padding: "8px",
               color: MUTED,
@@ -341,7 +343,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                 fontSize: "13px",
               }}
             >
-              {t('product.beFirstToReview')}
+              {t('product.purchaseRequired')}
             </p>
           </div>
         )}
@@ -369,7 +371,7 @@ export default function ProductReviewsModal({ productId, isOpen, onClose, onSucc
                   marginBottom: "8px",
                 }}
               >
-                Rating <span style={{ color: "#F87171" }}>*</span>
+                {t('product.rating')} <span style={{ color: "#F87171" }}>*</span>
               </label>
               <div
                 style={{

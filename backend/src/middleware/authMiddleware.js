@@ -59,7 +59,7 @@ const requireAdmin = (req, res, next) => {
     if (!decoded || !decoded.id) {
       throw new AppError("Invalid token payload", 401, "INVALID_TOKEN");
     }
-    if (decoded.role !== "admin") {
+    if (decoded.role !== "admin" && decoded.role !== "super_admin") {
       throw new AppError("Admin access required", 403, "ADMIN_FORBIDDEN");
     }
     req.admin = decoded;

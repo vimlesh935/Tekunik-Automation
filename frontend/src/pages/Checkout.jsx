@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { cartService, guestOrderService, couponService, userService, orderService } from "../services/api";
+import { cartService, guestOrderService, couponService, userService, orderService, shippingService } from "../services/api";
 import { useToast } from "../components/Toast.jsx";
 import SafeImage from "../components/SafeImage.jsx";
 import CouponOffers from "../components/checkout/CouponOffers.jsx";
@@ -83,6 +83,64 @@ export default function Checkout() {
   const [cityLocked, setCityLocked] = useState(false);
   const { loading: pincodeLoading, error: pincodeError, lookup: lookupPincode } = usePincodeLookup();
 
+  // Shipping calculation state
+  const [shippingInfo, setShippingInfo] = useState({
+    charge: 0,
+    method: "standard",
+    estimatedDays: { min: 2, max: 7 },
+    freeShipping: false,
+    zone: null,
+    loading: false,
+    error: null,
+  });
+
+  // Calculate shipping when pincode, payment method, or cart total changes
+  const calculateShipping = useCallback(async () => {
+    if (!form.pincode || form.pincode.length !== 6 || checkoutItems.length === 0) return;
+    
+    setShippingInfo(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const subtotal = checkoutItems.reduce((sum, item) => 
+        sum + (parseFloat(item.final_price || item.price || 0) * (item.quantity || 0)), 0
+      );
+      
+      const result = await shippingService.calculate({
+        subtotal,
+        payment_method: form.payment_method,
+        pincode: form.pincode,
+        shipping_method: "standard", // Could be extended to let user choose
+      });
+      
+      setShippingInfo({
+        charge: result.charge || 0,
+        method: result.method || "standard",
+        estimatedDays: result.estimatedDays || { min: 2, max: 7 },
+        freeShipping: result.freeShipping || false,
+        zone: result.zone || null,
+        loading: false,
+        error: null,
+      });
+    } catch (err) {
+      setShippingInfo(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: err.message || "Failed to calculate shipping",
+        charge: 0,
+        freeShipping: false,
+      }));
+    }
+  }, [form.pincode, form.payment_method, checkoutItems]);
+
+  // Trigger shipping calculation when pincode is valid
+  useEffect(() => {
+    if (form.pincode && form.pincode.length === 6 && checkoutItems.length > 0) {
+      const timer = setTimeout(() => {
+        calculateShipping();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [form.pincode, form.payment_method, checkoutItems, calculateShipping]);
+
   const isAuthenticated = authIsAuthenticated;
 
   // ── Coupon state ──────────────────────────────────────────────────────
@@ -138,14 +196,14 @@ export default function Checkout() {
       if (totals.couponCode) {
         setAppliedCoupon({
           code: totals.couponCode,
-          offerName: totals.couponOfferName || totals.coupon?.description || "Coupon Discount",
+          offerName: totals.couponOfferName || totals.coupon?.description || t("checkout.couponDiscount"),
           discount: Number(totals.discount || 0),
           grandTotal: Number(totals.grandTotal ?? totals.totalAmount ?? 0),
         });
       } else {
         setAppliedCoupon(null);
         if (totals.invalidatedReason?.message) {
-          addToast(`Your coupon was removed — ${totals.invalidatedReason.message}`, "warning");
+          addToast(`${t("toasts.couponRemoved")} — ${totals.invalidatedReason.message}`, "warning");
         }
       }
     } catch (err) {
@@ -351,6 +409,7 @@ export default function Checkout() {
       }
     };
     load();
+    syncGuestCart();
     return () => {
       isMounted = false;
     };
@@ -436,11 +495,11 @@ export default function Checkout() {
   const handleRazorpayPayment = async (order) => {
     try {
       const result = await orderService.createRazorpayOrder(order.id);
-      if (!result?.success) throw new Error(result?.message || "Failed to initiate payment");
+      if (!result?.success) throw new Error(result?.message || t("checkout.failedToInitiatePayment"));
       const rpData = result?.data?.razorpay_order_id ? result.data : result?.message;
       if (!rpData?.razorpay_order_id) {
         console.error("[Razorpay] Invalid response:", JSON.stringify(result));
-        throw new Error("Failed to initiate payment");
+        throw new Error(t("checkout.failedToInitiatePayment"));
       }
 
       return new Promise((resolve, reject) => {
@@ -449,7 +508,7 @@ export default function Checkout() {
           amount: rpData.amount,
           currency: rpData.currency,
           name: "TekNode",
-          description: `Order ${order.order_number}`,
+          description: t("orders.orderNumber", { number: order.order_number }),
           order_id: rpData.razorpay_order_id,
           prefill: {
             name: form.full_name,
@@ -467,7 +526,7 @@ export default function Checkout() {
               if (verifyRes?.success) {
                 resolve(verifyRes);
               } else {
-                reject(new Error(verifyRes?.message || "Payment verification failed"));
+                reject(new Error(verifyRes?.message || t("checkout.paymentVerificationFailed")));
               }
             } catch (err) {
               reject(err);
@@ -475,14 +534,14 @@ export default function Checkout() {
           },
           modal: {
             ondismiss: () => {
-              reject(new Error("Payment cancelled"));
+              reject(new Error(t("checkout.paymentCancelled")));
             },
           },
         };
 
         const rzp = new window.Razorpay(options);
         rzp.on("payment.failed", (resp) => {
-          reject(new Error(resp.error?.description || "Payment failed"));
+          reject(new Error(resp.error?.description || t("checkout.paymentFailed")));
         });
         rzp.open();
       });
@@ -495,6 +554,13 @@ export default function Checkout() {
     event?.preventDefault();
     console.log("[Checkout] Submit attempt with email:", form.email);
     if (!validate()) return;
+    
+    // Check if shipping is available
+    if (shippingInfo.error && !shippingInfo.freeShipping) {
+      addToast(shippingInfo.error || "Shipping not available for this location", "error");
+      return;
+    }
+    
     setSaving(true);
     let order = null;
     try {
@@ -514,6 +580,8 @@ export default function Checkout() {
           pincode: form.pincode.trim(),
         },
         payment_method: form.payment_method,
+        shipping_method: shippingInfo.method,
+        shipping_charge: shippingInfo.charge,
         create_account: form.create_account,
         coupon_code: appliedCoupon?.code || undefined,
       };
@@ -523,7 +591,7 @@ export default function Checkout() {
         : await guestOrderService.createOrder(payload);
       console.log("[Checkout] API response:", JSON.stringify(response));
       order = response?.data?.order;
-      if (!order) throw new Error("Order could not be created.");
+      if (!order) throw new Error(t("checkout.orderCouldNotBeCreated"));
 
       if (form.payment_method === "online") {
         await handleRazorpayPayment(order);
@@ -1105,8 +1173,29 @@ export default function Checkout() {
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">{t("common.shipping")}</span>
-                  <span className="font-semibold text-emerald-400">{t("common.free")}</span>
+                  <span className="text-slate-400 flex items-center gap-1.5">
+                    {t("common.shipping")}
+                    {shippingInfo.freeShipping && (
+                      <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                        {t("common.free")}
+                      </span>
+                    )}
+                    {shippingInfo.zone && (
+                      <span className="text-xs text-slate-500">({shippingInfo.zone})</span>
+                    )}
+                  </span>
+                  {shippingInfo.loading ? (
+                    <span className="font-semibold text-slate-400 flex items-center gap-1">
+                      <Loader2 size={12} className="animate-spin" />
+                      Calculating...
+                    </span>
+                  ) : shippingInfo.freeShipping ? (
+                    <span className="font-semibold text-emerald-400">{t("common.free")}</span>
+                  ) : shippingInfo.error ? (
+                    <span className="font-semibold text-rose-400">{shippingInfo.error}</span>
+                  ) : (
+                    <span className="font-semibold text-white">{formatCurrency(shippingInfo.charge)}</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between text-sm border-t border-slate-800 pt-3">
                   <span className="font-bold text-white">{t("cart.totalAmount")}</span>
@@ -1115,7 +1204,7 @@ export default function Checkout() {
                       Math.max(
                         0,
                         Number(appliedCoupon?.grandTotal) ||
-                          (checkoutTotals.totalAmount - (Number(appliedCoupon?.discount) || 0)),
+                          (checkoutTotals.totalAmount - (Number(appliedCoupon?.discount) || 0)) + shippingInfo.charge,
                       ),
                     )}
                   </span>
@@ -1128,6 +1217,17 @@ export default function Checkout() {
                   <Truck size={14} className="text-indigo-400" />
                   {t("checkout.estimatedDelivery")}
                 </p>
+                {!shippingInfo.loading && shippingInfo.estimatedDays && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    {shippingInfo.estimatedDays.min}-{shippingInfo.estimatedDays.max} business days
+                  </p>
+                )}
+                {shippingInfo.loading && (
+                  <p className="text-xs text-indigo-400 mt-1 flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" />
+                    Calculating delivery estimate...
+                  </p>
+                )}
               </div>
 
             </div>

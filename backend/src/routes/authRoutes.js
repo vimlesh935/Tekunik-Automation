@@ -25,10 +25,8 @@ router.get("/api/dashboard", requireAuth, authController.dashboard);
 
 // ════════════════════════════════════════════════════════════════════════════
 // CHANGE PASSWORD — AUTHENTICATED USER ONLY (Profile / Settings)
-//   1. Current-password method: /api/user/change-password
-//   2. Email OTP method:         send-otp → verify-otp → reset
+// Email OTP method only: send-otp → verify-otp → reset
 // ════════════════════════════════════════════════════════════════════════════
-router.post("/api/user/change-password", requireAuth, authController.changePasswordWithCurrentPassword);
 router.post("/api/user/change-password/send-otp", requireAuth, authController.sendChangePasswordOtp);
 router.post("/api/user/change-password/verify-otp", requireAuth, authController.verifyChangePasswordOtp);
 router.post("/api/user/change-password/reset", requireAuth, authController.resetPasswordAfterOtp);

@@ -85,6 +85,8 @@ module.exports = {
   adminEmail: process.env.ADMIN_EMAIL || "admin@teknode.com",
   adminSecretKey:
     process.env.ADMIN_SECRET_KEY || "change-this-secret-key-in-env",
+  adminDefaultEmail: process.env.ADMIN_DEFAULT_EMAIL || "admin@example.com",
+  adminDefaultPassword: process.env.ADMIN_DEFAULT_PASSWORD || "Admin@12345",
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || "",
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",

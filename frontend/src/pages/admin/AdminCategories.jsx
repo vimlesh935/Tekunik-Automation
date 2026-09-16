@@ -110,7 +110,7 @@ export default function AdminCategories() {
 
   const openEditCategory = (category) => {
     setEditingCategory(category);
-    setCategoryForm({ name: category.name || "", description: category.description || "", image_url: category.image_url || "" });
+    setCategoryForm({ ...category, name: category.name || "", description: category.description || "", name_hi: category.name_hi || "", name_mr: category.name_mr || "", description_hi: category.description_hi || "", description_mr: category.description_mr || "", image_url: category.image_url || "" });
     setCategoryError("");
     setShowCategoryModal(true);
   };

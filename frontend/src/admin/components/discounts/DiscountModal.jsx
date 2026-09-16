@@ -85,6 +85,49 @@ export default function DiscountModal({
             />
           </div>
 
+          {/* Localized Content */}
+          <div className="grid grid-cols-1 gap-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
+              Localized Content (Hindi / Marathi)
+            </p>
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">Offer Title (Hindi)</label>
+              <input
+                type="text"
+                value={discountForm.title_hi || ""}
+                onChange={(e) => onFieldChange("title_hi", e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">Offer Title (Marathi)</label>
+              <input
+                type="text"
+                value={discountForm.title_mr || ""}
+                onChange={(e) => onFieldChange("title_mr", e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">Short Description (Hindi)</label>
+              <textarea
+                rows={2}
+                value={discountForm.description_hi || ""}
+                onChange={(e) => onFieldChange("description_hi", e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">Short Description (Marathi)</label>
+              <textarea
+                rows={2}
+                value={discountForm.description_mr || ""}
+                onChange={(e) => onFieldChange("description_mr", e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none resize-none"
+              />
+            </div>
+          </div>
+
           {/* Banner Image */}
           <div>
             <label className="block text-sm font-semibold text-gray-300 mb-2">Banner Image</label>

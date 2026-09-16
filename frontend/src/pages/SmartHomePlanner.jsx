@@ -62,29 +62,99 @@ const HOME_TYPES = [
 ];
 
 const HOME_TYPE_ROOMS = {
-  "1-rk": ["Living cum Bedroom", "Kitchen", "Bathroom"],
-  "1-bhk": ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Balcony"],
-  "2-bhk": ["Living Room", "Master Bedroom", "Bedroom 2", "Kitchen", "Bathroom 1", "Bathroom 2", "Balcony"],
-  "3-bhk": ["Living Room", "Master Bedroom", "Bedroom 2", "Bedroom 3", "Kitchen", "Bathroom 1", "Bathroom 2", "Balcony"],
-  "4-bhk": ["Living Room", "Master Bedroom", "Bedroom 2", "Bedroom 3", "Bedroom 4", "Kitchen", "Bathroom 1", "Bathroom 2", "Bathroom 3", "Balcony"],
-  "villa": ["Living Room", "Master Bedroom", "Bedroom 2", "Bedroom 3", "Kitchen", "Dining Room", "Bathroom 1", "Bathroom 2", "Bathroom 3", "Garden", "Garage", "Balcony"],
-  "office": ["Reception", "Cabin", "Workstation Area", "Meeting Room", "Pantry", "Washroom"],
-  "custom": ["Living Room", "Bedroom", "Kitchen", "Bathroom"],
+  "1-rk": [
+    { id: "living-cum-bedroom", name: "Living cum Bedroom", nameKey: "planner.roomLivingCumBedroom" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom", name: "Bathroom", nameKey: "planner.roomBathroom" },
+  ],
+  "1-bhk": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "bedroom", name: "Bedroom", nameKey: "planner.roomBedroom" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom", name: "Bathroom", nameKey: "planner.roomBathroom" },
+    { id: "balcony", name: "Balcony", nameKey: "planner.roomBalcony" },
+  ],
+  "2-bhk": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "master-bedroom", name: "Master Bedroom", nameKey: "planner.roomMasterBedroom" },
+    { id: "bedroom-2", name: "Bedroom 2", nameKey: "planner.roomBedroom2" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom-1", name: "Bathroom 1", nameKey: "planner.roomBathroom1" },
+    { id: "bathroom-2", name: "Bathroom 2", nameKey: "planner.roomBathroom2" },
+    { id: "balcony", name: "Balcony", nameKey: "planner.roomBalcony" },
+  ],
+  "3-bhk": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "master-bedroom", name: "Master Bedroom", nameKey: "planner.roomMasterBedroom" },
+    { id: "bedroom-2", name: "Bedroom 2", nameKey: "planner.roomBedroom2" },
+    { id: "bedroom-3", name: "Bedroom 3", nameKey: "planner.roomBedroom3" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom-1", name: "Bathroom 1", nameKey: "planner.roomBathroom1" },
+    { id: "bathroom-2", name: "Bathroom 2", nameKey: "planner.roomBathroom2" },
+    { id: "balcony", name: "Balcony", nameKey: "planner.roomBalcony" },
+  ],
+  "4-bhk": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "master-bedroom", name: "Master Bedroom", nameKey: "planner.roomMasterBedroom" },
+    { id: "bedroom-2", name: "Bedroom 2", nameKey: "planner.roomBedroom2" },
+    { id: "bedroom-3", name: "Bedroom 3", nameKey: "planner.roomBedroom3" },
+    { id: "bedroom-4", name: "Bedroom 4", nameKey: "planner.roomBedroom4" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom-1", name: "Bathroom 1", nameKey: "planner.roomBathroom1" },
+    { id: "bathroom-2", name: "Bathroom 2", nameKey: "planner.roomBathroom2" },
+    { id: "bathroom-3", name: "Bathroom 3", nameKey: "planner.roomBathroom3" },
+    { id: "balcony", name: "Balcony", nameKey: "planner.roomBalcony" },
+  ],
+  "villa": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "master-bedroom", name: "Master Bedroom", nameKey: "planner.roomMasterBedroom" },
+    { id: "bedroom-2", name: "Bedroom 2", nameKey: "planner.roomBedroom2" },
+    { id: "bedroom-3", name: "Bedroom 3", nameKey: "planner.roomBedroom3" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "dining-room", name: "Dining Room", nameKey: "planner.roomDiningRoom" },
+    { id: "bathroom-1", name: "Bathroom 1", nameKey: "planner.roomBathroom1" },
+    { id: "bathroom-2", name: "Bathroom 2", nameKey: "planner.roomBathroom2" },
+    { id: "bathroom-3", name: "Bathroom 3", nameKey: "planner.roomBathroom3" },
+    { id: "garden", name: "Garden", nameKey: "planner.roomGarden" },
+    { id: "garage", name: "Garage", nameKey: "planner.roomGarage" },
+    { id: "balcony", name: "Balcony", nameKey: "planner.roomBalcony" },
+  ],
+  "office": [
+    { id: "reception", name: "Reception", nameKey: "planner.roomReception" },
+    { id: "cabin", name: "Cabin", nameKey: "planner.roomCabin" },
+    { id: "workstation-area", name: "Workstation Area", nameKey: "planner.roomWorkstationArea" },
+    { id: "meeting-room", name: "Meeting Room", nameKey: "planner.roomMeetingRoom" },
+    { id: "pantry", name: "Pantry", nameKey: "planner.roomPantry" },
+    { id: "washroom", name: "Washroom", nameKey: "planner.roomWashroom" },
+  ],
+  "custom": [
+    { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+    { id: "bedroom", name: "Bedroom", nameKey: "planner.roomBedroom" },
+    { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+    { id: "bathroom", name: "Bathroom", nameKey: "planner.roomBathroom" },
+  ],
 };
 
+const DEFAULT_HOME_ROOMS = [
+  { id: "living-room", name: "Living Room", nameKey: "planner.roomLivingRoom" },
+  { id: "bedroom", name: "Bedroom", nameKey: "planner.roomBedroom" },
+  { id: "kitchen", name: "Kitchen", nameKey: "planner.roomKitchen" },
+  { id: "bathroom", name: "Bathroom", nameKey: "planner.roomBathroom" },
+];
+
 const DEVICE_TYPES = [
-  { id: "lights", label: "Lights", icon: Lightbulb },
-  { id: "fans", label: "Fans", icon: Fan },
-  { id: "curtains", label: "Curtains", icon: Sun },
-  { id: "ac", label: "AC", icon: Thermometer },
-  { id: "tv", label: "TV", icon: Tv },
-  { id: "smart-plug", label: "Smart Plug", icon: Plug },
-  { id: "door-lock", label: "Door Lock", icon: Lock },
-  { id: "door-bell", label: "Door Bell", icon: Bell },
-  { id: "motion-sensor", label: "Motion Sensor", icon: Radio },
-  { id: "smoke-sensor", label: "Smoke Sensor", icon: Shield },
-  { id: "camera", label: "Camera", icon: Camera },
-  { id: "wifi-ap", label: "Wi-Fi AP", icon: WifiIcon },
+  { id: "lights", label: "Lights", labelKey: "planner.devLights", icon: Lightbulb },
+  { id: "fans", label: "Fans", labelKey: "planner.devFans", icon: Fan },
+  { id: "curtains", label: "Curtains", labelKey: "planner.devCurtains", icon: Sun },
+  { id: "ac", label: "AC", labelKey: "planner.devAc", icon: Thermometer },
+  { id: "tv", label: "TV", labelKey: "planner.devTv", icon: Tv },
+  { id: "smart-plug", label: "Smart Plug", labelKey: "planner.devSmartPlug", icon: Plug },
+  { id: "door-lock", label: "Door Lock", labelKey: "planner.devDoorLock", icon: Lock },
+  { id: "door-bell", label: "Door Bell", labelKey: "planner.devDoorBell", icon: Bell },
+  { id: "motion-sensor", label: "Motion Sensor", labelKey: "planner.devMotionSensor", icon: Radio },
+  { id: "smoke-sensor", label: "Smoke Sensor", labelKey: "planner.devSmokeSensor", icon: Shield },
+  { id: "camera", label: "Camera", labelKey: "planner.devCamera", icon: Camera },
+  { id: "wifi-ap", label: "Wi-Fi AP", labelKey: "planner.devWifiAp", icon: WifiIcon },
 ];
 
 const STEP_LABELS = [
@@ -190,7 +260,8 @@ function createDefaultDeviceConfig() {
 /* ================================================================== */
 export default function SmartHomePlanner() {
   const navigate = useNavigate();
-  const { t } = useTranslation('planner');
+  const { t } = useTranslation();
+  const roomDisplayName = (room) => (room?.nameKey ? t(room.nameKey) : room?.name) || "";
   const [currentStep, setCurrentStep] = useState(0);
   const [sessionId, setSessionId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -351,14 +422,14 @@ export default function SmartHomePlanner() {
     const newHomeType = same ? null : typeId;
     setHomeType(newHomeType);
     const defaultRooms = newHomeType
-      ? (HOME_TYPE_ROOMS[newHomeType] || ["Living Room", "Bedroom", "Kitchen", "Bathroom"])
-          .map((name) => ({ id: nextRoomId(), name, devices: createDefaultDeviceConfig() }))
+      ? (HOME_TYPE_ROOMS[newHomeType] || DEFAULT_HOME_ROOMS)
+          .map((r) => ({ id: nextRoomId(), name: r.name, nameKey: r.nameKey, devices: createDefaultDeviceConfig() }))
       : [];
     setRooms(defaultRooms);
   }, [homeType]);
 
   const addRoom = useCallback(() => {
-    setRooms((prev) => [...prev, { id: nextRoomId(), name: "New Room", devices: createDefaultDeviceConfig() }]);
+    setRooms((prev) => [...prev, { id: nextRoomId(), name: "New Room", nameKey: "planner.roomNewRoom", devices: createDefaultDeviceConfig() }]);
   }, []);
 
   const deleteRoom = useCallback((roomId) => {
@@ -366,7 +437,7 @@ export default function SmartHomePlanner() {
   }, []);
 
   const renameRoom = useCallback((roomId, newName) => {
-    setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, name: newName } : r)));
+    setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, name: newName, nameKey: undefined } : r)));
   }, []);
 
   const toggleDevice = useCallback((roomId, deviceId) => {
@@ -438,14 +509,15 @@ export default function SmartHomePlanner() {
         if (!cfg || !cfg.enabled) return;
         items.push({
           id: `${room.id}-${deviceType.id}`,
-          roomName: room.name,
+          roomName: roomDisplayName(room),
           deviceLabel: deviceType.label,
+          labelKey: deviceType.labelKey,
           quantity: cfg.quantity || 1,
         });
       });
     });
     return items;
-  }, [rooms]);
+  }, [rooms, t]);
 
   const totalDeviceUnits = useMemo(() => deviceSummaryItems.reduce((sum, i) => sum + i.quantity, 0), [deviceSummaryItems]);
 
@@ -462,9 +534,9 @@ export default function SmartHomePlanner() {
           <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-10 h-10 text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-bold mb-3">{t('submittedTitle')}</h2>
+          <h2 className="text-3xl font-bold mb-3">{t('planner.submittedTitle')}</h2>
           <p className="text-slate-400 mb-8">
-            {t('submittedDesc')}
+            {t('planner.submittedDesc')}
           </p>
           <button onClick={() => { localStorage.removeItem("shp_sessionId"); navigate("/home"); }} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all cursor-pointer">
             <ArrowLeft className="w-4 h-4" /> {t('common.backHome')}
@@ -619,7 +691,7 @@ export default function SmartHomePlanner() {
                       type="text"
                       value={personal.fullName}
                       onChange={(e) => setPersonal((prev) => ({ ...prev, fullName: e.target.value }))}
-                      placeholder="John Doe"
+                      placeholder={t('enquiry.namePlaceholder')}
                       className="w-full px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-800 text-sm text-white outline-none focus:border-indigo-500/50 transition-all placeholder-slate-600"
                     />
                   </div>
@@ -818,10 +890,10 @@ export default function SmartHomePlanner() {
                           <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
                             <RoomIcon className="w-4 h-4 text-slate-300" />
                           </div>
-                          <span className="text-sm font-semibold text-white flex-1">{room.name}</span>
+                          <span className="text-sm font-semibold text-white flex-1">{roomDisplayName(room)}</span>
                           {enabledCount > 0 && (
                             <span className="text-[11px] text-indigo-400 font-medium bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
-                              {enabledCount} selected
+                              {t('planner.selectedCount', { count: enabledCount })}
                             </span>
                           )}
                           <div className={`w-6 h-6 rounded-lg bg-slate-800/80 flex items-center justify-center transition-transform duration-300 flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}>
@@ -909,7 +981,7 @@ export default function SmartHomePlanner() {
                   {rooms.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/30">
                       <Cpu className="w-12 h-12 text-slate-600 mb-4" />
-                      <p className="text-slate-500 text-sm font-medium">No rooms configured yet. Go back and add rooms first.</p>
+                      <p className="text-slate-500 text-sm font-medium">{t('planner.noRoomsConfigured')}</p>
                     </div>
                   )}
                 </div>
@@ -922,7 +994,7 @@ export default function SmartHomePlanner() {
             {currentStep === 4 && (
               <>
                 <p className="text-slate-400 text-sm sm:text-base ml-16 mb-8">
-                  Review your complete smart home plan before submitting.
+                  {t('planner.introStep5')}
                 </p>
 
                 <div className="space-y-6 mb-12 ml-16">
@@ -930,13 +1002,13 @@ export default function SmartHomePlanner() {
                   <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                     <div className="flex items-center gap-2 mb-3">
                       <User className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Contact Details</span>
+                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">{t('planner.contactDetails')}</span>
                     </div>
                     <div className="text-sm text-slate-300 space-y-1">
-                      <p><span className="text-slate-500">Name:</span> {personal.fullName}</p>
-                      <p><span className="text-slate-500">Email:</span> {personal.email}</p>
-                      <p><span className="text-slate-500">Phone:</span> {personal.phone}</p>
-                      <p><span className="text-slate-500">City:</span> {personal.city || "—"}</p>
+                      <p><span className="text-slate-500">{t('planner.name')}</span> {personal.fullName}</p>
+                      <p><span className="text-slate-500">{t('planner.email')}</span> {personal.email}</p>
+                      <p><span className="text-slate-500">{t('planner.phone')}</span> {personal.phone}</p>
+                      <p><span className="text-slate-500">{t('planner.cityValue')}</span> {personal.city || "—"}</p>
                     </div>
                   </div>
 
@@ -944,10 +1016,10 @@ export default function SmartHomePlanner() {
                   <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                     <div className="flex items-center gap-2 mb-2">
                       <Home className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Home Type</span>
+                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">{t('planner.homeType')}</span>
                     </div>
                     <p className="text-sm text-slate-300">
-                      {homeType ? (HOME_TYPES.find((t) => t.id === homeType)?.label || homeType) : "Not selected"}
+                      {homeType ? (t(HOME_TYPE_LABEL_MAP[homeType]) || homeType) : t('planner.notSelected')}
                     </p>
                   </div>
 
@@ -955,7 +1027,7 @@ export default function SmartHomePlanner() {
                   <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                     <div className="flex items-center gap-2 mb-3">
                       <DoorOpen className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Rooms ({rooms.length})</span>
+                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">{t('planner.roomsLabel', { count: rooms.length })}</span>
                     </div>
                     {rooms.length > 0 ? (
                       <div className="space-y-2">
@@ -964,7 +1036,7 @@ export default function SmartHomePlanner() {
                           return (
                             <div key={room.id} className="px-3 py-2 rounded-lg bg-slate-800/50">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-sm text-slate-300 font-medium">{room.name}</span>
+                                <span className="text-sm text-slate-300 font-medium">{roomDisplayName(room)}</span>
                               </div>
                               {enabledDevices.length > 0 ? (
                                 <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -972,20 +1044,20 @@ export default function SmartHomePlanner() {
                                     const cfg = room.devices[d.id];
                                     return (
                                       <span key={d.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 text-[10px] text-indigo-300">
-                                        {d.label} ×{cfg.quantity || 1}
+                                        {t(d.labelKey)} ×{cfg.quantity || 1}
                                       </span>
                                     );
                                   })}
                                 </div>
                               ) : (
-                                <p className="text-[10px] text-slate-600 italic">No devices selected</p>
+                                <p className="text-[10px] text-slate-600 italic">{t('planner.noDevicesSelected')}</p>
                               )}
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-500 italic">No rooms configured</p>
+                      <p className="text-sm text-slate-500 italic">{t('planner.noRoomsConfiguredShort')}</p>
                     )}
                   </div>
 
@@ -993,22 +1065,22 @@ export default function SmartHomePlanner() {
                   <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                     <div className="flex items-center gap-2 mb-3">
                       <Cpu className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Device Summary</span>
+                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">{t('planner.deviceSummary')}</span>
                     </div>
                     {deviceSummaryItems.length > 0 ? (
                       <div className="space-y-2">
                         {deviceSummaryItems.map((item) => (
                           <div key={item.id} className="flex items-center justify-between text-xs">
-                            <span className="text-slate-300">{item.deviceLabel} × {item.quantity} <span className="text-slate-500">({item.roomName})</span></span>
+                            <span className="text-slate-300">{t(item.labelKey)} × {item.quantity} <span className="text-slate-500">({item.roomName})</span></span>
                           </div>
                         ))}
                         <div className="flex items-center justify-between text-sm font-bold border-t border-slate-800 pt-2 mt-2">
-                          <span className="text-white">Total Units</span>
+                          <span className="text-white">{t('planner.totalUnits')}</span>
                           <span className="text-white font-mono">{totalDeviceUnits}</span>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic">No devices selected</p>
+                      <p className="text-xs text-slate-500 italic">{t('planner.noDevicesSelected')}</p>
                     )}
                   </div>
 
@@ -1016,12 +1088,12 @@ export default function SmartHomePlanner() {
                   <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                     <div className="flex items-center gap-2 mb-3">
                       <ClipboardList className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Additional Notes</span>
+                      <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">{t('planner.additionalNotes')}</span>
                     </div>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Any special requirements or preferences..."
+                      placeholder={t('planner.notesPlaceholder')}
                       rows={3}
                       className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white outline-none focus:border-indigo-500/50 placeholder-slate-600 resize-none"
                     />
@@ -1043,7 +1115,7 @@ export default function SmartHomePlanner() {
                 whileTap={{ scale: 0.98 }}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 bg-slate-900/60 hover:bg-slate-900 font-medium text-sm transition-all duration-200 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Previous
+                <ArrowLeft className="w-4 h-4" /> {t('planner.previous')}
               </motion.button>
             )}
           </div>
@@ -1056,7 +1128,7 @@ export default function SmartHomePlanner() {
             )}
             {saveSuccess && !saveError && (
               <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                <Save className="w-3.5 h-3.5" /> Saved
+                <Save className="w-3.5 h-3.5" /> {t('planner.saved')}
               </span>
             )}
 
@@ -1070,9 +1142,9 @@ export default function SmartHomePlanner() {
                 className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {t('planner.submittingEllipsis')}</>
                 ) : (
-                  <><Sparkles className="w-4 h-4" /> Submit Plan</>
+                  <><Sparkles className="w-4 h-4" /> {t('planner.submitPlan')}</>
                 )}
               </motion.button>
             ) : (
@@ -1085,9 +1157,9 @@ export default function SmartHomePlanner() {
                 className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {t('planner.savingEllipsis')}</>
                 ) : (
-                  <><ArrowRight className="w-4 h-4" /> Next</>
+                  <><ArrowRight className="w-4 h-4" /> {t('planner.next')}</>
                 )}
               </motion.button>
             )}

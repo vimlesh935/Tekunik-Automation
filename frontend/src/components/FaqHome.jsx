@@ -1,39 +1,41 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const faqs = [
   {
-    question: "Do I need special wiring for Automate switches?",
-    answer: "No, Automate switches are designed to fit into your existing switchboards without requiring neutral wires or re-wiring."
+    questionKey: "homeFaq.wiring.question",
+    answerKey: "homeFaq.wiring.answer",
   },
   {
-    question: "Is my data secure?",
-    answer: "Yes. We use bank-level AES-256 encryption. Your video feeds and data never leave our secure cloud environment."
+    questionKey: "homeFaq.security.question",
+    answerKey: "homeFaq.security.answer",
   },
   {
-    question: "What happens if the internet goes down?",
-    answer: "Your smart devices will continue to function normally via physical switches or local network controls (if you are connected to the same WiFi router)."
+    questionKey: "homeFaq.internet.question",
+    answerKey: "homeFaq.internet.answer",
   },
   {
-    question: "Do you offer professional installation?",
-    answer: "Absolutely. We have a network of certified professionals who can install and configure your entire smart home in a few hours."
+    questionKey: "homeFaq.installation.question",
+    answerKey: "homeFaq.installation.answer",
   },
   {
-    question: "Is there a monthly subscription fee?",
-    answer: "Basic app usage and device control is completely free. We offer an optional premium plan for extended cloud storage of camera feeds."
+    questionKey: "homeFaq.subscription.question",
+    answerKey: "homeFaq.subscription.answer",
   }
 ];
 
 export default function FaqSection() {
+  const { t } = useTranslation();
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
     <section className="py-24 bg-background-secondary border-y border-border-color">
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-          <p className="text-text-secondary">Everything you need to know about our smart home ecosystem.</p>
+          <h2 className="text-4xl font-bold mb-4">{t("homeFaq.title")}</h2>
+          <p className="text-text-secondary">{t("homeFaq.subtitle")}</p>
         </div>
 
         <div className="space-y-4">
@@ -46,7 +48,7 @@ export default function FaqSection() {
                 className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
                 onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
               >
-                <span className="font-medium text-lg pr-8">{faq.question}</span>
+                <span className="font-medium text-lg pr-8">{t(faq.questionKey)}</span>
                 <ChevronDown 
                   className={`w-5 h-5 text-text-secondary transition-transform duration-300 flex-shrink-0 ${openIndex === idx ? "rotate-180 text-primary" : ""}`} 
                 />
@@ -61,7 +63,7 @@ export default function FaqSection() {
                     transition={{ duration: 0.3 }}
                   >
                     <div className="px-6 pb-5 text-text-secondary">
-                      {faq.answer}
+                      {t(faq.answerKey)}
                     </div>
                   </motion.div>
                 )}

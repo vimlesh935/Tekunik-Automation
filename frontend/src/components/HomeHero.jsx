@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { localizedField } from "../utils/i18nContent.js";
 
 const DEMO_VIDEO_SRC = "/videos/finalvid.mp4";
 const DEMO_VIDEO_POSTER = "/videos/demo-poster.jpg";
@@ -99,13 +100,14 @@ const DemoVideoModal = memo(function DemoVideoModal({ onClose, isDark }) {
 /*  Day / Night switch — styled like a real wall light-switch plate    */
 /* ------------------------------------------------------------------ */
 function DayNightSwitch({ isDark, onToggle }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       role="switch"
       aria-checked={!isDark}
       onClick={onToggle}
-      title={isDark ? "Flip to day mode" : "Flip to night mode"}
+      title={isDark ? t("home.flipToDayMode") : t("home.flipToNightMode")}
       className="relative w-11 h-[74px] rounded-2xl shrink-0 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       style={{
         background: "linear-gradient(180deg, #e8e9ec 0%, #cfd1d6 100%)",
@@ -188,13 +190,14 @@ function DayNightSwitch({ isDark, onToggle }) {
 /*  Rotating "room" carousel — cycles through what Automate controls   */
 /* ------------------------------------------------------------------ */
 const ROOM_STATES = [
-  { key: "security", label: "Security", detail: "All systems armed & secure.", icon: Shield, dot: "bg-green-500" },
-  { key: "lighting", label: "Lighting", detail: "12 fixtures dimmed to 40%.", icon: Lightbulb, dot: "bg-amber-400" },
-  { key: "climate", label: "Climate", detail: "Living room holding at 72°F.", icon: Thermometer, dot: "bg-sky-400" },
-  { key: "cameras", label: "Cameras", detail: "4 feeds live, no motion.", icon: Camera, dot: "bg-violet-400" },
+  { key: "security", labelKey: "home.roomSecurity", detailKey: "home.roomSecurityDetail", icon: Shield, dot: "bg-green-500" },
+  { key: "lighting", labelKey: "home.roomLighting", detailKey: "home.roomLightingDetail", icon: Lightbulb, dot: "bg-amber-400" },
+  { key: "climate", labelKey: "home.roomClimate", detailKey: "home.roomClimateDetail", icon: Thermometer, dot: "bg-sky-400" },
+  { key: "cameras", labelKey: "home.roomCameras", detailKey: "home.roomCamerasDetail", icon: Camera, dot: "bg-violet-400" },
 ];
 
 function RoomCarousel({ isDark }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -230,10 +233,10 @@ function RoomCarousel({ isDark }) {
               <Icon className={`w-4 h-4 ${isDark ? "text-white" : "text-slate-700"}`} />
               <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${current.dot}`} />
             </div>
-            <span className="text-sm font-semibold">{current.label}</span>
+            <span className="text-sm font-semibold">{t(current.labelKey)}</span>
           </div>
           <p className={`text-xs ${isDark ? "text-text-secondary" : "text-slate-500"}`}>
-            {current.detail}
+            {t(current.detailKey)}
           </p>
         </motion.div>
       </AnimatePresence>
@@ -243,7 +246,7 @@ function RoomCarousel({ isDark }) {
           <button
             key={s.key}
             type="button"
-            aria-label={`Show ${s.label}`}
+            aria-label={t("home.showRoom", { name: t(s.labelKey) })}
             onClick={() => setIndex(i)}
             className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
               i === index
@@ -292,12 +295,14 @@ function AutomateButton() {
 /*  Hero section                                                       */
 /* ------------------------------------------------------------------ */
 export default function HeroSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { settings } = useWebsiteSettings();
   const isDark = theme === "dark";
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const heroHeading = String(settings?.hero_heading || "Smart Living Starts Here").trim() || "Smart Living Starts Here";
+  const heroHeading =
+    String(localizedField(settings, "hero_heading", i18n.language)).trim() ||
+    t("home.smartLivingStartsHere");
   const heroImageUrl = getImageUrl(settings?.hero_image) || "/assest/hero-dashboard.png";
 
   const openVideo = useCallback(() => setIsVideoOpen(true), []);

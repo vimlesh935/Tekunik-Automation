@@ -172,7 +172,7 @@ export default function Enquiry() {
                 name="full_name"
                 value={formData.full_name}
                 onChange={handleChange}
-                placeholder="John Doe"
+                placeholder={t('enquiry.namePlaceholder')}
                 className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                   errors.full_name ? "border-red-500" : "border-white/10"
                 } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -190,7 +190,7 @@ export default function Enquiry() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="john@example.com"
+                  placeholder={t('enquiry.emailPlaceholder')}
                   className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                     errors.email ? "border-red-500" : "border-white/10"
                   } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -200,14 +200,14 @@ export default function Enquiry() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Phone <span className="text-red-400">*</span>
+                  {t('enquiry.phoneLabel')} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+91 98765 43210"
+                  placeholder={t('enquiry.phonePlaceholder')}
                   className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
                     errors.phone ? "border-red-500" : "border-white/10"
                   } text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all`}
@@ -219,7 +219,7 @@ export default function Enquiry() {
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Preferred Date <span className="text-red-400">*</span>
+                  {t('enquiry.preferredDateLabel')} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="date"
@@ -236,7 +236,7 @@ export default function Enquiry() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Preferred Time
+                  {t('enquiry.preferredTimeLabel')}
                 </label>
                 <input
                   type="time"
@@ -250,14 +250,14 @@ export default function Enquiry() {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Message <span className="text-gray-500">(optional)</span>
+                {t('enquiry.messageLabel')} <span className="text-gray-500">{t('enquiry.optional')}</span>
               </label>
               <textarea
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
                 rows={4}
-                placeholder="Tell us about your requirements..."
+                placeholder={t('enquiry.messagePlaceholder')}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none"
               />
             </div>
@@ -270,12 +270,12 @@ export default function Enquiry() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Submitting...
+                  {t('enquiry.submitting')}
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  Submit Enquiry
+                  {t('enquiry.submitEnquiry')}
                 </>
               )}
             </button>

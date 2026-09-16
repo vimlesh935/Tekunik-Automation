@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "react-i18next";
 import OrderReviewSection from "../components/OrderReviewSection.jsx";
 import CancelSuccessMessage from "../components/CancelSuccessMessage.jsx";
+import { getStatusKey } from "../utils/statusTranslations.js";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 import {
   Package,
   Clock,
@@ -19,6 +21,7 @@ import {
   AlertTriangle,
   Star,
   CheckCircle,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -77,7 +80,7 @@ export default function OrderHistory() {
         setPagination(data.pagination || null);
       }
     } catch (error) {
-      addToast(error?.message || t("orders.noOrders"), "error");
+      addToast(getErrorMessage(error, t, "orders.noOrders"), "error");
       setOrders([]);
     } finally {
       setLoading(false);
@@ -89,9 +92,12 @@ export default function OrderHistory() {
       pending: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       confirmed: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
       processing: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+      packed: "text-teal-400 bg-teal-500/10 border-teal-500/20",
       shipped: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+      in_transit: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
       out_for_delivery: "text-orange-400 bg-orange-500/10 border-orange-500/20",
       delivered: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+      delivery_failed: "text-red-400 bg-red-500/10 border-red-500/20",
       cancelled: "text-red-400 bg-red-500/10 border-red-500/20",
     };
     return colors[s] || colors.pending;
@@ -102,24 +108,19 @@ export default function OrderHistory() {
     return cancellable.includes(status);
   };
 
-  const statusLabel = (statusValue) => {
-    const map = {
-      pending: "orders.pending",
-      confirmed: "orders.confirmed",
-      processing: "orders.processing",
-      packed: "orders.packed",
-      shipped: "orders.shipped",
-      out_for_delivery: "orders.outForDelivery",
-      delivered: "orders.delivered",
-      cancelled: "orders.cancelled",
-      refunded: "orders.refunded",
-      partially_refunded: "orders.partiallyRefunded",
-    };
-    return map[statusValue] ? t(map[statusValue]) : statusValue;
+  const statusLabel = (statusValue) => t(getStatusKey(statusValue, 'order'));
+
+  const RETURN_STATUS_LABELS = {
+    pending: "statusPending",
+    approved: "statusApproved",
+    rejected: "statusRejected",
+    product_received: "statusProductReceived",
+    refund_processing: "statusRefundProcessing",
+    refunded: "statusRefunded",
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return "N/A";
+    if (!dateStr) return t("common.na");
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
         year: "numeric",
@@ -152,7 +153,7 @@ export default function OrderHistory() {
       setCancelSuccessOrder(updatedOrder || { id: cancelTarget.id, order_number: cancelTarget.number, payment_method: orders.find(o => o.id === cancelTarget.id)?.payment_method });
       addToast(t("dashboard.orderCancelled"), "success");
     } catch (error) {
-      addToast(error?.message || t("dashboard.failedToCancel"), "error");
+      addToast(getErrorMessage(error, t, "dashboard.failedToCancel"), "error");
     } finally {
       setCancellingOrderId(null);
       setCancelTarget({ id: null, number: null });
@@ -198,7 +199,7 @@ export default function OrderHistory() {
         setReviewSuccess(false);
       }, 1200);
     } catch (error) {
-      addToast(error?.message || t("toasts.error"), "error");
+      addToast(getErrorMessage(error, t, "toasts.error"), "error");
     } finally {
       setSubmittingReview(false);
     }
@@ -260,6 +261,22 @@ export default function OrderHistory() {
                         <Package size={12} />
                         {statusLabel(order.status)}
                       </span>
+                      {order.return_status && (
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border ${
+                            order.return_status === "refunded" || order.return_status === "product_received"
+                              ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"
+                              : order.return_status === "rejected"
+                                ? "text-rose-400 bg-rose-500/10 border-rose-500/25"
+                                : order.return_status === "refund_processing" || order.return_status === "approved"
+                                  ? "text-indigo-400 bg-indigo-500/10 border-indigo-500/25"
+                                  : "text-amber-400 bg-amber-500/10 border-amber-500/25"
+                          }`}
+                        >
+                          <RotateCcw size={11} />
+                          Return: {t(`returns.${RETURN_STATUS_LABELS[order.return_status] || "statusPending"}`)}
+                        </span>
+                      )}
                       {order.item_count && (
                         <span className="text-xs text-gray-500">
                           {order.item_count}{" "}
@@ -269,8 +286,7 @@ export default function OrderHistory() {
                         </span>
                       )}
                       <span className="text-xs text-gray-400">
-                        {order.total_products || order.items?.length || 0}{" "}
-                        {(order.total_products || order.items?.length || 0) !== 1 ? "Products" : "Product"}
+                        {t('orders.productCount', { count: order.total_products || order.items?.length || 0 })}
                         {" "}·{" "}
                         {order.total_quantity || (order.items || []).reduce((s, i) => s + (parseInt(i.quantity) || 0), 0)} {t("dashboard.items")}
                       </span>
@@ -297,7 +313,7 @@ export default function OrderHistory() {
                       <p
                         className={`text-xs mt-1 ${order.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"}`}
                       >
-                        {order.payment_status || t("orders.pending")}
+                        {t(getStatusKey(order.payment_status || 'pending', 'payment'))}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
@@ -398,7 +414,7 @@ export default function OrderHistory() {
                 onClick={() => setShowCancelModal(false)}
                 className="flex-1 inline-flex items-center justify-center rounded-[12px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm py-3 transition-all duration-200 border border-slate-700"
               >
-                Keep Order
+                {t("orders.keepOrder")}
               </button>
               <button
                 type="button"
@@ -445,6 +461,7 @@ export default function OrderHistory() {
               <button
                 type="button"
                 onClick={() => setShowReviewModal(false)}
+                aria-label={t("common.close")}
                 className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition"
               >
                 <X size={18} />
@@ -454,7 +471,7 @@ export default function OrderHistory() {
             {reviewProducts.length > 1 && (
               <div className="mb-5">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Select Product
+                  {t("home.selectProduct")}
                 </label>
                 <select
                   value={selectedProduct || ""}
@@ -505,7 +522,7 @@ export default function OrderHistory() {
                 type="text"
                 value={reviewTitle}
                 onChange={(e) => setReviewTitle(e.target.value)}
-                placeholder="Great product!"
+                placeholder={t("product.sampleReview")}
                 className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:border-amber-500 outline-none transition"
               />
             </div>
@@ -517,7 +534,7 @@ export default function OrderHistory() {
               <textarea
                 value={reviewMessage}
                 onChange={(e) => setReviewMessage(e.target.value)}
-                placeholder="Share your experience with this product..."
+                placeholder={t("product.reviewPlaceholder")}
                 rows={4}
                 className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:border-amber-500 outline-none transition resize-none"
               />

@@ -36,6 +36,8 @@ const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard.jsx
 const AdminProducts = React.lazy(() => import("./pages/admin/AdminProducts.jsx"));
 const AdminCategories = React.lazy(() => import("./pages/admin/AdminCategories.jsx"));
 const AdminOrders = React.lazy(() => import("./pages/admin/AdminOrders.jsx"));
+const AdminShipping = React.lazy(() => import("./pages/admin/AdminShipping.jsx"));
+const AdminReturns = React.lazy(() => import("./pages/admin/AdminReturns.jsx"));
 const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers.jsx"));
 const AdminReviews = React.lazy(() => import("./pages/admin/AdminReviews.jsx"));
 const AdminInventory = React.lazy(() => import("./pages/admin/AdminInventory.jsx"));
@@ -146,6 +148,8 @@ function AppContent() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="shipping" element={<AdminShipping />} />
+          <Route path="returns" element={<AdminReturns />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="inventory" element={<AdminInventory />} />

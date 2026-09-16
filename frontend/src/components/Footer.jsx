@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useWebsiteSettings } from "../context/WebsiteSettingsContext.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { localizedField } from "../utils/i18nContent.js";
 import Logo from "./Logo.jsx";
 import {
   Mail,
@@ -55,7 +56,7 @@ const safeExternalUrl = (value) => {
 };
 
 export default function Footer() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { settings } = useWebsiteSettings();
@@ -118,12 +119,12 @@ export default function Footer() {
               <Logo
                 src={logo}
                 fallbackSrc={theme === "dark" ? "/assest/logowhite.png" : "/assest/logo.png"}
-                alt={settings.company_name || "Logo"}
+                alt={settings.company_name || t('nav.logo')}
                 className="h-[55px] md:h-[70px] w-auto object-contain"
               />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed">
-              {settings.footer_about || settings.company_description || `${settings.company_name || "Tekunik Automation"} — Premium automation solutions for modern living and working spaces.`}
+              {localizedField(settings, "footer_about", i18n.language) || localizedField(settings, "company_description", i18n.language) || t('footer.taglineFallback', { company: settings.company_name || "Tekunik Automation" })}
             </p>
             {socialLinks.length > 0 && (
               <div className="flex items-center gap-3 pt-1">

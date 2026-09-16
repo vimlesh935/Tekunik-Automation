@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require("../config/db");
 const { createTransporter } = require("../services/mailService");
 const env = require("../config/env");
+const { success, failure } = require("../utils/response");
 
 const ADMIN_EMAIL = "vimleshnew29@gmail.com";
 
@@ -58,13 +59,7 @@ router.post("/api/demo-enquiry", async (req, res) => {
 
     if (validationErrors.length > 0) {
       console.log("[DEMO] ❌ Validation Error:", validationErrors);
-      return res.status(400).json({
-        success: false,
-        code: "VALIDATION_ERROR",
-        message: "Validation Error",
-        errors: validationErrors,
-        details: { errors: validationErrors },
-      });
+      return failure(res, "Validation Error", 400, "VALIDATION_ERROR", { errors: validationErrors });
     }
 
     console.log("[DEMO] ✅ Validation Passed");
@@ -92,12 +87,7 @@ router.post("/api/demo-enquiry", async (req, res) => {
     } catch (dbError) {
       console.error("[DEMO] ❌ Database Error:", dbError.message);
       console.error("[DEMO] ❌ Database Error Code:", dbError.code);
-      return res.status(500).json({
-        success: false,
-        code: "DATABASE_ERROR",
-        message: "Database error. Please try again later.",
-        details: { error: dbError.code === "ER_NO_SUCH_TABLE" ? "Table not found" : "Database operation failed" },
-      });
+      return failure(res, "Database error. Please try again later.", 500, "SERVER_ERROR");
     }
 
     // ── EMAIL SENDING ──
@@ -163,29 +153,19 @@ router.post("/api/demo-enquiry", async (req, res) => {
         console.error("[DEMO] Status update error:", updateErr.message);
       }
 
-      return res.status(200).json({
-        success: true,
-        code: "EMAIL_ERROR",
-        message: "Demo request submitted successfully but email notification failed. Our team will still review your request.",
-        data: {
-          id: insertResult.insertId,
-          email_sent: false,
-          email_error: emailErr.message,
-        },
-      });
+      return success(res, "Demo request submitted successfully but email notification failed. Our team will still review your request.", {
+        id: insertResult.insertId,
+        email_sent: false,
+        email_error: emailErr.message,
+      }, 200);
     }
 
     // ── SUCCESS RESPONSE ──
     console.log("[DEMO] ✅ Success Response");
-    return res.status(200).json({
-      success: true,
-      code: "SUCCESS",
-      message: "Demo request submitted successfully. Our team will contact you shortly.",
-      data: {
-        id: insertResult.insertId,
-        email_sent: emailSent,
-      },
-    });
+    return success(res, "Demo request submitted successfully. Our team will contact you shortly.", {
+      id: insertResult.insertId,
+      email_sent: emailSent,
+    }, 200);
 
   } catch (error) {
     console.error("\n❌ [DEMO ERROR]");
@@ -194,25 +174,17 @@ router.post("/api/demo-enquiry", async (req, res) => {
     console.error("   Stack:", error.stack);
 
     let statusCode = 500;
-    let errorCode = "API_ERROR";
     let errorMessage = "An unexpected error occurred. Please try again.";
 
     if (error.code === "ER_NO_SUCH_TABLE") {
-      errorCode = "DATABASE_ERROR";
       errorMessage = "Database table not found. Please contact support.";
     } else if (error.code === "ECONNREFUSED") {
-      errorCode = "DATABASE_ERROR";
       errorMessage = "Database connection failed. Please try again later.";
     } else if (error.code === "ER_DUP_ENTRY") {
-      errorCode = "DATABASE_ERROR";
       errorMessage = "Duplicate entry detected.";
     }
 
-    return res.status(statusCode).json({
-      success: false,
-      code: errorCode,
-      message: errorMessage,
-    });
+    return failure(res, errorMessage, statusCode, "SERVER_ERROR");
   }
 });
 
@@ -245,7 +217,7 @@ router.post("/api/enquiry/demo", async (req, res) => {
     if (!preferred_date || !preferred_date.trim()) validationErrors.push("Preferred Date is required");
 
     if (validationErrors.length > 0) {
-      return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Validation Error", errors: validationErrors });
+      return failure(res, "Validation Error", 400, "VALIDATION_ERROR", { errors: validationErrors });
     }
 
     const sanitized = {
@@ -292,14 +264,13 @@ router.post("/api/enquiry/demo", async (req, res) => {
       await pool.query("UPDATE demo_enquiries SET status = 'Email Failed' WHERE id = ?", [insertResult.insertId]);
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Demo request submitted successfully.",
-      data: { id: insertResult.insertId, email_sent: emailSent },
-    });
+    return success(res, "Demo request submitted successfully.", {
+      id: insertResult.insertId,
+      email_sent: emailSent,
+    }, 200);
   } catch (error) {
     console.error("[DEMO] Legacy Route - Error:", error.message);
-    return res.status(500).json({ success: false, code: "API_ERROR", message: "An unexpected error occurred." });
+    return failure(res, "An unexpected error occurred.", 500, "SERVER_ERROR");
   }
 });
 

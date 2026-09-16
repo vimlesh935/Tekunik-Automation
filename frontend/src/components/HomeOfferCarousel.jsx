@@ -4,19 +4,21 @@ import { ArrowRight, Clock, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { offerService } from "../services/api";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { localizedField } from "../utils/i18nContent.js";
 
 const HOMEPAGE_LIMIT = 5;
 
-export const formatOfferDiscount = (offer) => {
+export const formatOfferDiscount = (offer, t) => {
   if (offer?.type === "percentage") {
     const value = Math.round(Number(offer.value) || 0);
-    if (value > 0) return `${value}% OFF`;
+    if (value > 0) return t ? t("coupon.percentOff", { percent: value }) : `${value}% OFF`;
   }
-  if (offer?.type === "fixed") return `₹${Number(offer.value) || 0} OFF`;
-  return offer?.title || offer?.name || "Special Offer";
+  if (offer?.type === "fixed")
+    return t ? t("coupon.amountOff", { amount: `₹${Number(offer.value) || 0}` }) : `₹${Number(offer.value) || 0} OFF`;
+  return offer?.title || offer?.name || (t ? t("offers.specialOffer") : "Special Offer");
 };
 
-export const getOfferCta = (offer) => {
+export const getOfferCta = (offer, t) => {
   const type = offer?.cta_type || "offers";
   const target = offer?.cta_target || "";
   const productId =
@@ -29,15 +31,15 @@ export const getOfferCta = (offer) => {
     offer?.category_ids?.[0] ||
     "";
   if (type === "product") {
-    return { to: `/product/${productId}`, label: "Shop Deal" };
+    return { to: `/product/${productId}`, label: t ? t("offers.shopDeal") : "Shop Deal" };
   }
   if (type === "category") {
-    return { to: `/shop?category=${categoryId}`, label: "Shop Category" };
+    return { to: `/shop?category=${categoryId}`, label: t ? t("offers.shopCategory") : "Shop Category" };
   }
   if (type === "custom") {
-    return { to: target || "/offers", label: "Learn More" };
+    return { to: target || "/offers", label: t ? t("common.learnMore") : "Learn More" };
   }
-  return { to: "/offers", label: "View Offer" };
+  return { to: "/offers", label: t ? t("offers.viewOffer") : "View Offer" };
 };
 
 const formatExpiry = (date) => {
@@ -48,11 +50,15 @@ const formatExpiry = (date) => {
 };
 
 export function OfferCard({ offer }) {
+  const { t, i18n } = useTranslation();
   const image = getImageUrl(offer?.banner_image);
-  const title = offer?.title || offer?.name || "Limited Time Offer";
-  const description = offer?.description || "";
-  const discount = formatOfferDiscount(offer);
-  const cta = getOfferCta(offer);
+  const title =
+    localizedField(offer, "title", i18n.language) ||
+    offer?.name ||
+    t("offers.limitedTimeOffer");
+  const description = localizedField(offer, "description", i18n.language) || "";
+  const discount = formatOfferDiscount(offer, t);
+  const cta = getOfferCta(offer, t);
   const hasImage = Boolean(image);
   const expiry = formatExpiry(offer?.expires_at);
 

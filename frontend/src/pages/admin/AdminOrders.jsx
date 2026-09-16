@@ -7,7 +7,7 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import OrderDetailModal from "../../components/admin/OrderDetailModal.jsx";
 import Toast from "../../admin/components/common/Toast.jsx";
 
-const STATUS_OPTIONS = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"];
+const STATUS_OPTIONS = ["pending", "confirmed", "processing", "packed", "shipped", "in_transit", "out_for_delivery", "delivered", "delivery_failed", "cancelled"];
 
 export default function AdminOrders() {
   const { token } = useAuth();

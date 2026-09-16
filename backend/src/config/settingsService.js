@@ -82,6 +82,14 @@ const ENV_FALLBACK = {
   "abandonedCart.maxReminders": () => "2",
   "abandonedCart.recoveryWindowHours": () => "24",
   "abandonedCart.stopRemindersOnRecovery": () => "true",
+  // Shipping settings
+  "shipping.enabled": () => "true",
+  "shipping.free_shipping_threshold": () => "5000",
+  "shipping.default_charge": () => "50",
+  "shipping.express_charge": () => "150",
+  "shipping.cod_charge": () => "0",
+  "shipping.default_delivery_days_min": () => "2",
+  "shipping.default_delivery_days_max": () => "7",
 };
 
 // Keys (by convention) whose DB rows are stored encrypted.
@@ -112,6 +120,13 @@ const KEY_CATEGORY = {
   "abandonedCart.maxReminders": "abandoned_cart",
   "abandonedCart.recoveryWindowHours": "abandoned_cart",
   "abandonedCart.stopRemindersOnRecovery": "abandoned_cart",
+  "shipping.enabled": "shipping",
+  "shipping.free_shipping_threshold": "shipping",
+  "shipping.default_charge": "shipping",
+  "shipping.express_charge": "shipping",
+  "shipping.cod_charge": "shipping",
+  "shipping.default_delivery_days_min": "shipping",
+  "shipping.default_delivery_days_max": "shipping",
 };
 
 const cache = { rows: null };
@@ -261,6 +276,15 @@ const getAdminSnapshot = async (adminId) => {
     },
     jwt: {
       expiresIn: await get("jwt.expiresIn"),
+    },
+    shipping: {
+      enabled: await getBool("shipping.enabled"),
+      freeShippingThreshold: await getNumber("shipping.free_shipping_threshold"),
+      defaultCharge: await getNumber("shipping.default_charge"),
+      expressCharge: await getNumber("shipping.express_charge"),
+      codCharge: await getNumber("shipping.cod_charge"),
+      defaultDeliveryDaysMin: await getNumber("shipping.default_delivery_days_min"),
+      defaultDeliveryDaysMax: await getNumber("shipping.default_delivery_days_max"),
     },
   };
 };

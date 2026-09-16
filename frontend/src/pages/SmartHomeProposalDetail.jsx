@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { smartHomeProposalService } from "../services/api";
 import { User, Home, DoorOpen, Cpu, ClipboardList, Check } from "lucide-react";
 
@@ -17,9 +18,58 @@ const STATUSES = [
   "Cancelled",
 ];
 
+const STATUS_KEYS = {
+  "New": "proposals.statusNew",
+  "Contacted": "proposals.statusContacted",
+  "Under Review": "proposals.statusUnderReview",
+  "Quotation Prepared": "proposals.statusQuotationPrepared",
+  "Quotation Sent": "proposals.statusQuotationSent",
+  "Site Visit Scheduled": "proposals.statusSiteVisitScheduled",
+  "Awaiting Customer Approval": "proposals.statusAwaitingApproval",
+  "Approved": "proposals.statusApproved",
+  "Converted to Order": "proposals.statusConvertedToOrder",
+  "Completed": "proposals.statusCompleted",
+  "Cancelled": "proposals.statusCancelled",
+};
+
+const WIZARD_STATUS_KEYS = {
+  "New": "proposalDetail.wizardNew",
+  "In Progress": "proposalDetail.wizardInProgress",
+  "Pending": "proposalDetail.wizardPending",
+  "Completed": "proposalDetail.wizardCompleted",
+  "Submitted": "proposalDetail.wizardSubmitted",
+  "Draft": "proposalDetail.wizardDraft",
+};
+
 const HOME_TYPES_LABELS = {
   "1-rk": "1 RK", "1-bhk": "1 BHK", "2-bhk": "2 BHK", "3-bhk": "3 BHK",
   "4-bhk": "4 BHK", "villa": "Villa", "office": "Office", "custom": "Custom",
+};
+
+const HOME_TYPE_KEYS = {
+  "1-rk": "planner.home1rk",
+  "1-bhk": "planner.home1bhk",
+  "2-bhk": "planner.home2bhk",
+  "3-bhk": "planner.home3bhk",
+  "4-bhk": "planner.home4bhk",
+  "villa": "planner.homeVilla",
+  "office": "planner.homeOffice",
+  "custom": "planner.homeCustom",
+};
+
+const DEVICE_KEYS = {
+  lights: "planner.devLights",
+  fans: "planner.devFans",
+  curtains: "planner.devCurtains",
+  ac: "planner.devAc",
+  tv: "planner.devTv",
+  "smart-plug": "planner.devSmartPlug",
+  "door-lock": "planner.devDoorLock",
+  "door-bell": "planner.devDoorBell",
+  "motion-sensor": "planner.devMotionSensor",
+  "smoke-sensor": "planner.devSmokeSensor",
+  camera: "planner.devCamera",
+  "wifi-ap": "planner.devWifiAp",
 };
 
 const STATUS_COLORS = {
@@ -39,6 +89,7 @@ const STATUS_COLORS = {
 export default function SmartHomeProposalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [proposal, setProposal] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +130,7 @@ export default function SmartHomeProposalDetail() {
       setQuotationAmount(data?.proposal?.quotation_amount || "");
       setAssignedAdmin(data?.proposal?.assigned_admin || "");
     } catch (err) {
-      setError(err?.message || "Failed to load proposal");
+      setError(err?.message || t('proposalDetail.loadFailed', 'Failed to load proposal'));
     } finally {
       setLoading(false);
     }
@@ -92,49 +143,49 @@ export default function SmartHomeProposalDetail() {
   const handleUpdate = async (field, value) => {
     try {
       await smartHomeProposalService.update(id, { [field]: value });
-      setSuccessMsg(`${field.replace(/_/g, " ")} updated successfully`);
+      setSuccessMsg(t('proposalDetail.fieldUpdated', '{{field}} updated successfully', { field: field.replace(/_/g, " ") }));
       setTimeout(() => setSuccessMsg(""), 3000);
       load();
     } catch (err) {
-      setError(err?.message || "Update failed");
+      setError(err?.message || t('proposalDetail.updateFailed', 'Update failed'));
     }
   };
 
   const handleStatusChange = async (newStatus) => {
     try {
       await smartHomeProposalService.updateStatus(id, newStatus, "Status updated from detail page");
-      setSuccessMsg(`Status changed to ${newStatus}`);
+      setSuccessMsg(t('proposalDetail.statusChangedTo', 'Status changed to {{status}}', { status: t(STATUS_KEYS[newStatus], newStatus) }));
       setTimeout(() => setSuccessMsg(""), 3000);
       load();
     } catch (err) {
-      setError(err?.message || "Status update failed");
+      setError(err?.message || t('proposalDetail.statusUpdateFailed', 'Status update failed'));
     }
   };
 
   const handleConvert = async () => {
-    if (!window.confirm("Convert this proposal to an order? This action cannot be undone.")) return;
+    if (!window.confirm(t('proposalDetail.confirmConvert', 'Convert this proposal to an order? This action cannot be undone.'))) return;
     setConverting(true);
     setError("");
     try {
       await smartHomeProposalService.convert(id);
-      setSuccessMsg("Proposal converted to order successfully!");
+      setSuccessMsg(t('proposalDetail.convertedSuccess', 'Proposal converted to order successfully!'));
       setTimeout(() => setSuccessMsg(""), 3000);
       load();
     } catch (err) {
-      setError(err?.message || "Conversion failed");
+      setError(err?.message || t('proposalDetail.conversionFailed', 'Conversion failed'));
     } finally {
       setConverting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Permanently delete this proposal? This cannot be undone.")) return;
+    if (!window.confirm(t('proposalDetail.confirmDelete', 'Permanently delete this proposal? This cannot be undone.'))) return;
     setDeleting(true);
     try {
       await smartHomeProposalService.remove(id);
       navigate("/admin/smart-home-requests");
     } catch (err) {
-      setError(err?.message || "Delete failed");
+      setError(err?.message || t('proposalDetail.deleteFailed', 'Delete failed'));
       setDeleting(false);
     }
   };
@@ -185,7 +236,7 @@ export default function SmartHomeProposalDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <div className="text-slate-500">Loading proposal...</div>
+        <div className="text-slate-500">{t('proposalDetail.loading', 'Loading proposal...')}</div>
       </div>
     );
   }
@@ -194,9 +245,9 @@ export default function SmartHomeProposalDetail() {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-500 mb-4">Proposal not found</p>
+          <p className="text-slate-500 mb-4">{t('proposalDetail.notFound', 'Proposal not found')}</p>
           <Link to="/admin/smart-home-requests" className="text-indigo-400 hover:text-indigo-300">
-            &larr; Back to Proposals
+            &larr; {t('proposalDetail.backToProposals', 'Back to Proposals')}
           </Link>
         </div>
       </div>
@@ -209,10 +260,10 @@ export default function SmartHomeProposalDetail() {
         {/* Navigation */}
         <div className="flex items-center justify-between mb-6">
           <Link to="/admin/smart-home-requests" className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
-            &larr; Back to Proposals
+            &larr; {t('proposalDetail.backToProposals', 'Back to Proposals')}
           </Link>
           <Link to="/admin" className="text-sm text-indigo-400 hover:text-indigo-300">
-            Dashboard
+            {t('nav.dashboard')}
           </Link>
         </div>
 
@@ -237,34 +288,34 @@ export default function SmartHomeProposalDetail() {
                 <span className="font-mono text-sm text-slate-400">{proposal.proposal_number}</span>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusColors.bg} ${statusColors.text} ${statusColors.border} border`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot}`}></span>
-                  {proposal.status}
+                  {t(STATUS_KEYS[proposal.status], proposal.status)}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold mt-1">{proposal.full_name}</h1>
-              <p className="text-sm text-slate-400 mt-1">Created {formatDateTime(proposal.created_at)}</p>
+              <p className="text-sm text-slate-400 mt-1">{t('proposalDetail.createdAt', 'Created {{date}}', { date: formatDateTime(proposal.created_at) })}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <select value={proposal.status} onChange={(e) => handleStatusChange(e.target.value)}
                 className="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-white focus:border-indigo-500/50 outline-none">
                 {STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>{t(STATUS_KEYS[s], s)}</option>
                 ))}
               </select>
               {proposal.status !== "Converted to Order" && (
                 <button type="button" onClick={handleConvert} disabled={converting}
                   className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 disabled:opacity-50 transition">
-                  {converting ? "Converting..." : "Convert to Order"}
+                  {converting ? t('proposalDetail.converting', 'Converting...') : t('proposalDetail.convertToOrder', 'Convert to Order')}
                 </button>
               )}
               <button type="button" onClick={handleDelete} disabled={deleting}
                 className="px-4 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 disabled:opacity-50 transition">
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? t('proposalDetail.deleting', 'Deleting...') : t('common.delete')}
               </button>
             </div>
           </div>
           {proposal.converted_order_id && (
             <div className="mt-3 p-3 rounded-lg bg-teal-500/10 border border-teal-500/20 text-sm text-teal-300">
-              Converted to Order #{proposal.converted_order_id}
+              {t('proposalDetail.convertedOrder', 'Converted to Order #{{id}}', { id: proposal.converted_order_id })}
             </div>
           )}
         </div>
@@ -273,33 +324,33 @@ export default function SmartHomeProposalDetail() {
           {/* Customer Details */}
           <div className="lg:col-span-1 space-y-6">
             <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Customer Details</h2>
+              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">{t('proposalDetail.customerDetails', 'Customer Details')}</h2>
               <div className="space-y-3 text-sm">
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Full Name</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.fullName', 'Full Name')}</span>
                   <span className="text-slate-200">{proposal.full_name}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Email</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.email')}</span>
                   <a href={`mailto:${proposal.email}`} className="text-indigo-400 hover:text-indigo-300">{proposal.email}</a>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Phone</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.phone')}</span>
                   <a href={`tel:${proposal.phone}`} className="text-slate-200 hover:text-white">{proposal.phone || "-"}</a>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">City</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('planner.city')}</span>
                   <span className="text-slate-200">{proposal.city || "-"}</span>
                 </div>
                 {proposal.state && (
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">State</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.state', 'State')}</span>
                     <span className="text-slate-200">{proposal.state}</span>
                   </div>
                 )}
                 {proposal.address && (
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Address</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.address', 'Address')}</span>
                     <span className="text-slate-200 text-xs">{proposal.address}</span>
                   </div>
                 )}
@@ -308,32 +359,32 @@ export default function SmartHomeProposalDetail() {
 
             {/* Quick Actions */}
             <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Quick Actions</h2>
+              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">{t('proposalDetail.quickActions', 'Quick Actions')}</h2>
               <div className="grid grid-cols-1 gap-2">
                 <button onClick={() => setShowContactModal(true)}
                   className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition text-left">
-                  Contact Customer
+                  {t('proposalDetail.contactCustomer', 'Contact Customer')}
                 </button>
                 <button onClick={() => setShowNotesModal(true)}
                   className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition text-left">
-                  Add Notes
+                  {t('proposalDetail.addNotes', 'Add Notes')}
                 </button>
                 <button onClick={() => setShowAssignModal(true)}
                   className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition text-left">
-                  Assign Admin
+                  {t('proposalDetail.assignAdmin', 'Assign Admin')}
                 </button>
                 <button onClick={() => { setShowSiteVisitModal(true); setSiteVisitDate(proposal.site_visit_date || ""); }}
                   className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition text-left">
-                  Schedule Site Visit
+                  {t('proposalDetail.scheduleSiteVisit', 'Schedule Site Visit')}
                 </button>
                 <button onClick={() => { setShowQuotationModal(true); setQuotationAmount(proposal.quotation_amount || ""); }}
                   className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition text-left">
-                  Upload Quotation
+                  {t('proposalDetail.uploadQuotation', 'Upload Quotation')}
                 </button>
                 {proposal.status !== "Approved" && proposal.status !== "Converted to Order" && (
                   <button onClick={() => handleStatusChange("Approved")}
                     className="px-3 py-2 rounded-lg border border-emerald-500/30 text-emerald-400 text-xs hover:bg-emerald-500/10 transition text-left">
-                    Mark Approved
+                    {t('proposalDetail.markApproved', 'Mark Approved')}
                   </button>
                 )}
               </div>
@@ -346,7 +397,7 @@ export default function SmartHomeProposalDetail() {
             {/* Steps Completed Banner */}
             <div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 flex items-center gap-4">
               <div className="flex items-center gap-3 flex-1">
-                <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Progress:</span>
+                <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">{t('proposalDetail.progress', 'Progress:')}</span>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <div key={s} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
@@ -359,7 +410,7 @@ export default function SmartHomeProposalDetail() {
                   ))}
                 </div>
                 <span className="text-sm font-bold text-indigo-400 ml-2">
-                  {wizardStatus === "Completed" ? "Completed" : `${currentStep}/5 Steps`}
+                  {wizardStatus === "Completed" ? t('proposalDetail.wizardCompleted', 'Completed') : t('proposalDetail.stepsCount', '{{count}}/5 Steps', { count: currentStep })}
                 </span>
               </div>
               <span className={`text-[10px] px-2 py-1 rounded-full border font-bold uppercase tracking-wider ${
@@ -369,7 +420,7 @@ export default function SmartHomeProposalDetail() {
                   ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
                   : "bg-gray-500/20 text-gray-300 border-gray-500/30"
               }`}>
-                {wizardStatus || "New"}
+                {wizardStatus ? t(WIZARD_STATUS_KEYS[wizardStatus], wizardStatus) : t('proposalDetail.wizardNew', 'New')}
               </span>
             </div>
 
@@ -378,24 +429,24 @@ export default function SmartHomeProposalDetail() {
               <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                 <div className="flex items-center gap-2 mb-3">
                   <User className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Customer Details</h2>
-                  {currentStep >= 1 && <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>}
+                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{t('proposalDetail.customerDetails', 'Customer Details')}</h2>
+                  {currentStep >= 1 && <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> {t('proposalDetail.completed', 'Completed')}</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Full Name</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.fullName', 'Full Name')}</span>
                     <span className="text-slate-200 font-semibold">{proposal.full_name}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Email</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.email')}</span>
                     <a href={`mailto:${proposal.email}`} className="text-indigo-400 hover:text-indigo-300">{proposal.email}</a>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Phone</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.phone')}</span>
                     <a href={`tel:${proposal.phone}`} className="text-slate-200 hover:text-white">{proposal.phone || "-"}</a>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">City</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('planner.city')}</span>
                     <span className="text-slate-200">{proposal.city || "-"}</span>
                   </div>
                 </div>
@@ -407,25 +458,25 @@ export default function SmartHomeProposalDetail() {
               <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                 <div className="flex items-center gap-2 mb-3">
                   <Home className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Home Details</h2>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
+                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{t('proposalDetail.homeDetails', 'Home Details')}</h2>
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> {t('proposalDetail.completed', 'Completed')}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Home Type</span>
-                    <span className="text-sm font-semibold text-slate-200">{HOME_TYPES_LABELS[proposal.home_type] || proposal.home_type || "-"}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('planner.homeType')}</span>
+                    <span className="text-sm font-semibold text-slate-200">{proposal.home_type ? t(HOME_TYPE_KEYS[proposal.home_type], HOME_TYPES_LABELS[proposal.home_type] || proposal.home_type) : "-"}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Total Rooms</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.totalRooms', 'Total Rooms')}</span>
                     <span className="text-sm font-semibold text-slate-200">{proposal.total_rooms || 0}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Est. Budget</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.estBudget', 'Est. Budget')}</span>
                     <span className="text-sm font-semibold text-emerald-400">{formatINR(proposal.estimated_cost)}</span>
                   </div>
                   {proposal.quotation_amount && (
                     <div className="p-3 rounded-xl bg-slate-800/50">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Quotation</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.quotation', 'Quotation')}</span>
                       <span className="text-sm font-semibold text-amber-400">{formatINR(proposal.quotation_amount)}</span>
                     </div>
                   )}
@@ -442,8 +493,8 @@ export default function SmartHomeProposalDetail() {
                 <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                   <div className="flex items-center gap-2 mb-3">
                     <DoorOpen className="w-4 h-4 text-indigo-400" />
-                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Selected Rooms</h2>
-                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
+                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{t('proposalDetail.selectedRooms', 'Selected Rooms')}</h2>
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> {t('proposalDetail.completed', 'Completed')}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {rooms.map((room, i) => (
@@ -468,8 +519,8 @@ export default function SmartHomeProposalDetail() {
                 <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                   <div className="flex items-center gap-2 mb-3">
                     <Cpu className="w-4 h-4 text-indigo-400" />
-                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Selected Devices</h2>
-                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
+                    <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{t('proposalDetail.selectedDevices', 'Selected Devices')}</h2>
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> {t('proposalDetail.completed', 'Completed')}</span>
                   </div>
                   <div className="space-y-3">
                     {rooms.map((room) => {
@@ -479,12 +530,12 @@ export default function SmartHomeProposalDetail() {
                         <div key={room.id} className="p-3 rounded-xl bg-slate-800/50">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-semibold text-slate-200">{room.name}</span>
-                            <span className="text-[11px] text-slate-500">{enabled.length} devices</span>
+                            <span className="text-[11px] text-slate-500">{t('proposalDetail.devicesCount', '{{count}} devices', { count: enabled.length })}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {enabled.map(([deviceId, cfg]) => (
                               <span key={deviceId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 text-[11px] text-indigo-300">
-                                {deviceId.replace(/-/g, " ")} &times;{cfg.quantity || 1}
+                                {t(DEVICE_KEYS[deviceId], deviceId.replace(/-/g, " "))} &times;{cfg.quantity || 1}
                               </span>
                             ))}
                           </div>
@@ -501,8 +552,8 @@ export default function SmartHomeProposalDetail() {
               <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
                 <div className="flex items-center gap-2 mb-3">
                   <ClipboardList className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Additional Notes</h2>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> Completed</span>
+                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{t('planner.additionalNotes')}</h2>
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 ml-auto"><Check className="w-3 h-3" /> {t('proposalDetail.completed', 'Completed')}</span>
                 </div>
                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{proposal.additional_notes}</p>
               </div>
@@ -511,23 +562,23 @@ export default function SmartHomeProposalDetail() {
             {/* Home Configuration — fallback for legacy proposals without current_step */}
             {!currentStep && (
             <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Home Configuration</h2>
+              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">{t('proposalDetail.homeConfiguration', 'Home Configuration')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="p-3 rounded-xl bg-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Home Type</span>
-                  <span className="text-sm font-semibold text-slate-200">{HOME_TYPES_LABELS[proposal.home_type] || proposal.home_type || "-"}</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('planner.homeType')}</span>
+                  <span className="text-sm font-semibold text-slate-200">{proposal.home_type ? t(HOME_TYPE_KEYS[proposal.home_type], HOME_TYPES_LABELS[proposal.home_type] || proposal.home_type) : "-"}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Total Rooms</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.totalRooms', 'Total Rooms')}</span>
                   <span className="text-sm font-semibold text-slate-200">{proposal.total_rooms || 0}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Est. Budget</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.estBudget', 'Est. Budget')}</span>
                   <span className="text-sm font-semibold text-emerald-400">{formatINR(proposal.estimated_cost)}</span>
                 </div>
                 {proposal.quotation_amount && (
                   <div className="p-3 rounded-xl bg-slate-800/50">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Quotation</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.quotation', 'Quotation')}</span>
                     <span className="text-sm font-semibold text-amber-400">{formatINR(proposal.quotation_amount)}</span>
                   </div>
                 )}
@@ -541,7 +592,7 @@ export default function SmartHomeProposalDetail() {
               if (!rooms.length) return null;
               return (
                 <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Selected Rooms & Devices</h2>
+                  <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">{t('proposalDetail.selectedRoomsAndDevices', 'Selected Rooms & Devices')}</h2>
                   <div className="space-y-3">
                     {rooms.map((room) => {
                       const devices = room.devices || {};
@@ -550,18 +601,18 @@ export default function SmartHomeProposalDetail() {
                         <div key={room.id} className="p-3 rounded-xl bg-slate-800/50">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-semibold text-slate-200">{room.name}</span>
-                            <span className="text-[11px] text-slate-500">{enabled.length} devices</span>
+                            <span className="text-[11px] text-slate-500">{t('proposalDetail.devicesCount', '{{count}} devices', { count: enabled.length })}</span>
                           </div>
                           {enabled.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5">
                               {enabled.map(([deviceId, cfg]) => (
                                 <span key={deviceId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 text-[11px] text-indigo-300">
-                                  {deviceId.replace(/-/g, " ")} &times;{cfg.quantity || 1}
+                                  {t(DEVICE_KEYS[deviceId], deviceId.replace(/-/g, " "))} &times;{cfg.quantity || 1}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-slate-600 italic">No devices selected</p>
+                            <p className="text-[11px] text-slate-600 italic">{t('planner.noDevicesSelected')}</p>
                           )}
                         </div>
                       );
@@ -574,7 +625,7 @@ export default function SmartHomeProposalDetail() {
             {/* Admin Notes */}
             {proposal.admin_notes && (
               <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">Admin Notes</h2>
+                <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">{t('proposalDetail.adminNotes', 'Admin Notes')}</h2>
                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{proposal.admin_notes}</p>
               </div>
             )}
@@ -582,14 +633,14 @@ export default function SmartHomeProposalDetail() {
             {/* Additional Notes */}
             {proposal.additional_notes && (
               <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-                <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">Customer Notes</h2>
+                <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">{t('proposalDetail.customerNotes', 'Customer Notes')}</h2>
                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{proposal.additional_notes}</p>
               </div>
             )}
 
             {/* Status Timeline */}
             <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60">
-              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">Status Timeline</h2>
+              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4">{t('proposalDetail.statusTimeline', 'Status Timeline')}</h2>
               {statusHistory.length > 0 ? (
                 <div className="relative pl-6 space-y-4">
                   <div className="absolute left-2.5 top-1 bottom-1 w-px bg-slate-700"></div>
@@ -599,9 +650,9 @@ export default function SmartHomeProposalDetail() {
                       <div key={entry.id} className="relative">
                         <div className={`absolute -left-[18px] top-1.5 w-3 h-3 rounded-full border-2 border-slate-800 ${colors.dot}`}></div>
                         <div className="text-xs">
-                          <span className={`font-semibold ${colors.text}`}>{entry.to_status}</span>
+                          <span className={`font-semibold ${colors.text}`}>{t(STATUS_KEYS[entry.to_status], entry.to_status)}</span>
                           {entry.from_status && (
-                            <span className="text-slate-500"> (from {entry.from_status})</span>
+                            <span className="text-slate-500"> ({t('proposalDetail.fromStatus', 'from {{status}}', { status: t(STATUS_KEYS[entry.from_status], entry.from_status) })})</span>
                           )}
                           <div className="text-slate-500 text-[10px] mt-0.5">
                             {formatDateTime(entry.created_at)}
@@ -613,7 +664,7 @@ export default function SmartHomeProposalDetail() {
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 italic">No status history available</p>
+                <p className="text-xs text-slate-500 italic">{t('proposalDetail.noHistory', 'No status history available')}</p>
               )}
             </div>
           </div>
@@ -624,30 +675,30 @@ export default function SmartHomeProposalDetail() {
       {showContactModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowContactModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Contact Customer</h3>
+            <h3 className="text-lg font-bold mb-4">{t('proposalDetail.contactCustomer', 'Contact Customer')}</h3>
             <div className="space-y-3 text-sm">
               <div className="p-3 rounded-lg bg-slate-800/50">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Name</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('proposalDetail.nameLabel', 'Name')}</span>
                 <span className="text-slate-200">{proposal.full_name}</span>
               </div>
               <div className="p-3 rounded-lg bg-slate-800/50">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Email</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.email')}</span>
                 <a href={`mailto:${proposal.email}`} className="text-indigo-400 hover:text-indigo-300 text-sm">{proposal.email}</a>
               </div>
               <div className="p-3 rounded-lg bg-slate-800/50">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Phone</span>
-                <a href={`tel:${proposal.phone}`} className="text-slate-200 hover:text-white text-sm">{proposal.phone || "Not provided"}</a>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('common.phone')}</span>
+                <a href={`tel:${proposal.phone}`} className="text-slate-200 hover:text-white text-sm">{proposal.phone || t('proposalDetail.notProvided', 'Not provided')}</a>
               </div>
               {proposal.city && (
                 <div className="p-3 rounded-lg bg-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">City</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{t('planner.city')}</span>
                   <span className="text-slate-200 text-sm">{proposal.city}</span>
                 </div>
               )}
             </div>
             <button onClick={() => setShowContactModal(false)}
               className="mt-4 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -657,18 +708,18 @@ export default function SmartHomeProposalDetail() {
       {showNotesModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowNotesModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Admin Notes</h3>
+            <h3 className="text-lg font-bold mb-4">{t('proposalDetail.adminNotes', 'Admin Notes')}</h3>
             <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)}
               rows={5} className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50"
-              placeholder="Add notes about this proposal..." />
+              placeholder={t('proposalDetail.notesPlaceholder', 'Add notes about this proposal...')} />
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowNotesModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleSaveNotes}
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-                Save Notes
+                {t('proposalDetail.saveNotes', 'Save Notes')}
               </button>
             </div>
           </div>
@@ -679,18 +730,18 @@ export default function SmartHomeProposalDetail() {
       {showSiteVisitModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSiteVisitModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Schedule Site Visit</h3>
-            <p className="text-sm text-slate-400 mb-4">Select a date for the site visit:</p>
+            <h3 className="text-lg font-bold mb-4">{t('proposalDetail.scheduleSiteVisit', 'Schedule Site Visit')}</h3>
+            <p className="text-sm text-slate-400 mb-4">{t('proposalDetail.selectVisitDate', 'Select a date for the site visit:')}</p>
             <input type="date" value={siteVisitDate} onChange={(e) => setSiteVisitDate(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50" />
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowSiteVisitModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleSaveSiteVisit}
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-                Save & Update Status
+                {t('proposalDetail.saveAndUpdateStatus', 'Save & Update Status')}
               </button>
             </div>
           </div>
@@ -701,19 +752,19 @@ export default function SmartHomeProposalDetail() {
       {showQuotationModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowQuotationModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Set Quotation Amount</h3>
-            <p className="text-sm text-slate-400 mb-4">Enter the quotation amount for this proposal:</p>
+            <h3 className="text-lg font-bold mb-4">{t('proposalDetail.setQuotation', 'Set Quotation Amount')}</h3>
+            <p className="text-sm text-slate-400 mb-4">{t('proposalDetail.enterQuotation', 'Enter the quotation amount for this proposal:')}</p>
             <input type="number" step="0.01" min="0" value={quotationAmount} onChange={(e) => setQuotationAmount(e.target.value)}
-              placeholder="Enter amount"
+              placeholder={t('proposalDetail.enterAmount', 'Enter amount')}
               className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50" />
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowQuotationModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleSaveQuotation}
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-                Save & Mark Prepared
+                {t('proposalDetail.saveAndMarkPrepared', 'Save & Mark Prepared')}
               </button>
             </div>
           </div>
@@ -724,19 +775,19 @@ export default function SmartHomeProposalDetail() {
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAssignModal(false)}>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Assign Admin</h3>
-            <p className="text-sm text-slate-400 mb-4">Enter the admin ID or email to assign:</p>
+            <h3 className="text-lg font-bold mb-4">{t('proposalDetail.assignAdmin', 'Assign Admin')}</h3>
+            <p className="text-sm text-slate-400 mb-4">{t('proposalDetail.assignAdminHint', 'Enter the admin ID or email to assign:')}</p>
             <input type="text" value={assignedAdmin} onChange={(e) => setAssignedAdmin(e.target.value)}
-              placeholder="Admin ID or email"
+              placeholder={t('proposalDetail.assignAdminPlaceholder', 'Admin ID or email')}
               className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white outline-none focus:border-indigo-500/50" />
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowAssignModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleAssignAdmin}
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-                Assign
+                {t('proposalDetail.assign', 'Assign')}
               </button>
             </div>
           </div>

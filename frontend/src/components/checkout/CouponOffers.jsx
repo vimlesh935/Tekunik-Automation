@@ -2,10 +2,10 @@ import React, { useMemo, useState } from "react";
 import { BadgePercent, Check, ChevronDown, Copy, Loader2, Ticket, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "../../utils/currency.js";
-const headline = (c) =>
+const headline = (c, t) =>
   c.discountType === "percentage"
-    ? `${Math.round(Number(c.discountValue))}% OFF`
-    : `${formatCurrency(c.discountValue)} OFF`
+    ? t("coupon.percentOff", { percent: Math.round(Number(c.discountValue)) })
+    : t("coupon.amountOff", { amount: formatCurrency(c.discountValue) });
 
 export default function CouponOffers({
   coupons = [],
@@ -42,7 +42,7 @@ export default function CouponOffers({
     window.setTimeout(() => setCopiedCode((cur) => (cur === code ? null : cur)), 2000);
   };
   return (
-    <div className="mt-4 space-y-3" aria-label="Available coupons and offers">
+    <div className="mt-4 space-y-3" aria-label={t("coupon.availableCoupons")}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Ticket size={14} className="text-indigo-400" />
@@ -77,35 +77,37 @@ export default function CouponOffers({
                 <div className="min-w-0">
                   <p className="font-mono text-sm font-bold text-white">{c.code}</p>
                   <p className="max-w-[220px] truncate text-[11px] text-slate-400">
-                    {c.title || c.description || "Coupon"}
+                    {c.title || c.description || t("coupon.label")}
                   </p>
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <p className={`text-sm font-extrabold ${locked ? "text-slate-300" : "text-emerald-300"}`}>
-                  {headline(c)}
+                  {headline(c, t)}
                 </p>
                 {minOrder(c) > 0 && (
-                  <p className="text-[10px] text-slate-500">Min. {formatCurrency(minOrder(c))}</p>
+                  <p className="text-[10px] text-slate-500">
+                    {t("coupon.minOrderShort", { amount: formatCurrency(minOrder(c)) })}
+                  </p>
                 )}
               </div>
             </div>
 
             {locked ? (
               <div className="mt-2 rounded-lg bg-slate-900/70 px-2.5 py-2 text-[11px] text-amber-300/90">
-                🔒 Locked{c.lockMessage ? ` — ${c.lockMessage}` : ""}
+                {t("coupon.locked")}{c.lockMessage ? ` - ${c.lockMessage}` : ""}
                 {c.reasonCode === "MIN_CART_NOT_REACHED" && shortfallOf(c) > 0 && (
                   <>
                     <span className="mx-1 text-slate-500">·</span>
                     <span data-testid={`shortfall-${c.code}`}>
-                      Add {formatCurrency(shortfallOf(c))} more to unlock
+                      {t("coupon.addMoreToUnlock", { amount: formatCurrency(shortfallOf(c)) })}
                     </span>
                   </>
                 )}
               </div>
             ) : (
               <p className="mt-2 text-[11px] text-slate-400">
-                {c.description || "Valid on this order."}
+                {c.description || t("coupon.validOnOrder")}
               </p>
             )}
 
@@ -115,7 +117,7 @@ export default function CouponOffers({
                 onClick={() => toggleDetails(c.code)}
                 className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-slate-500 hover:text-slate-300"
               >
-                Show details
+                {t("coupon.showDetails")}
                 <ChevronDown size={11} />
               </button>
             )}
@@ -125,7 +127,7 @@ export default function CouponOffers({
 
             {c.maxDiscount > 0 && (
               <p className="mt-1.5 text-[10px] text-slate-500">
-                Up to {formatCurrency(c.maxDiscount)} off
+                {t("coupon.upToOff", { amount: formatCurrency(c.maxDiscount) })}
               </p>
             )}
 
@@ -136,12 +138,12 @@ export default function CouponOffers({
                   disabled
                   className="inline-flex flex-1 cursor-not-allowed items-center justify-center gap-1 rounded-lg bg-slate-800/60 px-3 py-1.5 text-[11px] font-bold text-slate-500"
                 >
-                  <Lock size={12} /> Locked
+                  <Lock size={12} /> {t("coupon.locked")}
                 </button>
               ) : (
                 <button
                   type="button"
-                  aria-label={`Apply coupon ${c.code}`}
+                  aria-label={t("coupon.applyCoupon", { code: c.code })}
                   onClick={() => onApply && onApply(c.code)}
                   disabled={busyCode === c.code}
                   className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-[11px] font-bold text-white transition-all hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50"
@@ -159,7 +161,7 @@ export default function CouponOffers({
               )}
               <button
                 type="button"
-                aria-label={`Copy coupon code ${c.code}`}
+                aria-label={t("coupon.copyCoupon", { code: c.code })}
                 onClick={() => handleCopy(c.code)}
                 className="inline-flex shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
               >

@@ -3,55 +3,64 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeadphonesIcon, Mic, Smartphone, Globe, Cloud, Leaf, Wrench, ShieldCheck, X, Expand, Snowflake, Sun, Flame, Radio } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const features = [
   { 
-    title: "24x7 Support", 
-    desc: "Always here when you need us.", 
+    id: "support24x7",
+    titleKey: "whyTeknode.support24x7.title", 
+    descKey: "whyTeknode.support24x7.desc", 
     icon: HeadphonesIcon, 
-    longDesc: "Our dedicated global support team is available round-the-clock to assist you with any questions, troubleshooting, or configuration support. You can reach us via live chat, phone, or email anytime." 
+    longDescKey: "whyTeknode.support24x7.longDesc" 
   },
   { 
-    title: "Voice Assistant", 
-    desc: "Works with Alexa & Google.", 
+    id: "voiceAssistant",
+    titleKey: "whyTeknode.voiceAssistant.title", 
+    descKey: "whyTeknode.voiceAssistant.desc", 
     icon: Mic, 
-    longDesc: "Seamlessly connect your smart ecosystem with leading voice controllers. Issue voice commands to adjust illumination levels, arm your property, or manage daily multi-device automation routines." 
+    longDescKey: "whyTeknode.voiceAssistant.longDesc" 
   },
   { 
-    title: "Mobile App Control", 
-    desc: "Manage everything from your phone.", 
+    id: "mobileApp",
+    titleKey: "whyTeknode.mobileApp.title", 
+    descKey: "whyTeknode.mobileApp.desc", 
     icon: Smartphone, 
-    longDesc: "Take complete control of your environment with our intuitive native iOS and Android application. Customize dashboard shortcuts, monitor system parameters, and modify settings in a unified UI." 
+    longDescKey: "whyTeknode.mobileApp.longDesc" 
   },
   { 
-    title: "Remote Access", 
-    desc: "Control devices from anywhere.", 
+    id: "remoteAccess",
+    titleKey: "whyTeknode.remoteAccess.title", 
+    descKey: "whyTeknode.remoteAccess.desc", 
     icon: Globe, 
-    longDesc: "Whether you are at the office or travelling abroad, securely check real-time device logs, toggle power grids, and receive critical push alerts instantly over encrypted network tunnels." 
+    longDescKey: "whyTeknode.remoteAccess.longDesc" 
   },
   { 
-    title: "Cloud Connectivity", 
-    desc: "Secure & fast data sync.", 
+    id: "cloudConnectivity",
+    titleKey: "whyTeknode.cloudConnectivity.title", 
+    descKey: "whyTeknode.cloudConnectivity.desc", 
     icon: Cloud, 
-    longDesc: "Powered by edge computing cluster arrays, device states synchronize instantly with millisecond latency. All cloud metrics are mirrored across decentralized node systems for continuous uptime." 
+    longDescKey: "whyTeknode.cloudConnectivity.longDesc" 
   },
   { 
-    title: "Energy Saving", 
-    desc: "Reduce electricity bills easily.", 
+    id: "energySaving",
+    titleKey: "whyTeknode.energySaving.title", 
+    descKey: "whyTeknode.energySaving.desc", 
     icon: Leaf, 
-    longDesc: "Gain exhaustive historical utility metrics. Our smart algorithms isolate high-consumption nodes and recommend automated custom schedules to minimize waste and utility expenses." 
+    longDescKey: "whyTeknode.energySaving.longDesc" 
   },
   { 
-    title: "Easy Installation", 
-    desc: "Zero damage, quick setup.", 
+    id: "easyInstallation",
+    titleKey: "whyTeknode.easyInstallation.title", 
+    descKey: "whyTeknode.easyInstallation.desc", 
     icon: Wrench, 
-    longDesc: "Engineered around zero-invasive mounting interfaces. Our plug-and-play architectural components fit straight cleanly into existing wall matrices without expensive rewiring overhauls." 
+    longDescKey: "whyTeknode.easyInstallation.longDesc" 
   },
   { 
-    title: "Advanced Security", 
-    desc: "Bank-level encryption standards.", 
+    id: "advancedSecurity",
+    titleKey: "whyTeknode.advancedSecurity.title", 
+    descKey: "whyTeknode.advancedSecurity.desc", 
     icon: ShieldCheck, 
-    longDesc: "Equipped with AES-256 bit end-to-end data transport cryptography. Local authentication handshakes ensure external network intrusions cannot compromise the perimeter integrity of your home." 
+    longDescKey: "whyTeknode.advancedSecurity.longDesc" 
   },
 ];
 
@@ -62,31 +71,32 @@ const TEMP_STOPS = [
   { pos: 100, rgb: [239, 68, 68] },  // red-500
 ];
 
-function getTempRGB(temp) {
-  const t = Math.min(100, Math.max(0, temp));
-  const [start, end] = t <= 50 ? [TEMP_STOPS[0], TEMP_STOPS[1]] : [TEMP_STOPS[1], TEMP_STOPS[2]];
+function getTmpRGB(temp) {
+  const tmpVal = Math.min(100, Math.max(0, temp));
+  const [start, end] = tmpVal <= 50 ? [TEMP_STOPS[0], TEMP_STOPS[1]] : [TEMP_STOPS[1], TEMP_STOPS[2]];
   const range = end.pos - start.pos;
-  const ratio = range === 0 ? 0 : (t - start.pos) / range;
+  const ratio = range === 0 ? 0 : (tmpVal - start.pos) / range;
   return [0, 1, 2].map((i) => Math.round(start.rgb[i] + (end.rgb[i] - start.rgb[i]) * ratio));
 }
 
 function getTempMeta(temp) {
-  if (temp < 34) return { label: "Cold", Icon: Snowflake, zone: "ZONE-B COOLING" };
-  if (temp < 67) return { label: "Mild", Icon: Sun, zone: "ZONE-A BALANCED" };
-  return { label: "Hot", Icon: Flame, zone: "ZONE-C HEATING" };
+  if (temp < 34) return { labelKey: "whyTeknode.climate.cold", Icon: Snowflake, zoneKey: "whyTeknode.climate.cooling" };
+  if (temp < 67) return { labelKey: "whyTeknode.climate.mild", Icon: Sun, zoneKey: "whyTeknode.climate.balanced" };
+  return { labelKey: "whyTeknode.climate.hot", Icon: Flame, zoneKey: "whyTeknode.climate.heating" };
 }
 
 export default function FeaturesSection() {
+  const { t } = useTranslation();
   const [activeFeature, setActiveFeature] = useState(null);
   const [temp, setTemp] = useState(50);
 
-  const [r, g, b] = useMemo(() => getTempRGB(temp), [temp]);
+  const [r, g, b] = useMemo(() => getTmpRGB(temp), [temp]);
   const c = `${r}, ${g}, ${b}`;
   const themeColor = `rgb(${c})`;
   const themeSoft = `rgba(${c}, 0.14)`;
   const themeMid = `rgba(${c}, 0.35)`;
   const themeGlow = `rgba(${c}, 0.55)`;
-  const { label, Icon: TempIcon, zone } = getTempMeta(temp);
+  const { labelKey, Icon: TempIcon, zoneKey } = getTempMeta(temp);
 
   return (
     <section
@@ -122,8 +132,8 @@ export default function FeaturesSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Why Choose Automate?</h2>
-          <p className="text-text-secondary text-sm sm:text-base px-4">Engineered for reliability, security, and elegance.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{t("whyTeknode.title")}</h2>
+          <p className="text-text-secondary text-sm sm:text-base px-4">{t("whyTeknode.subtitle")}</p>
         </motion.div>
 
         {/* Climate Engine Module */}
@@ -146,7 +156,7 @@ export default function FeaturesSection() {
             <div className="flex items-center gap-2 min-w-0">
               <Radio className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 animate-pulse" style={{ color: themeColor }} />
               <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-text-secondary truncate">
-                Climate Engine
+                {t("whyTeknode.climate.engine")}
               </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -170,11 +180,11 @@ export default function FeaturesSection() {
                   >
                     {temp}
                   </span>
-                  <span className="text-base sm:text-lg font-medium text-text-secondary mb-1">° {label}</span>
+                  <span className="text-base sm:text-lg font-medium text-text-secondary mb-1">° {t(labelKey)}</span>
                 </div>
                 <AnimatePresence mode="wait">
                   <motion.p
-                    key={zone}
+                    key={zoneKey}
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 4 }}
@@ -182,7 +192,7 @@ export default function FeaturesSection() {
                     className="text-[9px] sm:text-[10px] font-medium tracking-[0.14em] mt-1.5"
                     style={{ color: themeColor }}
                   >
-                    {zone}
+                    {t(zoneKey)}
                   </motion.p>
                 </AnimatePresence>
               </div>
@@ -198,7 +208,7 @@ export default function FeaturesSection() {
                 <span className="absolute inset-0 rounded-xl sm:rounded-2xl ring-pulse" style={{ boxShadow: `0 0 0 0 ${themeMid}` }} />
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={label}
+                    key={labelKey}
                     initial={{ opacity: 0, scale: 0.6, rotate: -20 }}
                     animate={{ opacity: 1, scale: 1, rotate: 0 }}
                     exit={{ opacity: 0, scale: 0.6, rotate: 20 }}
@@ -233,7 +243,7 @@ export default function FeaturesSection() {
                 value={temp}
                 onChange={(e) => setTemp(Number(e.target.value))}
                 className="absolute inset-x-0 top-0 w-full h-8 sm:h-9 appearance-none bg-transparent cursor-pointer temp-slider touch-none"
-                aria-label="Temperature"
+                aria-label={t("whyTeknode.climate.temperature")}
               />
 
               <motion.div
@@ -253,9 +263,9 @@ export default function FeaturesSection() {
             </div>
 
             <div className="flex justify-between text-[9px] sm:text-[10px] font-medium text-text-secondary/70 mt-2 uppercase tracking-[0.1em] sm:tracking-[0.15em]">
-              <span>Winter</span>
-              <span>Mild</span>
-              <span>Ember</span>
+              <span>{t("whyTeknode.climate.winter")}</span>
+              <span>{t("whyTeknode.climate.mild")}</span>
+              <span>{t("whyTeknode.climate.ember")}</span>
             </div>
           </div>
         </motion.div>
@@ -310,8 +320,8 @@ export default function FeaturesSection() {
               >
                 <feature.icon className="w-7 h-7 sm:w-8 sm:h-8 transition-colors duration-300" style={{ color: themeColor }} />
               </div>
-              <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2">{feature.title}</h3>
-              <p className="text-xs sm:text-sm text-text-secondary">{feature.desc}</p>
+              <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2">{t(feature.titleKey)}</h3>
+              <p className="text-xs sm:text-sm text-text-secondary">{t(feature.descKey)}</p>
             </motion.div>
           ))}
         </div>
@@ -360,18 +370,18 @@ export default function FeaturesSection() {
               </div>
 
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-2.5 sm:mb-3 tracking-tight">
-                {activeFeature.title}
+                {t(activeFeature.titleKey)}
               </h3>
 
               <p
                 className="text-xs sm:text-sm font-medium mb-3 sm:mb-4 uppercase tracking-widest transition-colors duration-300"
                 style={{ color: themeColor }}
               >
-                {activeFeature.desc}
+                {t(activeFeature.descKey)}
               </p>
 
               <p className="text-xs sm:text-sm text-text-secondary leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5">
-                {activeFeature.longDesc}
+                {t(activeFeature.longDescKey)}
               </p>
             </motion.div>
           </motion.div>

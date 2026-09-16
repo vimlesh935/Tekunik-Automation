@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { smartHomeProposalService } from "../services/api";
 
 const STATUSES = [
@@ -16,12 +17,27 @@ const STATUSES = [
   "Cancelled",
 ];
 
+const STATUS_KEYS = {
+  "New": "proposals.statusNew",
+  "Contacted": "proposals.statusContacted",
+  "Under Review": "proposals.statusUnderReview",
+  "Quotation Prepared": "proposals.statusQuotationPrepared",
+  "Quotation Sent": "proposals.statusQuotationSent",
+  "Site Visit Scheduled": "proposals.statusSiteVisitScheduled",
+  "Awaiting Customer Approval": "proposals.statusAwaitingApproval",
+  "Approved": "proposals.statusApproved",
+  "Converted to Order": "proposals.statusConvertedToOrder",
+  "Completed": "proposals.statusCompleted",
+  "Cancelled": "proposals.statusCancelled",
+};
+
 const HOME_TYPES = [
   "1-rk", "1-bhk", "2-bhk", "3-bhk", "4-bhk", "villa", "office", "custom",
 ];
 
 export default function SmartHomeProposals() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,7 +63,7 @@ export default function SmartHomeProposals() {
       setProposals(data?.proposals || []);
       setPagination(data?.pagination || { page: 1, totalPages: 1, total: 0 });
     } catch (err) {
-      setError(err?.message || "Failed to load proposals");
+      setError(err?.message || t('proposals.loadFailed', 'Failed to load proposals'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +90,7 @@ export default function SmartHomeProposals() {
       await smartHomeProposalService.updateStatus(id, newStatus, "Status updated from list");
       load();
     } catch (err) {
-      setError(err?.message || "Failed to update status");
+      setError(err?.message || t('proposals.updateStatusFailed', 'Failed to update status'));
     }
   };
 
@@ -103,71 +119,71 @@ export default function SmartHomeProposals() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Smart Home Proposals</h1>
+            <h1 className="text-2xl font-bold">{t('proposals.title', 'Smart Home Proposals')}</h1>
             <p className="text-sm text-slate-400 mt-1">
-              Manage customer smart home proposals &middot; {pagination.total} total
+              {t('proposals.subtitle', 'Manage customer smart home proposals · {{total}} total', { total: pagination.total })}
             </p>
           </div>
           <Link to="/admin" className="text-sm text-indigo-400 hover:text-indigo-300">
-            &larr; Back to Dashboard
+            &larr; {t('proposals.backToDashboard', 'Back to Dashboard')}
           </Link>
         </div>
 
         {/* Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-4">
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">Status</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('orders.status')}</label>
             <select value={filters.status} onChange={(e) => updateFilter("status", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white">
-              <option value="">All Statuses</option>
+              <option value="">{t('proposals.allStatuses', 'All Statuses')}</option>
               {STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{t(STATUS_KEYS[s], s)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">Search</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('common.search')}</label>
             <input type="text" value={filters.search} onChange={(e) => updateFilter("search", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white"
-              placeholder="Proposal / name / email / phone / city" />
+              placeholder={t('proposals.searchPlaceholder', 'Proposal / name / email / phone / city')} />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">Home Type</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('planner.homeType')}</label>
             <select value={filters.home_type} onChange={(e) => updateFilter("home_type", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white">
-              <option value="">All Types</option>
+              <option value="">{t('proposals.allTypes', 'All Types')}</option>
               {HOME_TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">Sort</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('proposals.sort', 'Sort')}</label>
             <select value={filters.sort} onChange={(e) => updateFilter("sort", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white">
-              <option value="latest">Latest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="proposal_number">Proposal Number</option>
+              <option value="latest">{t('proposals.sortLatest', 'Latest First')}</option>
+              <option value="oldest">{t('proposals.sortOldest', 'Oldest First')}</option>
+              <option value="proposal_number">{t('proposals.sortProposalNumber', 'Proposal Number')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">From</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('proposals.fromDate', 'From')}</label>
             <input type="date" value={filters.date_from} onChange={(e) => updateFilter("date_from", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white" />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">To</label>
+            <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider">{t('proposals.toDate', 'To')}</label>
             <input type="date" value={filters.date_to} onChange={(e) => updateFilter("date_to", e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white" />
           </div>
           <div className="flex items-end gap-2">
             <button type="button" onClick={applyFilters}
               className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition">
-              Apply
+              {t('common.apply')}
             </button>
             <button type="button" onClick={clearFilters}
               className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 transition">
-              Clear
+              {t('common.clear')}
             </button>
           </div>
         </div>
@@ -179,23 +195,23 @@ export default function SmartHomeProposals() {
           <table className="w-full text-sm">
             <thead className="bg-slate-900/60">
               <tr>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Proposal</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Customer</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Contact</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">City</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Home Type</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider text-center">Step</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Cost</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Date</th>
-                <th className="text-right px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">Actions</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colProposal', 'Proposal')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colCustomer', 'Customer')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colContact', 'Contact')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('planner.city')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('planner.homeType')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider text-center">{t('proposals.colStep', 'Step')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colCost', 'Cost')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('orders.status')}</th>
+                <th className="text-left px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colDate', 'Date')}</th>
+                <th className="text-right px-4 py-3 text-[10px] text-slate-400 uppercase tracking-wider">{t('proposals.colActions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-500">Loading proposals...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-500">{t('proposals.loading', 'Loading proposals...')}</td></tr>
               ) : proposals.length === 0 ? (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-500">No proposals found</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-500">{t('proposals.empty', 'No proposals found')}</td></tr>
               ) : (
                 proposals.map((p) => (
                   <tr key={p.id} className="border-t border-slate-800 hover:bg-slate-900/30 transition-colors">
@@ -222,7 +238,7 @@ export default function SmartHomeProposals() {
                       <select value={p.status} onChange={(e) => handleStatusChange(p.id, e.target.value)}
                         className={`text-[11px] px-2 py-1 rounded-lg border font-medium ${getStatusBadge(p.status)}`}>
                         {STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
+                          <option key={s} value={s}>{t(STATUS_KEYS[s], s)}</option>
                         ))}
                       </select>
                     </td>
@@ -232,7 +248,7 @@ export default function SmartHomeProposals() {
                     <td className="px-4 py-3 text-right">
                       <button onClick={() => navigate(`/admin/smart-home-proposals/${p.id}`)}
                         className="text-indigo-400 hover:text-indigo-300 text-xs font-medium transition-colors">
-                        View &rarr;
+                        {t('proposals.view', 'View')} &rarr;
                       </button>
                     </td>
                   </tr>
@@ -246,7 +262,7 @@ export default function SmartHomeProposals() {
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800/60">
             <span className="text-xs text-slate-500">
-              Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+              {t('proposals.pageOf', 'Page {{page}} of {{totalPages}} ({{total}} total)', { page: pagination.page, totalPages: pagination.totalPages, total: pagination.total })}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -254,7 +270,7 @@ export default function SmartHomeProposals() {
                 disabled={pagination.page <= 1}
                 className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &larr; Prev
+                &larr; {t('common.previous')}
               </button>
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 const startPage = Math.max(1, Math.min(pagination.page - 2, pagination.totalPages - 4));
@@ -279,7 +295,7 @@ export default function SmartHomeProposals() {
                 disabled={pagination.page >= pagination.totalPages}
                 className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                Next &rarr;
+                {t('common.next')} &rarr;
               </button>
             </div>
           </div>

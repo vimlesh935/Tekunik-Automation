@@ -16,6 +16,7 @@ import {
 import { authService } from "../services/api";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useTranslation } from "react-i18next";
+import { getErrorMessage } from "../utils/backendMessageMapper";
 import AuthInput from "../components/AuthInput.jsx";
 import ValidatedEmailInput from "../components/ValidatedEmailInput.jsx";
 import { usePincodeLookup } from "../hooks/usePincodeLookup.js";
@@ -190,7 +191,7 @@ export default function Register() {
     } catch (err) {
       setError(err.message === "Failed to fetch"
         ? t("auth.cannotConnect")
-        : err.message || t("auth.registrationFailed"));
+        : getErrorMessage(err, t, "auth.registrationFailed"));
     } finally { setLoading(false); }
   };
 
@@ -414,7 +415,7 @@ export default function Register() {
                 <Appear delay={460} style={{ marginBottom: 16 }}>
                   <AuthInput label={t("auth.address")} as="textarea" value={form.address}
                     onChange={(e) => updateField("address", e.target.value)}
-                    placeholder="Street address" icon={Icons.pin} />
+                    placeholder={t("auth.address")} icon={Icons.pin} />
                 </Appear>
 
                 <Appear delay={500} style={{ marginBottom: 16 }}>
@@ -468,10 +469,10 @@ export default function Register() {
                   <div className="reg-row">
                   <AuthInput label={t("auth.password")} type="password" value={form.password}
                     onChange={(e) => updateField("password", e.target.value)}
-                    placeholder="Min 6 characters" icon={Icons.lock} showPasswordToggle />
+                    placeholder={t("auth.passwordMinLength")} icon={Icons.lock} showPasswordToggle />
                   <AuthInput label={t("auth.confirmPassword")} type="password" value={form.confirm_password}
                     onChange={(e) => updateField("confirm_password", e.target.value)}
-                    placeholder="Re-enter password" icon={Icons.lock} showPasswordToggle />
+                    placeholder={t("auth.confirmPassword")} icon={Icons.lock} showPasswordToggle />
                   </div>
                 </Appear>
 

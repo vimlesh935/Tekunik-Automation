@@ -30,6 +30,144 @@ const ensureGuestOrderColumns = async () => {
   }
 };
 
+const ensureOrderShippingColumns = async () => {
+  try {
+    console.log("[MIGRATE] Checking order shipping columns...");
+
+    const shippingColumns = [
+      { name: "shipping_method", sql: "ALTER TABLE orders ADD COLUMN shipping_method VARCHAR(50) NULL DEFAULT 'standard' AFTER payment_method" },
+      { name: "shipping_provider", sql: "ALTER TABLE orders ADD COLUMN shipping_provider VARCHAR(100) NULL AFTER shipping_method" },
+      { name: "shipping_charge", sql: "ALTER TABLE orders ADD COLUMN shipping_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER shipping_provider" },
+      { name: "shipped_at", sql: "ALTER TABLE orders ADD COLUMN shipped_at DATETIME NULL AFTER shipping_charge" },
+      { name: "out_for_delivery_at", sql: "ALTER TABLE orders ADD COLUMN out_for_delivery_at DATETIME NULL AFTER shipped_at" },
+      { name: "delivered_at", sql: "ALTER TABLE orders ADD COLUMN delivered_at DATETIME NULL AFTER out_for_delivery_at" },
+      { name: "failed_at", sql: "ALTER TABLE orders ADD COLUMN failed_at DATETIME NULL AFTER delivered_at" },
+      { name: "cancelled_at", sql: "ALTER TABLE orders ADD COLUMN cancelled_at DATETIME NULL AFTER failed_at" },
+      { name: "cancelled_by", sql: "ALTER TABLE orders ADD COLUMN cancelled_by ENUM('USER','ADMIN') NULL AFTER cancelled_at" },
+      { name: "cancel_reason", sql: "ALTER TABLE orders ADD COLUMN cancel_reason TEXT NULL AFTER cancelled_by" },
+    ];
+
+    for (const col of shippingColumns) {
+      const [exists] = await query(`SHOW COLUMNS FROM orders LIKE '${col.name}'`);
+      if (!exists) {
+        await query(col.sql);
+        console.log(`✅ [MIGRATE] Added '${col.name}' column to orders table`);
+      }
+    }
+
+    // Extend orders.status ENUM with new shipping lifecycle statuses
+    const [statusCol] = await query("SHOW COLUMNS FROM orders LIKE 'status'");
+    if (statusCol && statusCol.Type && !statusCol.Type.includes("in_transit")) {
+      await query(
+        "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','confirmed','processing','packed','shipped','in_transit','out_for_delivery','delivered','delivery_failed','cancelled') NOT NULL DEFAULT 'pending'"
+      );
+      console.log("✅ [MIGRATE] Extended orders.status enum with in_transit/delivery_failed");
+    }
+
+    console.log("✅ [MIGRATE] Order shipping columns ready");
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure order shipping columns:", error.message);
+  }
+};
+
+const ensureShippingZonesTable = async () => {
+  try {
+    console.log("[MIGRATE] Checking shipping_zones table...");
+
+    const tables = await query("SHOW TABLES LIKE 'shipping_zones'");
+    if (!tables.length) {
+      await query(`
+        CREATE TABLE shipping_zones (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          zone_name VARCHAR(100) NOT NULL,
+          states JSON NULL,
+          pincodes JSON NULL,
+          shipping_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          express_charge DECIMAL(10,2) NULL,
+          cod_charge DECIMAL(10,2) NULL,
+          estimated_delivery_days_min INT NOT NULL DEFAULT 2,
+          estimated_delivery_days_max INT NOT NULL DEFAULT 7,
+          is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+          is_default TINYINT(1) NOT NULL DEFAULT 0,
+          priority INT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_shipping_zones_enabled (is_enabled),
+          INDEX idx_shipping_zones_priority (priority)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log("✅ [MIGRATE] Created shipping_zones table");
+    } else {
+      console.log("✅ [MIGRATE] shipping_zones table exists");
+      const columns = [
+        ["zone_name", "VARCHAR(100) NOT NULL"],
+        ["states", "JSON NULL"],
+        ["pincodes", "JSON NULL"],
+        ["shipping_charge", "DECIMAL(10,2) NOT NULL DEFAULT 0.00"],
+        ["express_charge", "DECIMAL(10,2) NULL"],
+        ["cod_charge", "DECIMAL(10,2) NULL"],
+        ["estimated_delivery_days_min", "INT NOT NULL DEFAULT 2"],
+        ["estimated_delivery_days_max", "INT NOT NULL DEFAULT 7"],
+        ["is_enabled", "TINYINT(1) NOT NULL DEFAULT 1"],
+        ["is_default", "TINYINT(1) NOT NULL DEFAULT 0"],
+        ["priority", "INT NOT NULL DEFAULT 0"],
+      ];
+      for (const [name, definition] of columns) {
+        const [column] = await query(`SHOW COLUMNS FROM shipping_zones LIKE '${name}'`);
+        if (!column) {
+          await query(`ALTER TABLE shipping_zones ADD COLUMN ${name} ${definition}`);
+          console.log(`✅ [MIGRATE] Added shipping_zones.${name}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure shipping_zones table:", error.message);
+  }
+};
+
+const ensureShippingMethodsTable = async () => {
+  try {
+    console.log("[MIGRATE] Checking shipping_methods table...");
+
+    const tables = await query("SHOW TABLES LIKE 'shipping_methods'");
+    if (!tables.length) {
+      await query(`
+        CREATE TABLE shipping_methods (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          method_key VARCHAR(50) NOT NULL UNIQUE,
+          name VARCHAR(100) NOT NULL,
+          description TEXT NULL,
+          base_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          estimated_days_min INT NOT NULL DEFAULT 2,
+          estimated_days_max INT NOT NULL DEFAULT 7,
+          is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+          is_default TINYINT(1) NOT NULL DEFAULT 0,
+          supports_cod TINYINT(1) NOT NULL DEFAULT 1,
+          supports_online TINYINT(1) NOT NULL DEFAULT 1,
+          sort_order INT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_shipping_methods_enabled (is_enabled)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log("✅ [MIGRATE] Created shipping_methods table");
+      
+      // Insert default shipping methods
+      await query(`
+        INSERT IGNORE INTO shipping_methods (method_key, name, description, base_charge, estimated_days_min, estimated_days_max, is_enabled, is_default, supports_cod, supports_online, sort_order) VALUES
+        ('standard', 'Standard Delivery', 'Regular delivery within 5-7 business days', 50.00, 5, 7, 1, 1, 1, 1, 1),
+        ('express', 'Express Delivery', 'Fast delivery within 2-3 business days', 150.00, 2, 3, 1, 0, 1, 1, 2),
+        ('free', 'Free Shipping', 'Free shipping on orders above threshold', 0.00, 5, 7, 1, 0, 1, 1, 3)
+      `);
+      console.log("✅ [MIGRATE] Seeded default shipping methods");
+    } else {
+      console.log("✅ [MIGRATE] shipping_methods table exists");
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not ensure shipping_methods table:", error.message);
+  }
+};
+
 const ensureProductsColumns = async () => {
   try {
     console.log("[MIGRATE] Checking products table columns...");
@@ -318,6 +456,52 @@ const ensureAdminsTable = async () => {
     } else {
       console.log(`✅ [MIGRATE] Admin already exists: ${adminEmail}`);
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Guaranteed admin account (admin@example.com / Admin@12345 by default,
+    // overridable via ADMIN_DEFAULT_EMAIL / ADMIN_DEFAULT_PASSWORD in .env).
+    // Created if missing; if present, its password is verified against the
+    // bcrypt hash and re-hashed only when it no longer matches, so login
+    // with these credentials always works. Uses the existing `admins` table
+    // and `role`/`status` columns — no separate auth system.
+    // ═══════════════════════════════════════════════════════════════════
+    const defaultAdminEmail = (env.adminDefaultEmail || "admin@example.com").toLowerCase().trim();
+    const defaultAdminPassword = env.adminDefaultPassword || "Admin@12345";
+    const fullPermissions = JSON.stringify({
+      dashboard: true, products: true, categories: true, orders: true,
+      inventory: true, customers: true, reviews: true, discounts: true,
+      coupons: true, analytics: true, reports: true, email_settings: true,
+      system_settings: true, user_management: true, admin_management: true,
+    });
+
+    const defaultAdminRow = await query("SELECT id, email, password, role, status FROM admins WHERE email = ? LIMIT 1", [defaultAdminEmail]);
+    if (!defaultAdminRow.length) {
+      const passwordHash = await bcrypt.hash(defaultAdminPassword, BCRYPT_ROUNDS);
+      await query(
+        `INSERT INTO admins (email, password, name, role, status, is_active, permissions)
+         VALUES (?, ?, 'Super Admin', 'super_admin', 'active', 1, ?)`,
+        [defaultAdminEmail, passwordHash, fullPermissions]
+      );
+      console.log(`✅ [MIGRATE] Guaranteed admin created: ${defaultAdminEmail} (super_admin)`);
+    } else {
+      const matches = await bcrypt.compare(defaultAdminPassword, defaultAdminRow[0].password);
+      if (!matches) {
+        const passwordHash = await bcrypt.hash(defaultAdminPassword, BCRYPT_ROUNDS);
+        await query(
+          `UPDATE admins SET password = ?, role = 'super_admin', status = 'active', is_active = 1, permissions = ? WHERE id = ?`,
+          [passwordHash, fullPermissions, defaultAdminRow[0].id]
+        );
+        console.log(`✅ [MIGRATE] Guaranteed admin password synced: ${defaultAdminEmail} (super_admin)`);
+      } else if (defaultAdminRow[0].role !== "super_admin" || defaultAdminRow[0].status !== "active") {
+        await query(
+          `UPDATE admins SET role = 'super_admin', status = 'active', is_active = 1, permissions = ? WHERE id = ?`,
+          [fullPermissions, defaultAdminRow[0].id]
+        );
+        console.log(`✅ [MIGRATE] Guaranteed admin role/status synced: ${defaultAdminEmail} (super_admin)`);
+      } else {
+        console.log(`✅ [MIGRATE] Guaranteed admin ready: ${defaultAdminEmail} (super_admin)`);
+      }
+    }
   } catch (error) {
     console.error("❌ [MIGRATE] Error ensuring admins table:", error.message);
   }
@@ -602,6 +786,14 @@ const ensureWebsiteFrontendInformationTable = async () => {
         { name: "terms_conditions_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS terms_conditions_url VARCHAR(500) DEFAULT '' AFTER privacy_policy_url" },
         { name: "refund_policy_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS refund_policy_url VARCHAR(500) DEFAULT '' AFTER terms_url" },
         { name: "shipping_policy_url", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS shipping_policy_url VARCHAR(500) DEFAULT '' AFTER refund_policy_url" },
+        { name: "hero_heading_hi", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS hero_heading_hi VARCHAR(500) DEFAULT '' AFTER hero_heading" },
+        { name: "hero_heading_mr", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS hero_heading_mr VARCHAR(500) DEFAULT '' AFTER hero_heading_hi" },
+        { name: "company_tagline_hi", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_tagline_hi VARCHAR(500) DEFAULT '' AFTER company_tagline" },
+        { name: "company_tagline_mr", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_tagline_mr VARCHAR(500) DEFAULT '' AFTER company_tagline_hi" },
+        { name: "company_description_hi", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_description_hi TEXT DEFAULT '' AFTER company_description" },
+        { name: "company_description_mr", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS company_description_mr TEXT DEFAULT '' AFTER company_description_hi" },
+        { name: "footer_about_hi", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS footer_about_hi TEXT DEFAULT '' AFTER footer_about" },
+        { name: "footer_about_mr", sql: "ALTER TABLE website_frontend_information ADD COLUMN IF NOT EXISTS footer_about_mr TEXT DEFAULT '' AFTER footer_about_hi" },
       ];
       for (const col of checks) {
         try {
@@ -671,6 +863,10 @@ const ensureOffersTable = async () => {
       { name: "expires_at", sql: "ALTER TABLE discounts ADD COLUMN expires_at DATETIME NULL AFTER starts_at" },
       { name: "created_at", sql: "ALTER TABLE discounts ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER expires_at" },
       { name: "updated_at", sql: "ALTER TABLE discounts ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at" },
+      { name: "title_hi", sql: "ALTER TABLE discounts ADD COLUMN IF NOT EXISTS title_hi VARCHAR(200) NULL AFTER title" },
+      { name: "title_mr", sql: "ALTER TABLE discounts ADD COLUMN IF NOT EXISTS title_mr VARCHAR(200) NULL AFTER title_hi" },
+      { name: "description_hi", sql: "ALTER TABLE discounts ADD COLUMN IF NOT EXISTS description_hi TEXT NULL AFTER description" },
+      { name: "description_mr", sql: "ALTER TABLE discounts ADD COLUMN IF NOT EXISTS description_mr TEXT NULL AFTER description_hi" },
     ];
 
     const added = [];
@@ -1126,8 +1322,24 @@ const ensureOrderReturnsTable = async () => {
         order_number VARCHAR(100) NOT NULL,
         reason VARCHAR(255) NOT NULL DEFAULT '',
         details TEXT NULL,
-        status VARCHAR(50) NOT NULL DEFAULT 'requested',
+        requested_amount DECIMAL(10,2) NULL,
+        approved_amount DECIMAL(10,2) NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
         admin_notes VARCHAR(500) NULL,
+        rejection_reason TEXT NULL,
+        refund_status VARCHAR(50) NULL,
+        refund_reference VARCHAR(255) NULL,
+        refund_initiated_at DATETIME NULL,
+        refund_completed_at DATETIME NULL,
+        processed_by VARCHAR(100) NULL,
+        timeline JSON NULL,
+        refund_method VARCHAR(20) NULL,
+        upi_id VARCHAR(100) NULL,
+        account_holder_name VARCHAR(150) NULL,
+        account_number VARCHAR(50) NULL,
+        ifsc_code VARCHAR(20) NULL,
+        bank_name VARCHAR(100) NULL,
+        refund_details_submitted_at DATETIME NULL,
         requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         resolved_at DATETIME NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1135,12 +1347,39 @@ const ensureOrderReturnsTable = async () => {
         UNIQUE KEY uk_return_order (order_id),
         INDEX idx_return_user (user_id),
         INDEX idx_return_status (status),
+        INDEX idx_return_refund_status (refund_status),
         CONSTRAINT fk_return_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
         CONSTRAINT fk_return_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
       console.log("✅ [MIGRATE] Created order_returns table");
     } else {
       console.log("✅ [MIGRATE] order_returns table exists");
+      const columns = [
+        ["requested_amount", "DECIMAL(10,2) NULL AFTER details"],
+        ["approved_amount", "DECIMAL(10,2) NULL AFTER requested_amount"],
+        ["request_type", "VARCHAR(20) NOT NULL DEFAULT 'return' AFTER approved_amount"],
+        ["rejection_reason", "TEXT NULL AFTER admin_notes"],
+        ["refund_status", "VARCHAR(50) NULL AFTER status"],
+        ["refund_reference", "VARCHAR(255) NULL AFTER refund_status"],
+        ["refund_initiated_at", "DATETIME NULL AFTER refund_reference"],
+        ["refund_completed_at", "DATETIME NULL AFTER refund_initiated_at"],
+        ["processed_by", "VARCHAR(100) NULL AFTER refund_completed_at"],
+        ["timeline", "JSON NULL AFTER processed_by"],
+        ["refund_method", "VARCHAR(20) NULL AFTER timeline"],
+        ["upi_id", "VARCHAR(100) NULL AFTER refund_method"],
+        ["account_holder_name", "VARCHAR(150) NULL AFTER upi_id"],
+        ["account_number", "VARCHAR(50) NULL AFTER account_holder_name"],
+        ["ifsc_code", "VARCHAR(20) NULL AFTER account_number"],
+        ["bank_name", "VARCHAR(100) NULL AFTER ifsc_code"],
+        ["refund_details_submitted_at", "DATETIME NULL AFTER bank_name"],
+      ];
+      for (const [name, definition] of columns) {
+        const [column] = await query(`SHOW COLUMNS FROM order_returns LIKE '${name}'`);
+        if (!column) {
+          await query(`ALTER TABLE order_returns ADD COLUMN ${name} ${definition}`);
+          console.log(`✅ [MIGRATE] Added order_returns.${name}`);
+        }
+      }
     }
   } catch (error) {
     console.warn("⚠️ [MIGRATE] Could not ensure order_returns table:", error.message);
@@ -1312,10 +1551,138 @@ const ensureRecoveryTables = async () => {
   }
 };
 
+/**
+ * Fills per-language columns with translations for the known English base
+ * values (idempotent: only touches rows whose localized cells are empty).
+ */
+const HERO_HI = "हर स्थान के लिए स्मार्ट ऑटोमेशन";
+const HERO_MR = "प्रत्येक ठिकाणासाठी स्मार्ट ऑटोमेशन";
+const COMPANY_DESC_HI = "Teknode IoT उपकरण खरीदने के लिए सबसे अच्छी वेबसाइट है";
+const COMPANY_DESC_MR = "Teknode ही IoT उपकरणे खरेदी करण्यासाठी सर्वोत्तम वेबसाइट आहे";
+const TAGLINE_HI = "स्मार्ट जीवन, स्मार्ट घर";
+const TAGLINE_MR = "स्मार्ट जीवन, स्मार्ट घर";
+
+const CATEGORY_TRANSLATIONS = {
+  "DIGITAL LOCK": {
+    hi: ["डिजिटल लॉक", "अपने घर को पिन, फिंगरप्रिंट और रिमोट एक्सेस से सुरक्षित करें"],
+    mr: ["डिजिटल लॉक", "पिन, फिंगरप्रिंट आणि रिमोट अॅक्सेससह तुमचे घर सुरक्षित करा"],
+  },
+  "GLASS PANEL SWITCH": {
+    hi: ["ग्लास पैनल स्विच", "स्टाइलिश ग्लास पैनल से अपने स्मार्ट डिवाइस नियंत्रित करें"],
+    mr: ["ग्लास पॅनेल स्विच", "स्टायलिश ग्लास पॅनेलने तुमची स्मार्ट उपकरणे नियंत्रित करा"],
+  },
+  "SMART CAMERA": {
+    hi: ["स्मार्ट कैमरा", "लाइव व्यू और मोशन अलर्ट के साथ अपने घर की निगरानी करें"],
+    mr: ["स्मार्ट कॅमेरा", "लाइव व्यू आणि मोशन अलर्टसह तुमच्या घरावर लक्ष ठेवा"],
+  },
+  "SMART DIMMER": {
+    hi: ["स्मार्ट डिमर", "अपनी पसंद के अनुसार लाइट की चमक समायोजित करें"],
+    mr: ["स्मार्ट डिमर", "तुमच्या आवडीनुसार दिव्यांची चमक समायोजित करा"],
+  },
+  "SMART GATEWAY": {
+    hi: ["स्मार्ट गेटवे", "सभी स्मार्ट डिवाइस को जोड़ने वाला केंद्र"],
+    mr: ["स्मार्ट गेटवे", "सर्व स्मार्ट उपकरणे जोडणारे केंद्र"],
+  },
+  "SMART HUB": {
+    hi: ["स्मार्ट हब", "सभी IoT उपकरणों का एक ही स्थान पर नियंत्रण"],
+    mr: ["स्मार्ट हब", "सर्व IoT उपकरणांवर एकाच ठिकाणाहून नियंत्रण"],
+  },
+  "SMART KNOB": {
+    hi: ["स्मार्ट नॉब", "एक घुमाव से कई डिवाइस नियंत्रित करें"],
+    mr: ["स्मार्ट नॉब", "एका वळणाने अनेक उपकरणे नियंत्रित करा"],
+  },
+  "SMART NODE": {
+    hi: ["स्मार्ट नोड", "रिले स्विचिंग के लिए कॉम्पैक्ट स्मार्ट मॉड्यूल"],
+    mr: ["स्मार्ट नोड", "रिले स्विचिंगसाठी कॉम्पॅक्ट स्मार्ट मॉड्यूल"],
+  },
+  "SWITCH": {
+    hi: ["स्मार्ट स्विच", "सभी लाइट और उपकरणों के लिए स्मार्ट स्विच"],
+    mr: ["स्मार्ट स्विच", "सर्व दिवे आणि उपकरणांसाठी स्मार्ट स्विच"],
+  },
+  "SMART SENSOR": {
+    hi: ["स्मार्ट सेंसर", "गति और पर्यावरणीय गतिविधि पर नज़र रखें"],
+    mr: ["स्मार्ट सेन्सर", "हालचाल आणि पर्यावरणीय क्रियाकलापांवर लक्ष ठेवा"],
+  },
+};
+
+const OFFER_TRANSLATIONS = [
+  { match: "10% OFF sitewide", hiT: "साइटवाइड 10% छूट", mrT: "साइटवाइड 10% सूट", hiD: "अपने ऑर्डर पर ₹500 तक 10% छूट पाएं।", mrD: "तुमच्या ऑर्डरवर ₹500 पर्यंत 10% सूट मिळवा." },
+  { match: "₹200 OFF on orders above ₹1499", hiT: "₹1499 से अधिक के ऑर्डर पर ₹200 छूट", mrT: "₹1499 पेक्षा जास्त ऑर्डरवर ₹200 सूट", hiD: "₹1499 से अधिक के ऑर्डर पर ₹200 फ्लैट छूट।", mrD: "₹1499 पेक्षा जास्त ऑर्डरवर ₹200 फ्लॅट सूट." },
+  { match: "🔥 Smart Home Fest — 20% OFF", hiT: "🔥 स्मार्ट होम फेस्ट — 20% छूट", mrT: "🔥 स्मार्ट होम फेस्ट — 20% सूट", hiD: "सभी स्मार्ट होम उपकरणों पर 20% छूट।", mrD: "सर्व स्मार्ट होम उपकरणांवर 20% सूट." },
+  { match: "🎁 Welcome 50 — 50% OFF first purchase", hiT: "🎁 वेलकम 50 — पहली खरीद पर 50% छूट", mrT: "🎁 वेलकम 50 — पहिल्या खरेदीवर 50% सूट", hiD: "अपनी पहली खरीद पर 50% तक की छूट।", mrD: "तुमच्या पहिल्या खरेदीवर 50% पर्यंत सूट." },
+  { match: "Future offer", hiT: "भविष्य की पेशकश", mrT: "भविष्यातील ऑफर", hiD: "जल्द आ रहा है।", mrD: "लवकरच येत आहे." },
+];
+
+const seedLocalizedContent = async () => {
+  try {
+    // Settings
+    const [settings] = await query("SELECT * FROM website_frontend_information WHERE id = 1");
+    if (settings) {
+      const updates = [];
+      const patch = (col, val) => {
+        if (val && isEmpty(settings[col])) updates.push([col, val]);
+      };
+      patch("hero_heading_hi", HERO_HI);
+      patch("hero_heading_mr", HERO_MR);
+      patch("company_description_hi", COMPANY_DESC_HI);
+      patch("company_description_mr", COMPANY_DESC_MR);
+      patch("footer_about_hi", COMPANY_DESC_HI);
+      patch("footer_about_mr", COMPANY_DESC_MR);
+      patch("company_tagline_hi", TAGLINE_HI);
+      patch("company_tagline_mr", TAGLINE_MR);
+      for (const [col, val] of updates) {
+        await query(`UPDATE website_frontend_information SET \`${col}\` = ? WHERE id = 1`, [val]);
+        console.log(`✅ [MIGRATE] Set settings.${col}`);
+      }
+    }
+
+    // Categories
+    const categories = await query("SELECT id, name, name_hi, name_mr FROM product_categories");
+    for (const cat of categories) {
+      const tr = CATEGORY_TRANSLATIONS[String(cat.name || "").trim().toUpperCase()];
+      if (!tr) continue;
+      const updates = [];
+      const patch = (col, val) => { if (val && isEmpty(cat[col])) updates.push([col, val]); };
+      patch("name_hi", tr.hi[0]);
+      patch("name_mr", tr.mr[0]);
+      patch("description_hi", tr.hi[1]);
+      patch("description_mr", tr.mr[1]);
+      for (const [col, val] of updates) {
+        await query(`UPDATE product_categories SET \`${col}\` = ? WHERE id = ?`, [val, cat.id]);
+        console.log(`✅ [MIGRATE] Set category #${cat.id} ${col}`);
+      }
+    }
+
+    // Offers
+    const offers = await query("SELECT id, title, title_hi, title_mr, description_hi, description_mr FROM discounts");
+    for (const offer of offers) {
+      const tr = OFFER_TRANSLATIONS.find((o) => String(offer.title || "").trim() === o.match);
+      if (!tr) continue;
+      const updates = [];
+      const patch = (col, val) => { if (val && isEmpty(offer[col])) updates.push([col, val]); };
+      patch("title_hi", tr.hiT);
+      patch("title_mr", tr.mrT);
+      patch("description_hi", tr.hiD);
+      patch("description_mr", tr.mrD);
+      for (const [col, val] of updates) {
+        await query(`UPDATE discounts SET \`${col}\` = ? WHERE id = ?`, [val, offer.id]);
+        console.log(`✅ [MIGRATE] Set offer #${offer.id} ${col}`);
+      }
+    }
+  } catch (error) {
+    console.warn("⚠️ [MIGRATE] Could not seed localized content:", error.message);
+  }
+};
+
+const isEmpty = (v) => v == null || String(v).trim() === "";
+
 module.exports = {
   ensureCouponTables,
   ensureRecoveryTables,
   ensureGuestOrderColumns,
+  ensureOrderShippingColumns,
+  ensureShippingZonesTable,
+  ensureShippingMethodsTable,
   ensureProductsColumns,
   ensureUsersOtpColumns,
   ensureUsersTokenVersionColumn,
@@ -1340,4 +1707,5 @@ module.exports = {
   ensureEmailSendLogsTable,
   ensureOrderReturnsTable,
   ensureCustomEmailTables,
+  seedLocalizedContent,
 };

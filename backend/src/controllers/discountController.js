@@ -88,11 +88,11 @@ const getDiscount = asyncHandler(async (req, res) => {
 
 /** POST /api/admin/discounts */
 const createDiscount = asyncHandler(async (req, res) => {
-  const { 
-    name, title, description, type, value, apply_to, product_ids, category_ids, 
+  const {
+    name, title, description, title_hi, title_mr, description_hi, description_mr, type, value, apply_to, product_ids, category_ids,
     min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target,
     display_order, starts_at, expires_at, is_active,
-    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
+    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days
   } = req.body;
 
   if (!name || !name.trim()) throw new AppError("Discount name is required", 400, "VALIDATION_ERROR");
@@ -110,12 +110,16 @@ const createDiscount = asyncHandler(async (req, res) => {
   }
 
   const result = await query(
-    `INSERT INTO discounts (name, title, description, type, value, apply_to, min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target, display_order, starts_at, expires_at, is_active, audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO discounts (name, title, description, title_hi, title_mr, description_hi, description_mr, type, value, apply_to, min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target, display_order, starts_at, expires_at, is_active, audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       name.trim(),
       title ? title.trim() : null,
       description ? description.trim() : null,
+      title_hi ? title_hi.trim() : null,
+      title_mr ? title_mr.trim() : null,
+      description_hi ? description_hi.trim() : null,
+      description_mr ? description_mr.trim() : null,
       type,
       parseFloat(value) || 0,
       apply_to || 'all',
@@ -161,11 +165,11 @@ const createDiscount = asyncHandler(async (req, res) => {
 /** PUT /api/admin/discounts/:id */
 const updateDiscount = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { 
-    name, title, description, type, value, apply_to, product_ids, category_ids, 
+  const {
+    name, title, description, title_hi, title_mr, description_hi, description_mr, type, value, apply_to, product_ids, category_ids,
     min_order_value, maximum_discount, banner_image, alt_text, cta_text, cta_type, cta_target,
     display_order, starts_at, expires_at, is_active,
-    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days 
+    audience, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days
   } = req.body;
 
   const existing = await query("SELECT id, value, new_user_only, coupon_generation, coupon_prefix, usage_limit, coupon_validity_days FROM discounts WHERE id = ?", [id]);
@@ -185,7 +189,7 @@ const updateDiscount = asyncHandler(async (req, res) => {
 
   await query(
     `UPDATE discounts
-     SET name = ?, title = ?, description = ?, type = ?, value = ?, apply_to = ?, min_order_value = ?,
+     SET name = ?, title = ?, description = ?, title_hi = ?, title_mr = ?, description_hi = ?, description_mr = ?, type = ?, value = ?, apply_to = ?, min_order_value = ?,
          maximum_discount = ?, banner_image = ?, alt_text = ?, cta_text = ?, cta_type = ?, cta_target = ?,
          display_order = ?, starts_at = ?, expires_at = ?, is_active = ?,
          audience = ?, new_user_only = ?, coupon_generation = ?, coupon_prefix = ?, usage_limit = ?, coupon_validity_days = ?
@@ -194,6 +198,10 @@ const updateDiscount = asyncHandler(async (req, res) => {
       name.trim(),
       title ? title.trim() : null,
       description ? description.trim() : null,
+      title_hi ? title_hi.trim() : null,
+      title_mr ? title_mr.trim() : null,
+      description_hi ? description_hi.trim() : null,
+      description_mr ? description_mr.trim() : null,
       type || "percentage",
       value !== undefined ? parseFloat(value) : 0,
       apply_to || 'all',

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const brands = [
   "Google Home",
@@ -12,11 +13,12 @@ const brands = [
 ];
 
 export default function TrustedBySection() {
+  const { t } = useTranslation();
   return (
     <section className="py-20 border-y border-border-color bg-background/50 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-6 mb-10 text-center">
         <p className="text-sm font-semibold tracking-wider text-text-secondary uppercase">
-          Trusted by Industry Leaders
+          {t('home.trustedByIndustryLeaders')}
         </p>
       </div>
 

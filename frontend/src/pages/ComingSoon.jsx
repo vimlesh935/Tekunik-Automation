@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 
@@ -54,6 +55,7 @@ function AppearingSquares() {
 }
 
 function Countdown() {
+  const { t } = useTranslation();
   const target = new Date("2026-09-01T00:00:00");
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -75,10 +77,10 @@ function Countdown() {
   return (
     <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
       {[
-        { label: "Days", value: time.days },
-        { label: "Hours", value: time.hours },
-        { label: "Minutes", value: time.minutes },
-        { label: "Seconds", value: time.seconds },
+        { label: t("comingSoon.days"), value: time.days },
+        { label: t("comingSoon.hours"), value: time.hours },
+        { label: t("comingSoon.minutes"), value: time.minutes },
+        { label: t("comingSoon.seconds"), value: time.seconds },
       ].map((unit) => (
         <motion.div
           key={unit.label}
@@ -115,6 +117,7 @@ function Countdown() {
 }
 
 export default function ComingSoon() {
+  const { t } = useTranslation();
   return (
     <div style={{
       minHeight: "100vh", background: BG, fontFamily: "'Space Grotesk', sans-serif",
@@ -145,7 +148,7 @@ export default function ComingSoon() {
           }}>
             <Zap size={16} style={{ color: CL }} />
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: MUTED, letterSpacing: "0.12em" }}>
-              Next-gen automation platform
+              {t('comingSoon.badge')}
             </span>
           </div>
         </motion.div>
@@ -172,12 +175,12 @@ export default function ComingSoon() {
             marginBottom: 16,
           }}
         >
-          Something{" "}
+          {t('comingSoon.something')}{" "}
           <span style={{
             background: `linear-gradient(135deg, ${VL}, ${CL})`,
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>extraordinary</span>
-          {" "}is coming
+          }}>{t('comingSoon.extraordinary')}</span>
+          {" "}{t('comingSoon.isComing')}
         </motion.h1>
 
         <motion.p
@@ -189,8 +192,7 @@ export default function ComingSoon() {
             maxWidth: 500, margin: "0 auto 48px",
           }}
         >
-          We're crafting a powerful automation platform that will transform how you work.
-          Stay tuned for the launch.
+          {t('comingSoon.desc')}
         </motion.p>
 
         <motion.div
@@ -220,7 +222,7 @@ export default function ComingSoon() {
             background: "#34D399", boxShadow: "0 0 6px #34D399",
             display: "inline-block",
           }} />
-          © {new Date().getFullYear()} Tek Node · Launching Soon
+          {t('comingSoon.launchingSoon', { year: new Date().getFullYear() })}
         </motion.div>
       </div>
     </div>

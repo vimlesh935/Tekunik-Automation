@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, X, Leaf } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const isOnlinePayment = (method) => {
   return method && method !== "cod";
 };
 
 export default function CancelSuccessMessage({ show, order, onClose, autoDismissMs = 8000 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!show || !autoDismissMs) return;
     const timer = setTimeout(onClose, autoDismissMs);
@@ -39,7 +41,7 @@ export default function CancelSuccessMessage({ show, order, onClose, autoDismiss
 
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                    Order Cancelled Successfully
+                    {t('cancelSuccess.title')}
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5 font-mono">
                     {orderNumber}
@@ -57,27 +59,25 @@ export default function CancelSuccessMessage({ show, order, onClose, autoDismiss
 
               <div className="mt-4 pl-0 sm:pl-16">
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Your order has been cancelled successfully.
+                  {t('cancelSuccess.orderCancelled')}
                 </p>
 
                 {isOnline ? (
                   <div className="mt-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
                     <p className="text-sm text-emerald-300 font-medium">
-                      Your refund has been initiated and will be credited to your
-                      original payment method within <span className="font-bold text-emerald-200">5–7 business days</span>,
-                      depending on your bank.
+                      {t('cancelSuccess.refundInitiated', { days: '5–7' })}
                     </p>
                     <p className="text-xs text-slate-400 mt-2">
-                      You will receive a confirmation once the refund is processed.
+                      {t('cancelSuccess.refundConfirmation')}
                     </p>
                   </div>
                 ) : (
                   <div className="mt-3 p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/50">
                     <p className="text-sm text-slate-300">
-                      Since this order was not prepaid, no refund is required.
+                      {t('cancelSuccess.noRefundRequired')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1.5">
-                      We hope to serve you again soon.
+                      {t('cancelSuccess.hopeToServeAgain')}
                     </p>
                   </div>
                 )}
@@ -85,7 +85,7 @@ export default function CancelSuccessMessage({ show, order, onClose, autoDismiss
                 <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
                   <Leaf size={12} className="text-emerald-500/60" />
                   <span>
-                    Thank you for choosing <span className="font-semibold text-slate-400">TekNode</span>.
+                    {t('cancelSuccess.thanksForChoosing', { brand: 'TekNode' })}
                   </span>
                 </div>
               </div>

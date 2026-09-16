@@ -19,30 +19,30 @@ import { useTranslation } from "react-i18next";
 const controls = [
   {
     id: "lights",
-    label: "Lights",
+    labelKey: "homeApp.controls.lights.label",
     onIcon: Lightbulb,
     offIcon: Lightbulb,
     accent: "251, 191, 36", // amber
-    onText: "Lights turned on",
-    offText: "Lights turned off",
+    onTextKey: "homeApp.controls.lights.on",
+    offTextKey: "homeApp.controls.lights.off",
   },
   {
     id: "doors",
-    label: "Front Door",
+    labelKey: "homeApp.controls.doors.label",
     onIcon: Lock,
     offIcon: Unlock,
     accent: "34, 197, 94", // emerald
-    onText: "Front door locked",
-    offText: "Front door unlocked",
+    onTextKey: "homeApp.controls.doors.on",
+    offTextKey: "homeApp.controls.doors.off",
   },
   {
     id: "camera",
-    label: "Living Room Cam",
+    labelKey: "homeApp.controls.camera.label",
     onIcon: Video,
     offIcon: VideoOff,
     accent: "244, 63, 94", // rose
-    onText: "Camera feed resumed",
-    offText: "Camera feed paused",
+    onTextKey: "homeApp.controls.camera.on",
+    offTextKey: "homeApp.controls.camera.off",
   },
 ];
 
@@ -57,7 +57,7 @@ export default function AppDownloadSection() {
   const toggle = (control) => {
     setState((prev) => {
       const next = !prev[control.id];
-      const message = next ? control.onText : control.offText;
+      const message = t(next ? control.onTextKey : control.offTextKey);
       const pulseId = `${control.id}-${Date.now()}`;
 
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -113,7 +113,7 @@ export default function AppDownloadSection() {
           </h2>
          
           <p className="max-w-lg font-mono text-xs uppercase tracking-wide text-text-secondary/60">
-            Tap the cards on the phone — every action here is live.
+            {t("homeApp.tapCards")}
           </p>
         </motion.div>
 
@@ -201,7 +201,10 @@ export default function AppDownloadSection() {
                     />
                   </div>
                   <p className="text-xs font-medium sm:text-sm">
-                    Lights {state.lights ? "On" : "Off"}
+                    {t("homeApp.deviceState", {
+                      device: t(controls[0].labelKey),
+                      state: state.lights ? t("homeApp.states.on") : t("homeApp.states.off"),
+                    })}
                   </p>
                 </motion.button>
 
@@ -235,7 +238,10 @@ export default function AppDownloadSection() {
                     )}
                   </div>
                   <p className="text-xs font-medium sm:text-sm">
-                    Doors {state.doors ? "Locked" : "Unlocked"}
+                    {t("homeApp.deviceState", {
+                      device: t(controls[1].labelKey),
+                      state: state.doors ? t("homeApp.states.locked") : t("homeApp.states.unlocked"),
+                    })}
                   </p>
                 </motion.button>
               </div>
@@ -268,12 +274,12 @@ export default function AppDownloadSection() {
                 )}
                 <div className="relative z-10 flex h-full flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium sm:text-sm">Living Room Cam</p>
+                    <p className="text-xs font-medium sm:text-sm">{t(controls[2].labelKey)}</p>
                     {state.camera ? (
                       <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-1">
                         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-400" />
                         <span className="text-[9px] font-semibold uppercase tracking-wider text-rose-300 sm:text-[10px]">
-                          Live
+                          {t("home.liveDemo")}
                         </span>
                       </span>
                     ) : (
@@ -281,7 +287,7 @@ export default function AppDownloadSection() {
                     )}
                   </div>
                   <p className="text-[10px] text-text-secondary sm:text-xs">
-                    {state.camera ? "4K · Streaming" : "Feed paused"}
+                    {state.camera ? t("homeApp.cameraStreaming") : t("homeApp.feedPaused")}
                   </p>
                 </div>
               </motion.button>

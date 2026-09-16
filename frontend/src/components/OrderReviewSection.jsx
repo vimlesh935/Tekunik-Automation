@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Star } from "lucide-react";
 import { reviewService } from "../services/api";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 
 export default function OrderReviewSection({ order, onReviewSubmit }) {
   const { t } = useTranslation();
@@ -105,7 +107,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
       setImageFile(null);
       if (onReviewSubmit) onReviewSubmit();
     } catch (err) {
-      alert(err.message || t('product.submitReview'));
+      alert(getErrorMessage(err, t, 'product.submitReview'));
     } finally {
       setSubmitting(false);
     }
@@ -144,7 +146,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
         <div key={item.product_id} className="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{item.product_name || `Product #${item.product_id}`}</p>
+              <p className="text-sm font-semibold text-white truncate">{item.product_name || t('product.itemFallback', { id: item.product_id })}</p>
               <p className="text-xs text-gray-500 mt-1">{t('common.qty')}: {item.quantity}</p>
             </div>
             {renderStatusBadge(item.product_id)}
@@ -169,7 +171,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                   value={reviewForm.review_title}
                   onChange={(e) => setReviewForm((prev) => ({ ...prev, review_title: e.target.value }))}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:border-cyan-500 outline-none"
-                  placeholder="Summarize your experience"
+                  placeholder={t('product.sampleReview')}
                 />
               </div>
               <div>
@@ -192,7 +194,7 @@ export default function OrderReviewSection({ order, onReviewSubmit }) {
                 />
                 {imagePreview && (
                   <div className="mt-2 relative inline-block">
-                    <img src={imagePreview} alt="Preview" loading="lazy" className="w-24 h-24 object-cover rounded-lg border border-gray-700" />
+                    <img src={imagePreview} alt={t('product.imagePreview')} loading="lazy" className="w-24 h-24 object-cover rounded-lg border border-gray-700" />
                     <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
                   </div>
                 )}

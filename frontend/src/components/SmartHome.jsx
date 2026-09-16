@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lightbulb, Thermometer, Blinds, Lock, Video, CalendarClock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Signature concept
@@ -18,63 +19,70 @@ import { Lightbulb, Thermometer, Blinds, Lock, Video, CalendarClock } from "luci
 const controlsData = [
   {
     id: "lights",
-    label: "Control Lights",
+    labelKey: "smartHome.controlLights",
     icon: Lightbulb,
     image:
       "https://i.pinimg.com/1200x/75/3b/61/753b619c49e1b03e2ed4fab126353551.jpg",
     status: "ON",
-    meta: "78% brightness",
+    statusKey: "smartHome.status.on",
+    metaKey: "smartHome.meta.brightness",
     accent: "251, 191, 36", // amber
   },
   {
     id: "ac",
-    label: "Control AC",
+    labelKey: "smartHome.controlAc",
     icon: Thermometer,
     image: "https://i.pinimg.com/736x/f1/fc/71/f1fc7139c996e652d8653a0f926dfcad.jpg",
     status: "24°C",
-    meta: "Auto mode",
+    statusKey: "smartHome.status.temperature",
+    metaKey: "smartHome.meta.autoMode",
     accent: "56, 189, 248", // sky
   },
   {
     id: "curtains",
-    label: "Control Curtains",
+    labelKey: "smartHome.controlCurtains",
     icon: Blinds,
     image: "https://i.pinimg.com/736x/a5/66/6a/a5666a9b5716d120a688f2a81534215f.jpg",
     status: "60%",
-    meta: "Open · east side",
+    statusKey: "smartHome.status.openPercent",
+    metaKey: "smartHome.meta.openEast",
     accent: "139, 92, 246", // violet
   },
   {
     id: "doors",
-    label: "Control Door Locks",
+    labelKey: "smartHome.controlDoorLocks",
     icon: Lock,
     image: "https://i.pinimg.com/736x/8e/cd/1c/8ecd1c9f6d479fd2627a65bae3ba9921.jpg",
     status: "LOCKED",
-    meta: "Front door secure",
+    statusKey: "smartHome.status.locked",
+    metaKey: "smartHome.meta.frontDoorSecure",
     accent: "34, 197, 94", // emerald
   },
   {
     id: "cameras",
-    label: "Monitor Cameras",
+    labelKey: "smartHome.monitorCameras",
     icon: Video,
     image: "https://i.pinimg.com/736x/ef/7e/75/ef7e75094f49be1ca257ba4b2b92eef7.jpg",
     status: "LIVE",
-    meta: "4 cameras streaming",
+    statusKey: "smartHome.status.live",
+    metaKey: "smartHome.meta.camerasStreaming",
     accent: "244, 63, 94", // rose
   },
   {
     id: "schedule",
-    label: "Schedule Automation",
+    labelKey: "smartHome.scheduleAutomation",
     icon: CalendarClock,
     image:
       "https://i.pinimg.com/1200x/9a/0c/ad/9a0cad3b73d108da0795a4ee72803fb5.jpg",
     status: "3",
-    meta: "Automations active",
+    statusKey: "smartHome.status.automationCount",
+    metaKey: "smartHome.meta.automationsActive",
     accent: "217, 70, 239", // fuchsia
   },
 ];
 
 export default function ExperienceSection() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(controlsData[0]);
   const isCam = activeTab.id === "cameras";
 
@@ -93,7 +101,7 @@ export default function ExperienceSection() {
             <motion.img
               key={activeTab.id}
               src={activeTab.image}
-              alt={activeTab.label}
+              alt={t(activeTab.labelKey)}
               initial={{ opacity: 0, scale: 1.06 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
@@ -139,7 +147,7 @@ export default function ExperienceSection() {
               }}
             />
             <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/70">
-              {isCam ? "Live feed" : "Live status"}
+              {isCam ? t("smartHome.liveFeed") : t("smartHome.liveStatus")}
             </span>
           </div>
 
@@ -156,10 +164,10 @@ export default function ExperienceSection() {
               >
                 <div className="min-w-0">
                   <h4 className="mb-0.5 truncate text-base font-bold sm:mb-1 sm:text-xl">
-                    {activeTab.label}
+                    {t(activeTab.labelKey)}
                   </h4>
                   <p className="truncate text-xs text-text-secondary sm:text-sm">
-                    {activeTab.meta}
+                    {t(activeTab.metaKey)}
                   </p>
                 </div>
                 <div
@@ -176,7 +184,7 @@ export default function ExperienceSection() {
                       style={{ background: `rgb(${activeTab.accent})` }}
                     />
                   )}
-                  {activeTab.status}
+                  {t(activeTab.statusKey)}
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -192,15 +200,13 @@ export default function ExperienceSection() {
         >
           <span className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-text-secondary/70">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            The Automate App
+            {t("smartHome.theAutomateApp")}
           </span>
           <h2 className="mb-4 text-3xl font-bold sm:mb-6 sm:text-4xl">
-            Smart Home Experience
+            {t("smartHome.experienceTitle")}
           </h2>
           <p className="mb-8 text-base text-text-secondary sm:mb-10 sm:text-lg">
-            Manage your entire home from a single intuitive interface. The
-            Automate app gives you unprecedented control and insight into
-            your living space.
+            {t("smartHome.experienceDesc")}
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
@@ -253,7 +259,7 @@ export default function ExperienceSection() {
                   </span>
 
                   <span className="relative z-10 truncate font-medium">
-                    {item.label}
+                    {t(item.labelKey)}
                   </span>
 
                   {isActive && (

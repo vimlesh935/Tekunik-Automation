@@ -22,9 +22,11 @@ import {
 } from "lucide-react";
 import SafeImage from "../components/SafeImage.jsx";
 import { formatCurrency } from "../utils/currency.js";
+import { useTranslation } from "react-i18next";
 import { calculateDiscount, hasDiscount } from "../utils/discount.js";
 
 export default function OrderConfirmation() {
+  const { t } = useTranslation();
   const location = useLocation();
   const order = location.state?.order;
   const { token } = useAuth();
@@ -105,56 +107,70 @@ export default function OrderConfirmation() {
   // Upgraded Status Configuration matching Premium Palette Architecture
   const statusConfig = {
     pending: {
-      label: "Pending",
+      label: t("orderConfirmation.statusPending"),
       bg: "bg-amber-400/10",
       border: "border-amber-400/30",
       text: "text-amber-400",
       dot: "bg-amber-400",
     },
     confirmed: {
-      label: "Order Confirmed",
+      label: t("orderConfirmation.statusConfirmed"),
       bg: "bg-indigo-600/10",
       border: "border-indigo-600/30",
       text: "text-indigo-400",
       dot: "bg-indigo-500",
     },
     processing: {
-      label: "Allocation Engine",
+      label: t("orderConfirmation.statusProcessing"),
       bg: "bg-indigo-600/10",
       border: "border-indigo-600/30",
       text: "text-indigo-400",
       dot: "bg-indigo-500",
     },
     packed: {
-      label: "Manifest Layer Ready",
+      label: t("orderConfirmation.statusPacked"),
       bg: "bg-indigo-600/10",
       border: "border-indigo-600/30",
       text: "text-indigo-400",
       dot: "bg-indigo-400",
     },
     shipped: {
-      label: "In Transit Route",
+      label: t("orderConfirmation.statusShipped"),
+      bg: "bg-indigo-600/10",
+      border: "border-indigo-600/30",
+      text: "text-indigo-400",
+      dot: "bg-indigo-400",
+    },
+    in_transit: {
+      label: t("orderConfirmation.statusInTransit"),
       bg: "bg-indigo-600/10",
       border: "border-indigo-600/30",
       text: "text-indigo-400",
       dot: "bg-indigo-400",
     },
     out_for_delivery: {
-      label: "Last-Mile Distribution",
+      label: t("orderConfirmation.statusOutForDelivery"),
       bg: "bg-amber-400/10",
       border: "border-amber-400/30",
       text: "text-amber-400",
       dot: "bg-amber-400",
     },
     delivered: {
-      label: "Fulfillment Complete",
+      label: t("orderConfirmation.statusDelivered"),
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/30",
       text: "text-emerald-400",
       dot: "bg-emerald-500",
     },
+    delivery_failed: {
+      label: t("orderConfirmation.statusDeliveryFailed"),
+      bg: "bg-red-500/10",
+      border: "border-red-500/30",
+      text: "text-red-400",
+      dot: "bg-red-500",
+    },
     cancelled: {
-      label: "Pipeline Terminated",
+      label: t("orderConfirmation.statusCancelled"),
       bg: "bg-red-500/10",
       border: "border-red-500/30",
       text: "text-red-400",
@@ -165,7 +181,7 @@ export default function OrderConfirmation() {
   const sc = statusConfig[status] || statusConfig.pending;
 
   const formatDate = (d) => {
-    if (!d) return "N/A";
+    if (!d) return t("common.na");
     try {
       return new Date(d).toLocaleDateString("en-IN", {
         year: "numeric",
@@ -214,10 +230,10 @@ export default function OrderConfirmation() {
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                  Thank you for your order
+                  {t("orderConfirmation.thankYou")}
                 </h1>
                 <p className="text-slate-400 text-sm mt-1.5 font-medium max-w-xl">
-                  Your platform request has been successfully finalized.
+                  {t("orderConfirmation.finalized")}
                 </p>
               </div>
             </div>
@@ -228,7 +244,7 @@ export default function OrderConfirmation() {
               <div className="relative bg-slate-900 rounded-2xl px-6 py-5 min-w-[280px] border border-slate-800/80 shadow-2xl">
                 <div className="flex items-center justify-between gap-4 mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Order Number
+                    {t("orderConfirmation.orderNumber")}
                   </span>
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${sc.bg} ${sc.border} ${sc.text}`}
@@ -247,7 +263,7 @@ export default function OrderConfirmation() {
                   <button
                     onClick={copyOrderNumber}
                     className="p-1.5 rounded-md bg-slate-900 hover:bg-indigo-600/20 text-slate-400 hover:text-indigo-400 border border-slate-800/80 hover:border-indigo-500/30 transition-all duration-300"
-                    title="Copy Order Number"
+                    title={t("orderConfirmation.copyOrderNumber")}
                   >
                     {copied ? (
                       <Check size={13} className="text-emerald-400" />
@@ -259,8 +275,8 @@ export default function OrderConfirmation() {
 
                 {created_at && (
                   <p className="text-[11px] text-slate-500 mt-3 font-semibold flex items-center gap-1.5 justify-end">
-                    <Clock size={12} className="text-slate-600" /> Order Date:{" "}
-                    {formatDate(created_at)}
+                    <Clock size={12} className="text-slate-600" />{" "}
+                    {t("orderConfirmation.orderDate")} {formatDate(created_at)}
                   </p>
                 )}
               </div>
@@ -270,9 +286,9 @@ export default function OrderConfirmation() {
           {/* Secure System Strip */}
           <div className="mt-8 pt-4 border-t border-slate-900/60 flex flex-wrap items-center gap-x-6 gap-y-3">
             {[
-              { icon: ShieldCheck, text: "SSL Secure Platform" },
-              { icon: Truck, text: "Within 5-6 days delivery" },
-              { icon: Mail, text: "Automated Email Invoice Sent" },
+              { icon: ShieldCheck, text: t("orderConfirmation.sslSecure") },
+              { icon: Truck, text: t("orderConfirmation.withinDelivery") },
+              { icon: Mail, text: t("orderConfirmation.automatedInvoice") },
             ].map(({ icon: Icon, text }) => (
               <div
                 key={text}
@@ -300,14 +316,14 @@ export default function OrderConfirmation() {
               <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-800/50 bg-slate-900/50">
                 <MapPin size={16} className="text-indigo-400" />
                 <h2 className="text-xs font-black text-white uppercase tracking-wider">
-                  Personal Information
+                  {t("orderConfirmation.personalInfo")}
                 </h2>
               </div>
               <div className="p-6">
                 <div className="grid gap-6 sm:grid-cols-2 mb-6">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                      Name
+                      {t("orderConfirmation.name")}
                     </p>
                     <div className="flex items-center gap-3 bg-slate-950 border border-slate-800/80 rounded-xl p-3">
                       <div className="w-9 h-9 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
@@ -320,7 +336,7 @@ export default function OrderConfirmation() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                      Name and Email
+                      {t("orderConfirmation.nameAndEmail")}
                     </p>
                     <div className="space-y-1.5 bg-slate-950 border border-slate-800/80 rounded-xl p-3 h-[62px] flex flex-col justify-center">
                       {guest_email && (
@@ -340,7 +356,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 relative">
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                    User Address
+                    {t("orderConfirmation.userAddress")}
                   </p>
                   <p className="text-sm text-slate-200 font-medium leading-relaxed">
                     {delivery_address || "—"}
@@ -361,7 +377,7 @@ export default function OrderConfirmation() {
               <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-800/50 bg-slate-900/50">
                 <Package size={16} className="text-indigo-400" />
                 <h2 className="text-xs font-black text-white uppercase tracking-wider">
-                  Order Information
+                  {t("orderConfirmation.orderInformation")}
                 </h2>
               </div>
 
@@ -397,7 +413,7 @@ export default function OrderConfirmation() {
                           {item.product_name}
                         </p>
                         <p className="text-xs text-slate-400 font-medium mt-1 font-mono">
-                          QTY{" "}
+                          {t("orderConfirmation.qty")}{" "}
                           <span className="text-indigo-400 font-bold">
                             {item.quantity}
                           </span>{" "}
@@ -426,14 +442,14 @@ export default function OrderConfirmation() {
               {/* Aggregation Frame Block */}
               <div className="px-6 py-5 border-t border-slate-800/60 bg-slate-950/40 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-400">Subtotal Amount</span>
+                  <span className="text-slate-400">{t("orderConfirmation.subtotalAmount")}</span>
                   <span className="font-bold text-slate-200 font-mono">
                     {formatCurrency(subtotal)}
                   </span>
                 </div>
                 {totalSavings > 0 && (
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-emerald-400">You Save</span>
+                    <span className="text-emerald-400">{t("orderConfirmation.youSave")}</span>
                     <span className="font-semibold text-emerald-400">
                       -{formatCurrency(totalSavings)}
                     </span>
@@ -441,15 +457,15 @@ export default function OrderConfirmation() {
                 )}
                 <div className="flex items-center justify-between text-xs font-semibold">
                   <span className="text-slate-400">
-                    Delivery Amount
+                    {t("orderConfirmation.deliveryAmount")}
                   </span>
                   <span className="font-black text-amber-400 tracking-wider text-[10px] bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                    FREE FREIGHT
+                    {t("orderConfirmation.freeFreight")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-800/60">
                   <span className="text-sm font-black text-white uppercase tracking-wider">
-                    Total Amount
+                    {t("orders.totalAmount")}
                   </span>
                   <span className="text-xl font-black text-indigo-400 font-mono drop-shadow-[0_0_15px_rgba(129,140,248,0.2)]">
                     {formatCurrency(total_amount)}
@@ -476,10 +492,10 @@ export default function OrderConfirmation() {
                 </div>
                 <div>
                   <p className="text-sm font-black text-white tracking-tight">
-                    Doorstep delivery
+                    {t("orderConfirmation.doorstepDelivery")}
                   </p>
                   <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                    Track your order
+                    {t("orderConfirmation.trackYourOrder")}
                   </p>
                 </div>
               </div>
@@ -494,20 +510,20 @@ export default function OrderConfirmation() {
               <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-800/50 bg-slate-900/50">
                 <CreditCard size={15} className="text-indigo-400" />
                 <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                  Payment Details
+                  {t("orderConfirmation.paymentDetails")}
                 </h3>
               </div>
               <div className="p-5 space-y-3.5 font-medium">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Payment Method</span>
+                  <span className="text-slate-400">{t("orderConfirmation.paymentMethod")}</span>
                   <span className="font-bold text-slate-200">
                     {payment_method === "online"
-                      ? "Online"
-                      : "Cash Settlement Layer"}
+                      ? t("orderConfirmation.online")
+                      : t("orderConfirmation.cashSettlement")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Payment Status</span>
+                  <span className="text-slate-400">{t("orderConfirmation.paymentStatus")}</span>
                   <span
                     className={`font-bold px-2.5 py-0.5 rounded-md text-[11px] border ${
                       payment_status === "paid"
@@ -515,11 +531,11 @@ export default function OrderConfirmation() {
                         : "bg-amber-400/10 border-amber-400/30 text-amber-400"
                     }`}
                   >
-                    {payment_status === "paid" ? "Paid" : "Pending Sync"}
+                    {payment_status === "paid" ? t("orderConfirmation.paid") : t("orderConfirmation.pendingSync")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-400">Total Amount</span>
+                  <span className="text-slate-400">{t("orders.totalAmount")}</span>
                   <span className="font-bold text-indigo-400 font-mono">
                     {formatCurrency(total_amount)}
                   </span>
@@ -531,7 +547,7 @@ export default function OrderConfirmation() {
 
                 {invoice_number && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Invoice Number</span>
+                    <span className="text-slate-400">{t("orderConfirmation.invoiceNumber")}</span>
                     <span className="font-mono text-[11px] font-bold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded">
                       {invoice_number}
                     </span>
@@ -539,7 +555,7 @@ export default function OrderConfirmation() {
                 )}
                 {tracking_number && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Tracking Number</span>
+                    <span className="text-slate-400">{t("orderConfirmation.trackingNumber")}</span>
                     <span className="font-mono text-[11px] font-bold text-indigo-400 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded">
                       {tracking_number}
                     </span>
@@ -554,12 +570,12 @@ export default function OrderConfirmation() {
               <div className="flex items-center gap-2 mb-3">
                 <Clock size={16} className="text-indigo-400" />
                 <p className="text-xs font-black text-indigo-400 uppercase tracking-wider">
-                  Delivery Date
+                  {t("orderConfirmation.deliveryDate")}
                 </p>
               </div>
               <p className="text-lg font-black text-white tracking-tight">
                 {formatDeliveryDate(estimated_delivery) ||
-                  "3–5 System Business Days"}
+                  t("orderConfirmation.deliveryFallback")}
               </p>
             </div>
 
@@ -571,7 +587,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                    Order Placement Date
+                    {t("orderConfirmation.orderPlacementDate")}
                   </p>
                   <p className="text-xs font-bold text-slate-200 mt-0.5">
                     {formatDate(created_at)}
@@ -591,7 +607,7 @@ export default function OrderConfirmation() {
                 }}
                 className="flex items-center justify-center gap-2 w-full bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800/50 text-slate-300 font-bold text-sm rounded-xl py-3 transition-colors duration-300 shadow-sm"
               >
-                <Truck size={15} className="text-indigo-500" /> Track Order
+                <Truck size={15} className="text-indigo-500" /> {t("orderConfirmation.trackOrder")}
               </Link>
 
               <button
@@ -602,15 +618,15 @@ export default function OrderConfirmation() {
               >
                 <CreditCard size={15} className="text-indigo-500" />
                 {downloadingInvoice
-                  ? "Preparing Invoice..."
-                  : "Download Invoice"}
+                  ? t("orderConfirmation.preparingInvoice")
+                  : t("orderConfirmation.downloadInvoice")}
               </button>
 
               <Link
                 to="/shop"
                 className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl py-4 transition-all duration-300 shadow-[0_4px_20px_rgba(79,70,229,0.2)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-[0.98]"
               >
-                Continue Shopping <ArrowRight size={16} />
+                {t("orderConfirmation.continueShopping")} <ArrowRight size={16} />
               </Link>
             </div>
           </div>

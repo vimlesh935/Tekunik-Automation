@@ -41,6 +41,7 @@ import { useCart } from "../context/CartContext.jsx";
 import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
 import RecentlyViewedSection from "../components/RecentlyViewedSection.jsx";
 import { getImageUrl } from "../utils/imageUrl.js";
+import { getStatusKey } from "../utils/statusTranslations";
 import ChangePassword from "../components/ChangePassword.jsx";
 
 // Animation Configurations
@@ -290,7 +291,7 @@ useEffect(() => {
       setEditMode(false);
       showNotification(t("dashboard.profileUpdated"), "success");
     } catch (err) {
-      setError(err.message || "Failed to update profile");
+      setError(err.message || t("dashboard.failedToUpdateProfile"));
     } finally {
       setSaving(false);
     }
@@ -307,9 +308,9 @@ useEffect(() => {
   // other sessions (old tokens) are invalidated server-side.
   //
   // This is invoked ONLY after the backend confirms the password was changed
-  // (a fresh JWT is returned). Validation errors, wrong current password, and
-  // wrong/expired OTP all throw before reaching here, so the dashboard is
-  // never refreshed on failure or while a request is still processing.
+  // (a fresh JWT is returned). Validation errors and wrong/expired OTP all
+  // throw before reaching here, so the dashboard is never refreshed on
+  // failure or while a request is still processing.
   const handlePasswordChanged = (newToken) => {
     if (!newToken) return;
     login(newToken, profile);
@@ -427,7 +428,7 @@ useEffect(() => {
         setReviewSuccess(false);
       }, 1200);
     } catch (error) {
-      showNotification(error?.message || "Failed to submit review", "error");
+      showNotification(error?.message || t("review.failedToSubmit"), "error");
     } finally {
       setSubmittingReview(false);
     }
@@ -445,10 +446,14 @@ useEffect(() => {
         return <Package size={14} className="text-cyan-400" />;
       case "shipped":
         return <Truck size={14} className="text-cyan-400" />;
+      case "in_transit":
+        return <Truck size={14} className="text-cyan-400" />;
       case "out_for_delivery":
         return <Truck size={14} className="text-cyan-400" />;
       case "delivered":
         return <CheckCircle size={14} className="text-cyan-400" />;
+      case "delivery_failed":
+        return <XCircle size={14} className="text-cyan-400" />;
       case "cancelled":
         return <XCircle size={14} className="text-cyan-400" />;
       default:
@@ -491,13 +496,15 @@ useEffect(() => {
       processing: t("orders.processing"),
       packed: t("orders.packed"),
       shipped: t("orders.shipped"),
+      in_transit: t("orders.inTransit"),
       out_for_delivery: t("orders.outForDelivery"),
       delivered: t("orders.delivered"),
+      delivery_failed: t("orders.deliveryFailed"),
       cancelled: t("orders.cancelled"),
       refunded: t("orders.refunded"),
       partially_refunded: t("orders.partiallyRefunded"),
     };
-    return map[status] || status;
+    return map[status] || t(getStatusKey(status, "order"));
   };
 
   if (loading) {
@@ -941,7 +948,7 @@ useEffect(() => {
                               month: "short",
                               year: "numeric",
                             })
-                          : "N/A";
+                          : t("common.na");
                         return (
                           <motion.div
                             key={order.id}
@@ -1189,8 +1196,8 @@ useEffect(() => {
                                     <Bell size={13} />
                                   )}
                                   {notifySubscribed[item.product_id]
-                                    ? "✓ Notification Active"
-                                    : "🔔 Notify Me When Available"}
+                                    ? t("dashboard.notifyActive")
+                                    : t("dashboard.notifyMeWhenAvailable")}
                                 </button>
                               </div>
                             )}
@@ -1198,7 +1205,7 @@ useEffect(() => {
                               <div className="flex flex-col">
                                 {item.price_dropped && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                                    🔥 Price Dropped{item.drop_amount > 0 ? ` ₹${Number(item.drop_amount).toLocaleString("en-IN")}` : ""}
+                                    🔥 {t("dashboard.priceDropped")}{item.drop_amount > 0 ? ` ₹${Number(item.drop_amount).toLocaleString("en-IN")}` : ""}
                                   </span>
                                 )}
                                 <span className="text-sm font-black text-white">
@@ -1243,16 +1250,16 @@ useEffect(() => {
                         <Heart size={20} className="text-slate-500" />
                       </div>
                       <h3 className="text-sm font-bold text-slate-300 mb-1">
-                        Your wishlist is empty
+                        {t("dashboard.wishlistEmpty")}
                       </h3>
                       <p className="text-xs text-slate-500 mb-4">
-                        Save items you love here to buy them later.
+                        {t("dashboard.wishlistEmptyDescription")}
                       </p>
                       <Link
                         to="/shop"
                         className="inline-flex items-center justify-center text-xs font-bold rounded-lg bg-cyan-600 hover:bg-cyan-500 px-4 py-2 text-white shadow-md transition-colors"
                       >
-                        Browse Products
+                        {t("offers.browseProducts")}
                       </Link>
                     </div>
                   )}
@@ -1273,10 +1280,10 @@ useEffect(() => {
                 <motion.div key="offers-coupons-tab" variants={tabContentVariants} initial="hidden" animate="visible" className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                      <Ticket size={20} className="text-cyan-400" /> My Offers & Coupons
+                      <Ticket size={20} className="text-cyan-400" /> {t("coupon.myOffersAndCoupons")}
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
-                      Redeem your coupons at checkout to unlock exclusive offers.
+                      {t("coupon.subtitle")}
                     </p>
                   </div>
 
@@ -1298,26 +1305,26 @@ useEffect(() => {
                         <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
                           <div className="flex items-center gap-2 mb-4">
                             <Sparkles size={16} className="text-cyan-400" />
-                            <h3 className="text-base font-bold text-white">Active Offers</h3>
+                            <h3 className="text-base font-bold text-white">{t("coupon.activeOffers")}</h3>
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {myOffers.map((offer) => {
                               const discountLabel =
                                 offer.type === "percentage"
-                                  ? `${Math.round(Number(offer.value))}% OFF`
+                                  ? t("coupon.percentOff", { percent: Math.round(Number(offer.value)) })
                                   : offer.type === "fixed"
-                                    ? `₹${Number(offer.value).toLocaleString("en-IN")} OFF`
-                                    : "Special Offer";
+                                    ? t("coupon.amountOff", { amount: `₹${Number(offer.value).toLocaleString("en-IN")}` })
+                                    : t("coupon.specialOffer");
                               const appliedTo =
                                 offer.applyTo === "all"
-                                  ? "All products"
+                                  ? t("coupon.allProducts")
                                   : offer.applyTo === "selected_products"
-                                    ? "Selected products"
+                                    ? t("coupon.selectedProducts")
                                     : offer.applyTo === "selected_category"
-                                      ? "Selected category"
+                                      ? t("coupon.selectedCategory")
                                       : offer.applyTo === "selected_product"
-                                        ? "Selected product"
-                                        : "All products";
+                                        ? t("coupon.selectedProduct")
+                                        : t("coupon.allProducts");
                               return (
                                 <div key={offer.id} className="rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/5 to-slate-900/60 p-4 flex flex-col group hover:border-indigo-400/40 transition-colors">
                                   <div className="flex items-start justify-between gap-2">
@@ -1332,20 +1339,20 @@ useEffect(() => {
                                   )}
                                   <div className="mt-auto pt-3 space-y-1 text-[10px] text-slate-500">
                                     {Number(offer.minOrderValue) > 0 && (
-                                      <p>Min. order: ₹{Number(offer.minOrderValue).toLocaleString("en-IN")}</p>
+                                      <p>{t("offers.minOrder", { value: Number(offer.minOrderValue).toLocaleString("en-IN") })}</p>
                                     )}
                                     {Number(offer.maximumDiscount) > 0 && (
-                                      <p>Max. savings: ₹{Number(offer.maximumDiscount).toLocaleString("en-IN")}</p>
+                                      <p>{t("coupon.maxSavings", { value: Number(offer.maximumDiscount).toLocaleString("en-IN") })}</p>
                                     )}
-                                    <p>Applies to: {appliedTo}</p>
+                                    <p>{t("coupon.appliesTo", { value: appliedTo })}</p>
                                     {offer.expiryDate && (
                                       <p className="flex items-center gap-1 text-amber-400/80">
-                                        <Clock size={10} /> Valid till {new Date(offer.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                        <Clock size={10} /> {t("coupon.validTill", { date: new Date(offer.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) })}
                                       </p>
                                     )}
                                     {offer.couponCode && (
                                       <p className="pt-1 text-xs text-cyan-300">
-                                        Coupon: <span className="font-mono font-bold">{offer.couponCode}</span>
+                                        {t("coupon.label")}: <span className="font-mono font-bold">{offer.couponCode}</span>
                                       </p>
                                     )}
                                   </div>
@@ -1355,11 +1362,11 @@ useEffect(() => {
                                       onClick={() => useNow({ code: offer.couponCode })}
                                       className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-bold text-cyan-300 hover:bg-cyan-500/20 transition-colors"
                                     >
-                                      Apply Coupon <ChevronRight size={12} />
+                                      {t("coupon.applyCouponButton")} <ChevronRight size={12} />
                                     </button>
                                   ) : (
                                     <Link to="/shop" className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-bold text-indigo-300 hover:bg-indigo-500/20 transition-colors">
-                                      Shop Now <ChevronRight size={12} />
+                                      {t("home.shopNow")} <ChevronRight size={12} />
                                     </Link>
                                   )}
                                 </div>
@@ -1372,19 +1379,19 @@ useEffect(() => {
                       {/* ── FILTERS + SEARCH ── */}
                       <div className="flex items-end justify-between gap-4">
                         <div>
-                          <h3 className="text-base font-bold text-white">My Coupons</h3>
-                          <p className="mt-1 text-xs text-slate-500">Coupons available to your account, including redemption history.</p>
+                          <h3 className="text-base font-bold text-white">{t("coupon.myCoupons")}</h3>
+                          <p className="mt-1 text-xs text-slate-500">{t("coupon.myCouponsSubtitle")}</p>
                         </div>
-                        <span className="hidden rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-500 sm:inline-flex">{myCoupons.length} total</span>
+                        <span className="hidden rounded-full border border-slate-800 px-3 py-1 text-xs text-slate-500 sm:inline-flex">{t("coupon.totalCount", { count: myCoupons.length })}</span>
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap gap-2">
                           {[
-                            { key: "all", label: "All" },
-                            { key: "available", label: "Available" },
-                            { key: "expiring", label: "Expiring Soon" },
-                            { key: "used", label: "Used" },
-                            { key: "expired", label: "Expired" },
+                            { key: "all", labelKey: "dashboard.all" },
+                            { key: "available", labelKey: "coupon.filterAvailable" },
+                            { key: "expiring", labelKey: "coupon.filterExpiringSoon" },
+                            { key: "used", labelKey: "dashboard.used" },
+                            { key: "expired", labelKey: "dashboard.expired" },
                           ].map((f) => (
                             <button
                               key={f.key}
@@ -1396,7 +1403,7 @@ useEffect(() => {
                                   : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"
                               }`}
                             >
-                              {f.label}
+                              {t(f.labelKey)}
                             </button>
                           ))}
                         </div>
@@ -1404,7 +1411,7 @@ useEffect(() => {
                           type="text"
                           value={couponSearch}
                           onChange={(e) => setCouponSearch(e.target.value.toUpperCase())}
-                          placeholder="Search coupon code…"
+                          placeholder={t("coupon.searchPlaceholder")}
                           className="sm:w-60 rounded-lg border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all"
                         />
                       </div>
@@ -1426,10 +1433,10 @@ useEffect(() => {
                           return (
                             <div className="rounded-2xl border border-dashed border-slate-800 p-12 text-center">
                               <Ticket size={32} className="mx-auto text-slate-600" />
-                              <p className="mt-4 text-slate-300 text-sm font-semibold">No coupons available right now.</p>
-                              <p className="mt-1 text-slate-500 text-sm">Check back soon for new offers.</p>
+                              <p className="mt-4 text-slate-300 text-sm font-semibold">{t("dashboard.noCouponsAvailable")}</p>
+                              <p className="mt-1 text-slate-500 text-sm">{t("coupon.checkBackSoon")}</p>
                               <Link to="/shop" className="inline-flex items-center gap-1.5 mt-6 rounded-lg bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white transition-colors">
-                                Continue Shopping
+                                {t("common.continueShopping")}
                               </Link>
                             </div>
                           );
@@ -1440,8 +1447,8 @@ useEffect(() => {
                             {filtered.map((c) => {
                               const isPct = c.discountType === "percentage";
                               const valueLabel = isPct
-                                ? `${Math.round(Number(c.discountValue))}% OFF`
-                                : `₹${Number(c.discountValue || 0).toLocaleString("en-IN")} OFF`;
+                                ? t("coupon.percentOff", { percent: Math.round(Number(c.discountValue)) })
+                                : t("coupon.amountOff", { amount: `₹${Number(c.discountValue || 0).toLocaleString("en-IN")}` });
                               const daysLeft = c.expiryDate ? Math.ceil((new Date(c.expiryDate) - new Date()) / 86400000) : null;
                               const statusStyles = {
                                 available: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
@@ -1469,14 +1476,14 @@ useEffect(() => {
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${statusStyles[c.userStatus] || "bg-slate-500/10 text-slate-400"}`}>
                                         {statusIcon[c.userStatus]}
-                                        {c.statusLabel}
+                                        {c.status && ["active", "disabled", "expired", "used"].includes(c.status) ? t(getStatusKey(c.status, "coupon")) : c.statusLabel}
                                       </span>
                                       <span className="text-[11px] font-semibold text-slate-500">
                                         {daysLeft && c.userStatus !== "expired" && c.userStatus !== "used"
-                                          ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}`
+                                          ? t("coupon.expiresInDays", { count: daysLeft })
                                           : c.userStatus === "expired"
-                                            ? "Expired"
-                                            : "No expiry"}
+                                            ? t("dashboard.expired")
+                                            : t("dashboard.noExpiry")}
                                       </span>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4">
@@ -1494,21 +1501,21 @@ useEffect(() => {
                                     </div>
                                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
                                       {Number(c.minOrder) > 0 && (
-                                        <span>Minimum order <span className="text-slate-200 font-semibold">₹{Number(c.minOrder).toLocaleString("en-IN")}</span></span>
+                                        <span>{t("coupon.minimumOrder")} <span className="text-slate-200 font-semibold">₹{Number(c.minOrder).toLocaleString("en-IN")}</span></span>
                                       )}
                                       {Number(c.maxDiscount) > 0 && (
-                                        <span>Max. discount <span className="text-slate-200 font-semibold">₹{Number(c.maxDiscount).toLocaleString("en-IN")}</span></span>
+                                        <span>{t("coupon.maxDiscountLabel")} <span className="text-slate-200 font-semibold">₹{Number(c.maxDiscount).toLocaleString("en-IN")}</span></span>
                                       )}
                                       {c.expiryDate && (
                                         <span className="flex items-center gap-1">
-                                          <Clock size={11} /> Valid till {new Date(c.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                          <Clock size={11} /> {t("coupon.validTill", { date: new Date(c.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) })}
                                         </span>
                                       )}
                                       <span>
-                                        Applies to {c.applicableProducts?.length ? `${c.applicableProducts.length} product${c.applicableProducts.length > 1 ? "s" : ""}` : c.applicableCategories?.length ? `${c.applicableCategories.length} categor${c.applicableCategories.length > 1 ? "ies" : "y"}` : "all products"}
+                                        {t("coupon.appliesToScope", { value: c.applicableProducts?.length ? t("coupon.productCount", { count: c.applicableProducts.length }) : c.applicableCategories?.length ? t("coupon.categoryCount", { count: c.applicableCategories.length }) : t("coupon.allProductsScope") })}
                                       </span>
                                       <span>
-                                        Used {Number(c.userUsedCount || 0)}{c.perUserLimit > 0 ? ` / ${c.perUserLimit}` : ""} time{Number(c.userUsedCount || 0) === 1 ? "" : "s"}
+                                        {t("coupon.usedCount", { count: Number(c.userUsedCount || 0) })}{c.perUserLimit > 0 ? ` / ${c.perUserLimit}` : ""}
                                       </span>
                                     </div>
 
@@ -1523,7 +1530,7 @@ useEffect(() => {
                                           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-cyan-500/50 hover:text-cyan-300 transition-colors"
                                         >
                                           {copiedCode === c.code ? <CheckCircle size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                                          {copiedCode === c.code ? "Copied" : "Copy Code"}
+                                          {copiedCode === c.code ? t("coupon.copied") : t("coupon.copyCode")}
                                         </button>
                                         {c.userStatus === "available" || c.userStatus === "expiring" ? (
                                           <button
@@ -1531,11 +1538,11 @@ useEffect(() => {
                                             onClick={(e) => { e.stopPropagation(); useNow(c); }}
                                             className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 px-4 py-2 text-xs font-bold text-white hover:from-cyan-500 hover:to-indigo-500 transition-colors"
                                           >
-                                            Use Now <ChevronRight size={12} />
+                                            {t("dashboard.useNow")} <ChevronRight size={12} />
                                           </button>
                                         ) : (
                                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed">
-                                            Use Now
+                                            {t("dashboard.useNow")}
                                           </span>
                                         )}
                                         <button
@@ -1543,7 +1550,7 @@ useEffect(() => {
                                           onClick={(e) => { e.stopPropagation(); setSelectedCoupon(c); }}
                                           className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-400 hover:border-slate-500 hover:text-white transition-colors"
                                         >
-                                          Details
+                                          {t("coupon.details")}
                                         </button>
                                       </div>
                                     </div>
@@ -1565,7 +1572,7 @@ useEffect(() => {
                             onClick={() => setCouponReloadKey((key) => key + 1)}
                             className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
                           >
-                            Retry
+                            {t("common.retry")}
                           </button>
                         </div>
                       )}
@@ -1574,10 +1581,10 @@ useEffect(() => {
                       {!couponsError && myOffers.length === 0 && myCoupons.length === 0 && (
                         <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-10 text-center">
                           <Ticket size={30} className="mx-auto text-slate-600" />
-                          <p className="mt-3 text-sm font-semibold text-slate-300">No active offers right now</p>
-                          <p className="mt-1 text-xs text-slate-500">Check back soon for new discounts and special offers.</p>
+                          <p className="mt-3 text-sm font-semibold text-slate-300">{t("offers.noActiveOffers")}</p>
+                          <p className="mt-1 text-xs text-slate-500">{t("coupon.emptyCheckBack")}</p>
                           <Link to="/shop" className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-cyan-500">
-                            Continue Shopping <ChevronRight size={14} />
+                            {t("common.continueShopping")} <ChevronRight size={14} />
                           </Link>
                         </div>
                       )}
@@ -1627,7 +1634,7 @@ useEffect(() => {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black tracking-tight text-white">
-                    Rate Your Experience
+                    {t("review.rateYourExperience")}
                   </h3>
                   <p className="mt-1 text-xs font-medium text-slate-500">
                     {reviewOrder.order_number}
@@ -1645,7 +1652,7 @@ useEffect(() => {
               {reviewProducts.length > 1 && (
                 <div className="mb-5">
                   <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Select Product
+                    {t("review.selectProduct")}
                   </label>
                   <select
                     value={selectedProduct || ""}
@@ -1663,7 +1670,7 @@ useEffect(() => {
 
               {reviewProducts.length === 0 ? (
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
-                  No reviewable products were found for this order.
+                  {t("review.noProductsFound")}
                 </div>
               ) : (
                 <>
@@ -1702,7 +1709,7 @@ useEffect(() => {
                       type="text"
                       value={reviewTitle}
                       onChange={(e) => setReviewTitle(e.target.value)}
-                      placeholder="Great product!"
+                      placeholder={t("product.sampleReview")}
                       className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-500"
                     />
                   </div>
@@ -1714,7 +1721,7 @@ useEffect(() => {
                     <textarea
                       value={reviewMessage}
                       onChange={(e) => setReviewMessage(e.target.value)}
-                      placeholder="Share your experience with this product..."
+                      placeholder={t("product.reviewPlaceholder")}
                       rows={4}
                       className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-500"
                     />
@@ -1741,12 +1748,12 @@ useEffect(() => {
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-current">
                         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                       </span>
-                      <span>Review Submitted Successfully</span>
+                      <span>{t("review.submittedSuccess")}</span>
                     </>
                   ) : submittingReview ? (
                     <>
                       <span className="inline-flex h-5 w-5 animate-spin rounded-full border-[2px] border-current border-t-transparent" />
-                      <span className="tabular-nums tracking-wide">Submitting Review...</span>
+                      <span className="tabular-nums tracking-wide">{t("review.submittingReview")}</span>
                     </>
                   ) : (
                     <>
@@ -1788,9 +1795,9 @@ useEffect(() => {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                    <Ticket size={18} className="text-cyan-400" /> Coupon Details
+                    <Ticket size={18} className="text-cyan-400" /> {t("coupon.detailsTitle")}
                   </h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500">Review coupon terms and eligibility.</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{t("coupon.detailsSubtitle")}</p>
                 </div>
                 <button
                   type="button"
@@ -1810,91 +1817,91 @@ useEffect(() => {
                     {(() => {
                       const isPct = selectedCoupon.discountType === "percentage";
                       return isPct
-                        ? `${Math.round(Number(selectedCoupon.discountValue))}% OFF`
-                        : `₹${Number(selectedCoupon.discountValue || 0).toLocaleString("en-IN")} OFF`;
+                        ? t("coupon.percentOff", { percent: Math.round(Number(selectedCoupon.discountValue)) })
+                        : t("coupon.amountOff", { amount: `₹${Number(selectedCoupon.discountValue || 0).toLocaleString("en-IN")}` });
                     })()}
                   </p>
                   {selectedCoupon.description && (
                     <p className="mt-1 text-sm text-slate-400">{selectedCoupon.description}</p>
                   )}
                   <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold border bg-slate-500/10 text-slate-300 border-slate-600/40`}>
-                    {selectedCoupon.statusLabel}
+                    {selectedCoupon.status && ["active", "disabled", "expired", "used"].includes(selectedCoupon.status) ? t(getStatusKey(selectedCoupon.status, "coupon")) : selectedCoupon.statusLabel}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Minimum Cart</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.minimumCart")}</p>
                     <p className="text-sm font-semibold text-white mt-0.5">
-                      {Number(selectedCoupon.minOrder) > 0 ? `₹${Number(selectedCoupon.minOrder).toLocaleString("en-IN")}` : "No minimum"}
+                      {Number(selectedCoupon.minOrder) > 0 ? `₹${Number(selectedCoupon.minOrder).toLocaleString("en-IN")}` : t("coupon.noMinimum")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Maximum Discount</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.maximumDiscount")}</p>
                     <p className="text-sm font-semibold text-white mt-0.5">
-                      {Number(selectedCoupon.maxDiscount) > 0 ? `₹${Number(selectedCoupon.maxDiscount).toLocaleString("en-IN")}` : "No limit"}
+                      {Number(selectedCoupon.maxDiscount) > 0 ? `₹${Number(selectedCoupon.maxDiscount).toLocaleString("en-IN")}` : t("coupon.noLimit")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Valid From</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.validFrom")}</p>
                     <p className="text-sm font-semibold text-white mt-0.5">
-                      {selectedCoupon.startDate ? new Date(selectedCoupon.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Immediately"}
+                      {selectedCoupon.startDate ? new Date(selectedCoupon.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : t("coupon.immediately")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Expiry Date</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.expiryDateLabel")}</p>
                     <p className="text-sm font-semibold text-white mt-0.5">
-                      {selectedCoupon.expiryDate ? new Date(selectedCoupon.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "No expiry"}
+                      {selectedCoupon.expiryDate ? new Date(selectedCoupon.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : t("dashboard.noExpiry")}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Eligible Categories</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.eligibleCategories")}</p>
                     <p className="text-sm text-slate-300 mt-0.5">
                       {selectedCoupon.applicableCategories && selectedCoupon.applicableCategories.length > 0
                         ? selectedCoupon.applicableCategories.join(", ")
-                        : "All categories"}
+                        : t("coupon.allCategories")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Eligible Products</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.eligibleProducts")}</p>
                     <p className="text-sm text-slate-300 mt-0.5">
                       {selectedCoupon.applicableProducts && selectedCoupon.applicableProducts.length > 0
                         ? selectedCoupon.applicableProducts.join(", ")
-                        : "All products"}
+                        : t("coupon.allProducts")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">User Eligibility</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.userEligibility")}</p>
                     <p className="text-sm text-slate-300 mt-0.5">
-                      {selectedCoupon.userUsedCount > 0 ? `Used ${selectedCoupon.userUsedCount} time(s)` : "Available for you"}
+                      {selectedCoupon.userUsedCount > 0 ? t("coupon.usedCount", { count: Number(selectedCoupon.userUsedCount) }) : t("coupon.availableForYou")}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Usage Limit</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("coupon.usageLimitLabel")}</p>
                     <p className="text-sm text-slate-300 mt-0.5">
                       {selectedCoupon.usageLimit
-                        ? `${Math.max(0, Number(selectedCoupon.usageLimit) - (selectedCoupon.userUsedCount || 0))} left of ${selectedCoupon.usageLimit} per user`
-                        : `${selectedCoupon.perUserLimit || 1} use(s) per user · unlimited total`}
+                        ? t("coupon.leftOfPerUser", { left: Math.max(0, Number(selectedCoupon.usageLimit) - (selectedCoupon.userUsedCount || 0)), limit: selectedCoupon.usageLimit })
+                        : t("coupon.usesPerUserUnlimited", { count: selectedCoupon.perUserLimit || 1 })}
                     </p>
                   </div>
                   <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Terms &amp; Conditions</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("footer.termsAndConditions")}</p>
                     <ul className="mt-1 space-y-1 text-xs leading-relaxed text-slate-400">
                       {selectedCoupon.minOrder > 0 && (
-                        <li>This coupon is valid only on orders above ₹{Number(selectedCoupon.minOrder).toLocaleString("en-IN")}.</li>
+                        <li>{t("coupon.tcMinOrder", { amount: Number(selectedCoupon.minOrder).toLocaleString("en-IN") })}</li>
                       )}
                       {selectedCoupon.discountType === "percentage" && Number(selectedCoupon.maxDiscount) > 0 && (
-                        <li>Maximum discount applicable is ₹{Number(selectedCoupon.maxDiscount).toLocaleString("en-IN")}.</li>
+                        <li>{t("coupon.tcMaxDiscount", { amount: Number(selectedCoupon.maxDiscount).toLocaleString("en-IN") })}</li>
                       )}
                       {selectedCoupon.stackWithOffer === false || selectedCoupon.stackWithOffer === 0 ? (
-                        <li>Cannot be combined with another coupon or offer.</li>
+                        <li>{t("coupon.tcNoStack")}</li>
                       ) : (
-                        <li>Can be combined with eligible product offers.</li>
+                        <li>{t("coupon.tcStackable")}</li>
                       )}
-                      <li>Subject to availability and complete eligibility at checkout.</li>
+                      <li>{t("coupon.tcEligibility")}</li>
                     </ul>
                   </div>
                 </div>
@@ -1906,7 +1913,7 @@ useEffect(() => {
                     className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[12px] border border-slate-700 bg-slate-800 py-3 text-sm font-bold text-slate-200 transition hover:bg-slate-700"
                   >
                     {copiedCode === selectedCoupon.code ? <CheckCircle size={15} className="text-emerald-400" /> : <Copy size={15} />}
-                    {copiedCode === selectedCoupon.code ? "Copied!" : "Copy Code"}
+                    {copiedCode === selectedCoupon.code ? t("common.copied") : t("coupon.copyCode")}
                   </button>
                   {(selectedCoupon.userStatus === "available" || selectedCoupon.userStatus === "expiring") && (
                     <button
@@ -1914,7 +1921,7 @@ useEffect(() => {
                       onClick={() => { setSelectedCoupon(null); useNow(selectedCoupon); }}
                       className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-r from-cyan-600 to-indigo-600 py-3 text-sm font-bold text-white transition-all hover:from-cyan-500 hover:to-indigo-500"
                     >
-                      Use Now <ChevronRight size={15} />
+                      {t("dashboard.useNow")} <ChevronRight size={15} />
                     </button>
                   )}
                 </div>

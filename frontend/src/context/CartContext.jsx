@@ -105,11 +105,34 @@ const normalizeCartItem = (product, quantity = 1) => {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => loadCartItems());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Admin sessions have no user cart on the server. Guarding here prevents
+  // the root-level provider from calling user-scoped cart endpoints with an
+  // admin token — those return 401 and would wipe the admin session.
+  const isAdminSession =
+    !!user &&
+    (user.is_admin === true ||
+      user.role === "admin" ||
+      user.role === "super_admin");
 
   const itemsRef = useRef(items);
   const syncingRef = useRef(false);
   const hydratedRef = useRef(false);
+  const wasAuthenticatedRef = useRef(isAuthenticated);
+
+  // Clear cart on logout (transition from authenticated to unauthenticated)
+  useEffect(() => {
+    if (wasAuthenticatedRef.current === true && isAuthenticated === false && !isAdminSession) {
+      updateState([]);
+      try {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } catch (e) {
+        // ignore
+      }
+    }
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, isAdminSession]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -172,7 +195,7 @@ export function CartProvider({ children }) {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || isAdminSession) {
       hydratedRef.current = false;
       return;
     }
@@ -205,7 +228,7 @@ export function CartProvider({ children }) {
         syncingRef.current = false;
       }
     })();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAdminSession]);
 
   const addToCart = (product, quantity = 1) => {
     if (!product || !product.id) return;
@@ -233,7 +256,7 @@ export function CartProvider({ children }) {
 
     updateState(nextItems);
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !isAdminSession) {
       (async () => {
         try {
           const res = await cartService.addToCart(
@@ -263,7 +286,7 @@ export function CartProvider({ children }) {
 
     updateState(nextItems);
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !isAdminSession) {
       (async () => {
         try {
           if (nextQuantity === 0) {
@@ -287,7 +310,7 @@ export function CartProvider({ children }) {
   const removeItem = (product_id) => {
     updateState(items.filter((item) => item.product_id !== product_id));
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !isAdminSession) {
       (async () => {
         try {
           const itemId = await resolveServerItemId(product_id);
@@ -302,7 +325,7 @@ export function CartProvider({ children }) {
   const clearCart = () => {
     updateState([]);
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !isAdminSession) {
       cartService.clearCart().catch((error) => {
         console.warn("[CART] server clear failed:", error.message);
       });

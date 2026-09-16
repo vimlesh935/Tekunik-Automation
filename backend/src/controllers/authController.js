@@ -6,6 +6,7 @@ const { createOtpSession, verifyOtpSession } = require("../services/otpService")
 const AppError = require("../utils/appError");
 const asyncHandler = require("../utils/asyncHandler");
 const { success } = require("../utils/response");
+const { MESSAGE_CODES } = require("../utils/messageCodes");
 const { signToken, verifyToken } = require("../utils/jwt");
 const { ACTIVITY_TYPES, createActivity } = require("../services/adminActivityService");
 const { generateWelcomeCoupon } = require("../services/couponService");
@@ -333,7 +334,7 @@ const sendForgotOtp = asyncHandler(async (req, res) => {
   return success(res, `OTP sent to ${maskEmail(email)}`, {
     email: maskEmail(email),
     expiresInMinutes,
-  });
+  }, 200, MESSAGE_CODES.AUTH_OTP_SENT);
 });
 
 /**
@@ -402,9 +403,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 // ════════════════════════════════════════════════════════════════════════════
 // CHANGE PASSWORD — AUTHENTICATED USER ONLY (Profile / Settings)
-// Two independent methods:
-//   1. Current password verification
-//   2. Email OTP (reuses the shared email_otps infrastructure)
+// Email OTP only (reuses the shared email_otps infrastructure):
+//   send-otp → verify-otp → reset
 // ════════════════════════════════════════════════════════════════════════════
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -505,48 +505,7 @@ const logPasswordChangedActivity = async (user, method) => {
 };
 
 /**
- * POST /api/user/change-password — METHOD 1 (current password)
- * Body: { currentPassword, newPassword, confirmPassword }
- * Verifies the authenticated user's current password, then updates the
- * password hash for that user only and invalidates other sessions.
- */
-const changePasswordWithCurrentPassword = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-  const currentPassword = String(req.body.currentPassword || "");
-  const newPassword = String(req.body.newPassword || "");
-  const confirmPassword = String(req.body.confirmPassword || "");
-
-  if (!currentPassword) {
-    throw new AppError("Current password is required", 400, "VALIDATION_ERROR");
-  }
-  requireNewPassword(newPassword);
-  if (newPassword !== confirmPassword) {
-    throw new AppError("Passwords do not match", 400, "PASSWORD_MISMATCH");
-  }
-
-  const user = await getPasswordFacingUser(userId);
-  if (!user.password) {
-    throw new AppError("Password change is unavailable for this account", 400, "VALIDATION_ERROR");
-  }
-
-  const currentMatches = await bcrypt.compare(currentPassword, user.password);
-  if (!currentMatches) {
-    throw new AppError("Incorrect current password", 400, "INVALID_CURRENT_PASSWORD");
-  }
-
-  await assertNewPasswordNotCurrent(newPassword, user.password);
-
-  const newPasswordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-  const nextToken = await commitPasswordChange({ user, newPasswordHash, res });
-
-  await logPasswordChangedActivity(user, "current_password");
-
-  console.log("[auth] Password changed via current password:", { userId });
-
-  return success(res, "Password changed successfully", { token: nextToken });
-});
-/**
- * POST /api/user/change-password/send-otp — METHOD 2 step 1
+ * POST /api/user/change-password/send-otp — step 1
  * Sends a 6-digit OTP (hashed in DB, 5-min expiry, 60s resend cooldown,
  * rate-limited) to the authenticated user's verified email address.
  */
@@ -576,11 +535,11 @@ const sendChangePasswordOtp = asyncHandler(async (req, res) => {
     email: maskEmail(user.email),
     expiresInMinutes,
     resendAfterSeconds: 60,
-  });
+  }, 200, MESSAGE_CODES.AUTH_OTP_SENT);
 });
 
 /**
- * POST /api/user/change-password/verify-otp — METHOD 2 step 2
+ * POST /api/user/change-password/verify-otp — step 2
  * Body: { otp }
  * Verifies the OTP server-side and returns a short-lived, user-bound
  * step-up token. The frontend can NOT mark itself "verified" on its own.
@@ -618,7 +577,7 @@ const verifyChangePasswordOtp = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/user/change-password/reset — METHOD 2 step 3
+ * POST /api/user/change-password/reset — step 3
  * Body: { stepUpToken, newPassword, confirmPassword }
  * Completes the change with the user-bound step-up token obtained after
  * a successful OTP verification.
@@ -681,7 +640,6 @@ module.exports = {
   sendForgotOtp,
   verifyForgotOtp,
   resetPassword,
-  changePasswordWithCurrentPassword,
   sendChangePasswordOtp,
   verifyChangePasswordOtp,
   resetPasswordAfterOtp,

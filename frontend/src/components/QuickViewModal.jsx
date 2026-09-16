@@ -187,6 +187,7 @@ export default function QuickViewModal({
           >
             <button
               onClick={() => setShow(false)}
+              aria-label={t('common.close')}
               className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
             >
               <X className="w-5 h-5" />
@@ -212,7 +213,7 @@ export default function QuickViewModal({
 
                 {/* Category */}
                 <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">
-                  {product.category_name || "IoT Component"}
+                  {product.category_name || t('product.categoryFallback')}
                 </div>
 
                 {/* Wishlist Button */}
@@ -254,7 +255,7 @@ export default function QuickViewModal({
                         : "0.0 / 5"}
                     </span>
                     <span className="text-xs text-slate-500 font-medium">
-                      {product.totalReviews > 0 ? `${product.totalReviews} Review${product.totalReviews > 1 ? "s" : ""}` : t('product.noReviews')}
+                      {product.totalReviews > 0 ? t('product.reviewCount', { count: product.totalReviews }) : t('product.noReviews')}
                     </span>
                   </div>
                 </div>
@@ -264,7 +265,7 @@ export default function QuickViewModal({
                   {/* Discount badge */}
                   {hasDiscount(product) && (
                     <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-md tracking-wider uppercase shadow-sm">
-                      {Math.round(product.discount_percent)}% OFF
+                      {t('coupon.percentOff', { percent: Math.round(product.discount_percent) })}
                     </span>
                   )}
 
@@ -285,8 +286,8 @@ export default function QuickViewModal({
                     {product.stock_quantity === 0
                       ? `❌ ${t('product.outOfStock')}`
                       : product.stock_quantity < product.low_stock_limit
-                        ? "⚠ Low Stock"
-                        : `✅ ${product.stock_quantity} ${t('common.units')}`}
+? `⚠ ${t('product.lowStock')}`
+                : `✅ ${product.stock_quantity} ${t('common.units')}`}
                   </p>
                 </div>
 
@@ -295,7 +296,7 @@ export default function QuickViewModal({
                   <p className="text-sm text-slate-400 line-clamp-3">
                     {product.short_description ||
                       product.description ||
-                      "High-performance component for smart home automation."}
+                      t('product.descriptionFallback')}
                   </p>
                 </div>
 

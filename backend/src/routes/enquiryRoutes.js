@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require("../config/db");
 const { createTransporter } = require("../services/mailService");
 const env = require("../config/env");
+const { success, failure } = require("../utils/response");
 
 // Build enquiry notification email HTML
 const buildEnquiryEmailHTML = (data) => {
@@ -122,12 +123,7 @@ router.post("/api/enquiry/demo", async (req, res) => {
 
     if (errors.length > 0) {
       console.log("[ENQUIRY] ❌ Validation failed:", errors);
-      return res.status(400).json({
-        success: false,
-        message: "Validation Error",
-        errors,
-        code: "VALIDATION_ERROR",
-      });
+      return failure(res, "Validation Error", 400, "VALIDATION_ERROR", { errors });
     }
 
     console.log("[ENQUIRY] ✅ Validation passed");
@@ -206,14 +202,10 @@ router.post("/api/enquiry/demo", async (req, res) => {
 
     // ── RESPONSE ──
     console.log("[ENQUIRY] ✅ Flow complete. Sending response...");
-    return res.status(200).json({
-      success: true,
-      message: "Your demo enquiry has been submitted successfully! We will contact you shortly.",
-      data: {
-        enquiryId: insertResult.insertId,
-        emailSent,
-      },
-    });
+    return success(res, "Your demo enquiry has been submitted successfully! We will contact you shortly.", {
+      enquiryId: insertResult.insertId,
+      emailSent,
+    }, 200);
 
   } catch (error) {
     console.error("\n═[ENQUIRY ERROR]══════════════════════════════");
@@ -224,25 +216,17 @@ router.post("/api/enquiry/demo", async (req, res) => {
 
     // Determine if it's a known error type
     let statusCode = 500;
-    let errorCode = "INTERNAL_ERROR";
     let errorMessage = "An unexpected error occurred. Please try again later.";
 
     if (error.code === "ER_BAD_DB_ERROR" || error.code === "ECONNREFUSED") {
       statusCode = 503;
-      errorCode = "DATABASE_ERROR";
       errorMessage = "Database connection failed. Please try again later.";
     } else if (error.code === "EAUTH" || error.code === "EENVELOPE") {
       statusCode = 500;
-      errorCode = "EMAIL_ERROR";
       errorMessage = "Email service is temporarily unavailable. Your enquiry has been saved.";
     }
 
-    return res.status(statusCode).json({
-      success: false,
-      message: errorMessage,
-      code: errorCode,
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    return failure(res, errorMessage, statusCode, "SERVER_ERROR");
   }
 });
 

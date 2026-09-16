@@ -96,7 +96,7 @@ export default function HomeWrapper({ token }) {
         }
       } catch (error) {
         console.error("Failed to load home data:", error);
-        setError("Failed to sync store parameters. Please reload.");
+        setError(t("home.loadFailed"));
         setFeaturedProducts([]);
       } finally {
         setLoading(false);
@@ -167,18 +167,18 @@ export default function HomeWrapper({ token }) {
 
     if (!token) {
       addToCart(product, 1);
-      setNotification(`🛒 Added ${product.name} to your basket!`);
+      setNotification(t("cart.addedToBasket", { name: product.name }));
       setTimeout(() => setNotification(""), 3000);
       return;
     }
 
     try {
       await cartService.addToCart(product.id, 1);
-      setNotification(`🛒 Added ${product.name} to your basket!`);
+      setNotification(t("cart.addedToBasket", { name: product.name }));
       setTimeout(() => setNotification(""), 3000);
     } catch (error) {
       addToCart(product, 1);
-      setNotification(`🛒 Added ${product.name} to your basket!`);
+      setNotification(t("cart.addedToBasket", { name: product.name }));
       setTimeout(() => setNotification(""), 3000);
     }
   };
@@ -187,10 +187,10 @@ export default function HomeWrapper({ token }) {
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       {/* WhatsApp Support Button */}
       <a
-        href={`https://wa.me/${whatsappNumber}?text=Hello%2C%20I%20need%20help%20with%20your%20automation%20products.`}
+        href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(t("home.whatsappPrefill"))}`}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Open WhatsApp support chat"
+        aria-label={t("home.openWhatsappSupport")}
         className="fixed bottom-5 right-4 sm:bottom-8 sm:right-8 z-[60] group inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-indigo-600/25 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:bg-indigo-500 hover:shadow-indigo-500/35 active:scale-95 sm:px-5"
       >
         <MessageCircle

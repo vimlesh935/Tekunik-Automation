@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import i18next from "../i18n";
 
 const PINCODE_API = "https://api.postalpincode.in/pincode";
 
@@ -18,8 +19,8 @@ export function usePincodeLookup() {
     }
 
     if (!/^\d{6}$/.test(digits)) {
-      setError("Invalid Pincode");
-      if (onError) onError("Invalid Pincode");
+      setError(i18next.t("pincode.invalid"));
+      if (onError) onError(i18next.t("pincode.invalid"));
       return;
     }
 
@@ -32,8 +33,8 @@ export function usePincodeLookup() {
           setError("");
           if (onSuccess) onSuccess(cached);
         } else {
-          setError("Invalid Pincode");
-          if (onError) onError("Invalid Pincode");
+          setError(i18next.t("pincode.invalid"));
+          if (onError) onError(i18next.t("pincode.invalid"));
         }
         return;
       }
@@ -52,16 +53,16 @@ export function usePincodeLookup() {
 
         if (!data || !data[0] || data[0].Status !== "Success") {
           pincodeCache.set(digits, null);
-          setError("Invalid Pincode");
-          if (onError) onError("Invalid Pincode");
+          setError(i18next.t("pincode.invalid"));
+          if (onError) onError(i18next.t("pincode.invalid"));
           return;
         }
 
         const postOffice = data[0].PostOffice?.[0];
         if (!postOffice) {
           pincodeCache.set(digits, null);
-          setError("Invalid Pincode");
-          if (onError) onError("Invalid Pincode");
+          setError(i18next.t("pincode.invalid"));
+          if (onError) onError(i18next.t("pincode.invalid"));
           return;
         }
 
@@ -75,8 +76,8 @@ export function usePincodeLookup() {
         if (onSuccess) onSuccess(result);
       } catch (err) {
         console.error("Pincode lookup failed:", err);
-        setError("Unable to fetch location. Please try again.");
-        if (onError) onError("Unable to fetch location. Please try again.");
+        setError(i18next.t("pincode.unableToFetch"));
+        if (onError) onError(i18next.t("pincode.unableToFetch"));
       } finally {
         setLoading(false);
       }

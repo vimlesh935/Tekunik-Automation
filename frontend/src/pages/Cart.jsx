@@ -105,7 +105,7 @@ export default function Cart() {
               type="button"
               onClick={dismissPendingCoupon}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              aria-label="Remove pending coupon"
+              aria-label={t("cart.removePendingCoupon")}
             >
               <X size={16} />
             </button>
@@ -126,10 +126,11 @@ export default function Cart() {
 
               <AnimatePresence mode="popLayout">
                 {currentCart.items.map((item) => {
-                  const itemId = item.cart_item_id || item.product_id;
+                  const itemKey = item.cart_item_id || item.product_id;
+                  const productId = item.product_id;
                   return (
                     <motion.div
-                      key={itemId}
+                      key={itemKey}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 50, scale: 0.95 }}
@@ -203,7 +204,7 @@ export default function Cart() {
                               type="button"
                               onClick={() =>
                                 updateItem(
-                                  itemId,
+                                  productId,
                                   Math.max(1, item.quantity - 1),
                                 )
                               }
@@ -218,7 +219,7 @@ export default function Cart() {
                               type="button"
                               onClick={() =>
                                 updateItem(
-                                  itemId,
+                                  productId,
                                   Math.min(
                                     item.max_quantity,
                                     item.quantity + 1,
@@ -237,7 +238,7 @@ export default function Cart() {
 
                         <button
                           type="button"
-                          onClick={() => removeItem(itemId)}
+                          onClick={() => removeItem(productId)}
                           className="inline-flex items-center gap-1.5 border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-rose-400 transition-all duration-200 active:scale-95"
                         >
                           <Trash2 size={12} /> {t("cart.remove")}

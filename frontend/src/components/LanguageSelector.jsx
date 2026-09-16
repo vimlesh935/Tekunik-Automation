@@ -24,7 +24,7 @@ const LANGUAGES = [
 const LANG_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l]));
 
 export default function LanguageSelector() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -122,8 +122,8 @@ export default function LanguageSelector() {
             ? "border-indigo-500/30 bg-indigo-500/5 text-indigo-400"
             : "border-slate-900 bg-slate-900/30 text-slate-300 hover:text-white hover:border-slate-800"
         }`}
-        title="Select language"
-        aria-label="Select language"
+        title={t("common.selectLanguage")}
+        aria-label={t("common.selectLanguage")}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -153,12 +153,12 @@ export default function LanguageSelector() {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="absolute right-0 mt-3 w-72 max-h-80 rounded-2xl bg-slate-900 border border-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.6)] z-50 overflow-hidden flex flex-col"
               role="listbox"
-              aria-label="Available languages"
+              aria-label={t("language.availableLanguages")}
             >
               <div className="px-3 py-2.5 border-b border-slate-800 bg-slate-950/30">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                    Select Language
+                    {t("common.selectLanguage")}
                   </p>
                   <button
                     type="button"
@@ -167,7 +167,7 @@ export default function LanguageSelector() {
                       setQuery("");
                     }}
                     className="text-slate-600 hover:text-slate-300 transition-colors"
-                    aria-label="Close language selector"
+                    aria-label={t("language.closeSelector")}
                   >
                     <X size={12} />
                   </button>
@@ -182,7 +182,7 @@ export default function LanguageSelector() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search languages..."
+                    placeholder={t("common.searchLanguages")}
                     className="w-full h-8 rounded-lg border border-slate-800 bg-slate-950/50 pl-8 pr-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/40 transition-colors"
                     autoComplete="off"
                   />
@@ -193,7 +193,7 @@ export default function LanguageSelector() {
                 {filtered.length === 0 && (
                   <div className="px-4 py-6 text-center">
                     <p className="text-xs text-slate-600 font-medium">
-                      No languages found
+                      {t("common.noLanguagesFound")}
                     </p>
                   </div>
                 )}

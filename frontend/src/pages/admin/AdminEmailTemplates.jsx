@@ -14,6 +14,11 @@ const FILTERS = [
   { key: "disabled", label: "Disabled" },
 ];
 
+const TABLE_COLS = {
+  gridTemplateColumns:
+    "minmax(0, 2.2fr) minmax(0, 2.4fr) minmax(max-content, 0.7fr) minmax(max-content, 1.2fr) minmax(max-content, 1fr)",
+};
+
 function StatusBadge({ enabled }) {
   return enabled ? (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 whitespace-nowrap">
@@ -292,40 +297,43 @@ export default function AdminEmailTemplates() {
 
               {/* Desktop / tablet table */}
               <div className="hidden md:block bg-black/40 border border-gray-800 rounded-2xl overflow-hidden">
-                <table className="w-full table-fixed text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800 text-left">
-                      <th className="w-[30%] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Template</th>
-                      <th className="w-[24%] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Email Type / Trigger</th>
-                      <th className="w-[16%] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                      <th className="w-[15%] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 hidden lg:table-cell">Last Updated</th>
-                      <th className="w-[15%] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <div className="overflow-x-auto min-w-0">
+                  <div className="w-full max-w-full min-w-0">
+                    {/* Header row */}
+                    <div className="grid min-w-0" style={TABLE_COLS}>
+                      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Template</div>
+                      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Email Type / Trigger</div>
+                      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</div>
+                      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Last Updated</div>
+                      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 text-right">Actions</div>
+                    </div>
+
+                    {/* Body rows */}
                     {filtered.map((template) => (
-                      <tr key={template.template_key} className="border-b border-gray-800/60 last:border-0 hover:bg-white/[0.02] transition align-top">
-                        <td className="px-4 py-4 min-w-0">
-                          <div className="font-bold text-white break-words">{template.template_name}</div>
+                      <div key={template.template_key} className="grid min-w-0 border-t border-gray-800/60" style={TABLE_COLS}>
+                        <div className="min-w-0 px-4 py-4 hover:bg-white/[0.02] transition">
+                          <div className="font-bold text-white [overflow-wrap:anywhere]">{template.template_name}</div>
                           {template.subject && (
-                            <div className="text-gray-500 text-xs mt-1 break-words line-clamp-2">
+                            <div className="text-gray-500 text-xs mt-1 line-clamp-2 [overflow-wrap:anywhere]">
                               <span className="text-gray-600">Subject: </span>{template.subject}
                             </div>
                           )}
-                        </td>
-                        <td className="px-4 py-4 min-w-0">
+                        </div>
+                        <div className="min-w-0 px-4 py-4 hover:bg-white/[0.02] transition">
                           <div className="flex items-start gap-2 text-gray-400 min-w-0">
                             <Zap size={13} className="text-cyan-500/70 mt-0.5 shrink-0" />
-                            <span className="break-words">{template.trigger || "—"}</span>
+                            <span className="min-w-0 [overflow-wrap:anywhere]">{template.trigger || "—"}</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-4"><StatusBadge enabled={Boolean(template.is_enabled)} /></td>
-                        <td className="px-4 py-4 hidden lg:table-cell">
+                        </div>
+                        <div className="min-w-0 px-4 py-4 hover:bg-white/[0.02] transition">
+                          <StatusBadge enabled={Boolean(template.is_enabled)} />
+                        </div>
+                        <div className="min-w-0 px-4 py-4 hover:bg-white/[0.02] transition">
                           <div className="flex items-center gap-1.5 text-gray-400 text-xs whitespace-nowrap">
                             <Clock size={13} className="text-gray-600 shrink-0" /> {formatDate(template.updated_at)}
                           </div>
-                        </td>
-                        <td className="px-4 py-4">
+                        </div>
+                        <div className="min-w-0 px-4 py-4 hover:bg-white/[0.02] transition">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
                             <Link
                               to={`/admin/email-templates/${encodeURIComponent(template.template_key)}`}
@@ -347,11 +355,11 @@ export default function AdminEmailTemplates() {
                               Preview
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               </div>
             </>
           )}

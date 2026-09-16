@@ -30,6 +30,7 @@ import ProductReviewsModal from "../components/ProductReviewsModal.jsx";
 import WishlistHeart from "../components/WishlistHeart.jsx";
 import CompareButton from "../components/CompareButton.jsx";
 import useRecentlyViewed from "../hooks/useRecentlyViewed.js";
+import { getErrorMessage } from "../utils/backendMessageMapper.js";
 
 export default function ProductDetails({ token }) {
   const { t } = useTranslation();
@@ -175,7 +176,7 @@ export default function ProductDetails({ token }) {
       await fetchWishlist();
     } catch (error) {
       console.warn("toggleWishlist error:", error);
-      addToast("Failed to update wishlist", "error");
+      addToast(getErrorMessage(error, t, "compare.unableToUpdateWishlist"), "error");
     } finally {
       setAddingToWishlist((prev) => {
         const next = new Map(prev);
@@ -248,7 +249,7 @@ export default function ProductDetails({ token }) {
         }).catch(() => {});
       } catch (error) {
         console.warn("loadProduct error:", error);
-        addToast(error?.message || "Unable to load product", "error");
+        addToast(getErrorMessage(error, t, 'product.unableToLoad'), "error");
       } finally {
         setLoading(false);
       }
@@ -259,7 +260,7 @@ export default function ProductDetails({ token }) {
 
   const handleAddToCart = async () => {
     if (!product || product.stock_quantity <= 0) {
-      addToast("This product is currently unavailable.", "warning");
+      addToast(t('product.unavailable'), "warning");
       return;
     }
 
@@ -275,7 +276,7 @@ export default function ProductDetails({ token }) {
       addToast(t('dashboard.addedToCart', { name: product.name }), "success");
     } catch (error) {
       console.warn("addToCart error:", error);
-      addToast(error?.message || "Unable to add item to cart.", "error");
+      addToast(getErrorMessage(error, t, 'searchResults.unableToAddToCart'), "error");
     } finally {
       setAddingToCart(false);
     }
@@ -304,7 +305,7 @@ export default function ProductDetails({ token }) {
   const handleNotifyMe = async () => {
     if (!product?.id) return;
     if (!isAuthenticated) {
-      addToast("Sign in to get notified when this product is back in stock.", "info");
+      addToast(t('product.signInToNotify'), "info");
       navigate("/login");
       return;
     }
@@ -317,7 +318,7 @@ export default function ProductDetails({ token }) {
       if (error?.code === "ALREADY_IN_STOCK") {
         addToast(t('dashboard.backInStock'), "success");
       } else {
-        addToast(error?.message || t('dashboard.failedNotify'), "error");
+        addToast(getErrorMessage(error, t, 'dashboard.failedNotify'), "error");
       }
       setNotifyState("idle");
     }
@@ -356,7 +357,7 @@ export default function ProductDetails({ token }) {
             </button>
 
           <div className="text-xs font-mono text-slate-500 hidden sm:block">
-            SYSTEM INDEX // SKU-{id?.padStart(4, "0")}
+            {t('product.systemIndex')} SKU-{id?.padStart(4, "0")}
           </div>
         </div>
 
@@ -390,7 +391,7 @@ export default function ProductDetails({ token }) {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-600 font-mono text-xs">
-                    [ NO DIAGRAM ATTACHED ]
+                    {t('product.noDiagram')}
                   </div>
                 )}
 
@@ -448,11 +449,11 @@ export default function ProductDetails({ token }) {
                       >
                         <SafeImage
                           src={imgUrl}
-                          alt={`${product.name} Thumbnail ${index + 1}`}
+                          alt={t('product.thumbnail', { name: product.name, index: index + 1 })}
                           className="w-full h-full object-contain"
                           fallback={
                             <div className="w-full h-full flex items-center justify-center bg-slate-950 text-slate-700 text-[10px] font-mono">
-                              IMG
+                              {t('product.imgFallback')}
                             </div>
                           }
                         />
@@ -461,8 +462,7 @@ export default function ProductDetails({ token }) {
                   </div>
 
                   <p className="text-[11px] font-mono text-slate-500 text-right tracking-wide">
-                    FRAME INVENTORY: {selectedImageIndex + 1} OF{" "}
-                    {allImages.length}
+                    {t('product.frameInventory', { current: selectedImageIndex + 1, total: allImages.length })}
                   </p>
                 </div>
               )}
@@ -496,14 +496,14 @@ export default function ProductDetails({ token }) {
                     {reviewStats.averageRating > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5` : "0.0 / 5"}
                   </span>
                   <span className="text-xs text-slate-500 font-medium">
-                    {reviewStats.totalReviews > 0 ? `${reviewStats.totalReviews} REVIEW${reviewStats.totalReviews > 1 ? "S" : ""}` : t('product.noReviews').toUpperCase()}
+                    {reviewStats.totalReviews > 0 ? t('product.reviewCount', { count: reviewStats.totalReviews }).toUpperCase() : t('product.noReviews').toUpperCase()}
                   </span>
                 </div>
 
                 <div className="border-t border-slate-900 pt-4">
                   <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
                     {product.description ||
-                      "High-performance solid-state engineering module constructed for automated network infrastructure and resilient sensory deployment environments."}
+                      t('product.descriptionFallback')}
                   </p>
                 </div>
               </div>
@@ -516,12 +516,12 @@ export default function ProductDetails({ token }) {
                   {/* System Pricing Grid Block - Dynamic Discount Display */}
                   <div className="rounded-xl bg-slate-950/80 border border-slate-900 p-4 text-left">
                     <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                      Unit Cost Matrix
+                      {t('product.unitCostMatrix')}
                     </p>
                     {/* Show original price with strikethrough when discount exists */}
                     {hasDiscount(product) && (
                       <p className="text-xs text-slate-500 line-through mb-1">
-                        Original: {formatPrice(product.original_price || product.price)}
+                        {t('product.originalPrice', { price: formatPrice(product.original_price || product.price) })}
                       </p>
                     )}
                     {/* Display final_price prominently */}
@@ -531,11 +531,11 @@ export default function ProductDetails({ token }) {
                     {/* Show savings when discount exists */}
                     {hasDiscount(product) && (
                       <span className="text-[10px] text-emerald-400 font-mono mt-1 block">
-                        You Save: {formatPrice(product.discount_amount || 0)} ({Math.round(product.discount_percent)}% OFF)
+                        {t('product.youSave', { price: formatPrice(product.discount_amount || 0), percent: Math.round(product.discount_percent) })}
                       </span>
                     )}
                     <span className="text-[10px] text-slate-500 font-mono mt-1 block">
-                      Inc. GST Logistics
+                      {t('product.incGstLogistics')}
                     </span>
                   </div>
 
@@ -578,7 +578,7 @@ export default function ProductDetails({ token }) {
                         const code =
                           color.color_code || color.code || "#475569";
                         const name =
-                          color.color_name || color.name || "Default Array";
+                          color.color_name || color.name || t('product.defaultArray');
                         return (
                           <span
                             key={color.id || name}
@@ -621,12 +621,12 @@ export default function ProductDetails({ token }) {
                         <Bell size={15} />
                       )}
                       {notifyState === "loading"
-                        ? "Registering..."
+                        ? t('product.registering')
                         : notifyState === "success"
-                          ? "We'll Notify You"
+                          ? t('product.weWillNotifyYou')
                           : notifyState === "active"
-                            ? "Notification Active"
-                            : "Notify Me"}
+                            ? t('product.notificationActive')
+                            : t('product.notifyMe')}
                     </button>
                   ) : (
                     <button
@@ -642,7 +642,7 @@ export default function ProductDetails({ token }) {
                       ) : (
                         <ShoppingCart size={15} />
                       )}
-                      {addingToCart ? "Deploying Node..." : t('product.addToCart')}
+                      {addingToCart ? t('product.deployingNode') : t('product.addToCart')}
                     </button>
                   )}
 
@@ -656,19 +656,19 @@ export default function ProductDetails({ token }) {
                 <div className="p-3 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col items-center justify-center">
                   <ShieldCheck size={16} className="text-indigo-400 mb-1" />
                   <span className="text-[10px] font-mono text-slate-400 block tracking-wide">
-                    100% Genuine Tech
+                    {t('product.genuineTech')}
                   </span>
                 </div>
                 <div className="p-3 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col items-center justify-center">
                   <Truck size={16} className="text-amber-400 mb-1" />
                   <span className="text-[10px] font-mono text-slate-400 block tracking-wide">
-                    Express Delivery
+                    {t('product.expressDelivery')}
                   </span>
                 </div>
                 <div className="p-3 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col items-center justify-center">
                   <RefreshCw size={16} className="text-purple-400 mb-1" />
                   <span className="text-[10px] font-mono text-slate-400 block tracking-wide">
-                    7-Day Return Grid
+                    {t('product.returnGrid')}
                   </span>
                 </div>
               </div>
@@ -682,19 +682,17 @@ export default function ProductDetails({ token }) {
               size={40}
             />
             <h3 className="text-xl font-bold text-white tracking-tight">
-              Product Not Found
+              {t('product.notFound')}
             </h3>
             <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-              The targeted inventory node signature could not be located inside
-              our network clusters. The item might have been unlisted or
-              relocated.
+              {t('product.notFoundBody')}
             </p>
             <div className="mt-6">
               <Link
                 to="/shop"
                 className="bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-widest transition-all"
               >
-                Return to Network Catalog
+                {t('product.returnToCatalog')}
               </Link>
             </div>
           </div>
@@ -725,7 +723,7 @@ export default function ProductDetails({ token }) {
                   margin: 0,
                 }}
               >
-                {reviewStats.totalReviews} VERIFIED REVIEW{reviewStats.totalReviews > 1 ? "S" : ""}
+                {t('product.verifiedReview', { count: reviewStats.totalReviews }).toUpperCase()}
               </p>
             </div>
           </div>
@@ -783,7 +781,7 @@ export default function ProductDetails({ token }) {
                           margin: 0,
                         }}
                       >
-                        Based on {reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? "s" : ""}
+                        {t('product.basedOnReview', { count: reviewStats.totalReviews })}
                       </p>
                     </div>
                   </div>
@@ -900,7 +898,7 @@ export default function ProductDetails({ token }) {
                     >
                       {review.first_name || review.last_name
                         ? `${review.first_name || ""} ${review.last_name || ""}`.trim()
-                        : "Verified Customer"}
+                        : t('product.verifiedCustomer')}
                     </span>
                     <span
                       style={{
@@ -983,7 +981,7 @@ export default function ProductDetails({ token }) {
               }}
             >
               <Edit size={14} />
-              Write a Review
+              {t('product.writeReview')}
             </button>
           </div>
         </div>
@@ -1005,11 +1003,10 @@ export default function ProductDetails({ token }) {
                 <div className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full" />
                 <div>
                   <h2 className="text-xl font-black text-white tracking-tight">
-                    Related Products
+                    {t('product.relatedProducts')}
                   </h2>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    MORE FROM{" "}
-                    {product?.category_name?.toUpperCase() || "THIS CATEGORY"}
+                    {t('product.moreFrom', { category: product?.category_name?.toUpperCase() || t('product.thisCategory') })}
                   </p>
                 </div>
               </div>
@@ -1017,7 +1014,7 @@ export default function ProductDetails({ token }) {
                 to={`/shop`}
                 className="text-xs font-bold text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40 bg-indigo-500/5 px-4 py-2 rounded-xl transition-all"
               >
-                View All
+                {t('common.viewAll')}
               </Link>
             </div>
 

@@ -71,7 +71,24 @@
     "loginRequired": "ಲಾಗಿನ್ ಅಗತ್ಯ",
     "somethingWentWrong": "ಏನೋ ತೊಂದರೆಯಾಗಿದೆ",
     "invalidInput": "ಅಮಾನ್ಯ ಇನ್ಪುಟ್",
-    "products": "ಉತ್ಪನ್ನಗಳು"
+    "products": "ಉತ್ಪನ್ನಗಳು",
+    "networkError": "Unable to connect to the server. Please refresh the page or try again later.",
+    "review": "review",
+    "selectLanguage": "Select Language",
+    "noLanguagesFound": "No languages found",
+    "searchLanguages": "Search languages...",
+    "bookFreeDemo": "Book Free Demo",
+    "chatOnWhatsApp": "Chat on WhatsApp",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "contactUs": "Contact Us",
+    "validationError": "Please check your input and try again",
+    "unauthorized": "Please login to continue",
+    "forbidden": "You don't have permission to perform this action",
+    "notFound": "The requested resource was not found",
+    "serverError": "Something went wrong. Please try again later.",
+    "explore": "Explore",
+    "checkingWebsiteStatus": "Checking website status..."
   },
   "nav": {
     "home": "ಮುಖಪುಟ",
@@ -108,7 +125,9 @@
     "loadingNotifications": "ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
     "loadFailed": "ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ.",
     "allCaughtUp": "ನೀವು ಎಲ್ಲಾ ನವೀಕೃತರಾಗಿದ್ದೀರಿ",
-    "willLetYouKnow": "ಪ್ರಮುಖವಾದದ್ದು ಸಂಭವಿಸಿದಾಗ ನಾವು ನಿಮಗೆ ತಿಳಿಸುತ್ತೇವೆ."
+    "willLetYouKnow": "ಪ್ರಮುಖವಾದದ್ದು ಸಂಭವಿಸಿದಾಗ ನಾವು ನಿಮಗೆ ತಿಳಿಸುತ್ತೇವೆ.",
+    "logo": "Logo",
+    "notificationsLabel": "Notifications, {{count}} unread"
   },
   "footer": {
     "quickLinks": "ತ್ವರಿತ ಲಿಂಕ್‌ಗಳು",
@@ -132,7 +151,8 @@
     "shop": "ಅಂಗಡಿ",
     "aboutUs": "ನಮ್ಮ ಬಗ್ಗೆ",
     "contactUs": "ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ",
-    "trackOrder": "ಆರ್ಡರ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ"
+    "trackOrder": "ಆರ್ಡರ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+    "taglineFallback": "{{company}} — Premium automation solutions for modern living and working spaces."
   },
   "home": {
     "welcome": "ಸ್ವಾಗತ",
@@ -179,7 +199,28 @@
     "whereCanYouUse": "ಟೆಕ್ ನೋಡ್ ಅನ್ನು ಎಲ್ಲಿ ಬಳಸಬಹುದು?",
     "shopByCategory": "ವರ್ಗದ ಪ್ರಕಾರ ಖರೀದಿಸಿ",
     "selectProduct": "ಉತ್ಪನ್ನ ಆಯ್ಕೆಮಾಡಿ",
-    "newArrivalBanner": "ಹೊಸದು: ಆಟೊಮೇಟ್ ಹಬ್ ಪ್ರೊ ಲಭ್ಯ"
+    "newArrivalBanner": "ಹೊಸದು: ಆಟೊಮೇಟ್ ಹಬ್ ಪ್ರೊ ಲಭ್ಯ",
+    "loadFailed": "Failed to sync store parameters. Please reload.",
+    "openWhatsappSupport": "Open WhatsApp support chat",
+    "flipToDayMode": "Flip to day mode",
+    "flipToNightMode": "Flip to night mode",
+    "roomSecurity": "Security",
+    "roomSecurityDetail": "All systems armed & secure.",
+    "roomLighting": "Lighting",
+    "roomLightingDetail": "12 fixtures dimmed to 40%.",
+    "roomClimate": "Climate",
+    "roomClimateDetail": "Living room holding at 72°F.",
+    "roomCameras": "Cameras",
+    "roomCamerasDetail": "4 feeds live, no motion.",
+    "showRoom": "Show {{name}}",
+    "smartLivingStartsHere": "Smart Living Starts Here",
+    "limitedTimeShopNow": "Limited time offer. Shop now!",
+    "customerReviews": "Customer Reviews",
+    "noApprovedReviews": "No approved reviews yet. Reviews from verified buyers will appear here after admin approval.",
+    "verifiedCustomer": "Verified Customer",
+    "purchased": "Purchased: {{product}}",
+    "whatsappPrefill": "Hello, I need help with your automation products.",
+    "trustedByIndustryLeaders": "Trusted by Industry Leaders"
   },
   "shop": {
     "allProducts": "ಎಲ್ಲಾ ಉತ್ಪನ್ನಗಳು",
@@ -192,7 +233,13 @@
     "noProductsFound": "ಯಾವುದೇ ಉತ್ಪನ್ನಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
     "tryAdjustingFilters": "ನಿಮ್ಮ ಫಿಲ್ಟರ್‌ಗಳನ್ನು ಬದಲಾಯಿಸಿ ಪ್ರಯತ್ನಿಸಿ",
     "resultsFound": "ಫಲಿತಾಂಶಗಳು ಕಂಡುಬಂದಿವೆ",
-    "featured": "ವಿಶೇಷ"
+    "featured": "ವಿಶೇಷ",
+    "compilingInventories": "Compiling System Inventories...",
+    "loadingPayload": "Loading data payload from storage blocks",
+    "allocationEmpty": "Allocation Empty",
+    "iotHardware": "IoT Hardware",
+    "index": "Index",
+    "nextNode": "Next Node"
   },
   "cart": {
     "title": "ಕಾರ್ಟ್",
@@ -217,7 +264,15 @@
     "cartEmpty": "ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ. ಚೆಕ್‌ಔಟ್ ಮಾಡುವ ಮೊದಲು ಉತ್ಪನ್ನಗಳನ್ನು ಸೇರಿಸಿ.",
     "couponSelected": "ಕೂಪನ್ {{code}} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ",
     "couponAutoApplied": "ಚೆಕ್‌ಔಟ್‌ಗೆ ಹೋದಾಗ ಇದು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಅನ್ವಯಿಸಲ್ಪಡುತ್ತದೆ.",
-    "limit": "ಮಿತಿ {{count}}"
+    "limit": "ಮಿತಿ {{count}}",
+    "fetched": "Cart fetched",
+    "itemAdded": "Product added to cart",
+    "itemUpdated": "Cart updated",
+    "cleared": "Cart cleared",
+    "insufficientStock": "Insufficient stock available",
+    "productUnavailable": "Product is no longer available",
+    "removePendingCoupon": "Remove pending coupon",
+    "addedToBasket": "{{name}} added to basket"
   },
   "checkout": {
     "title": "ಚೆಕ್‌ಔಟ್",
@@ -386,7 +441,25 @@
     "automations": "ಸ್ವಯಂಚಾಲಿತಗಳು",
     "encryption": "ಎನ್‌ಕ್ರಿಪ್ಷನ್",
     "recovery": "ಮರುಪಡೆಯುವಿಕೆ",
-    "support": "ಬೆಂಬಲ"
+    "support": "ಬೆಂಬಲ",
+    "registeredSuccess": "Registration successful! Welcome to Tek Node.",
+    "loggedInSuccess": "Logged in successfully",
+    "loggedOutSuccess": "Logged out successfully",
+    "passwordChanged": "Password changed successfully",
+    "passwordMismatch": "Passwords do not match",
+    "otpSent": "OTP sent to your email",
+    "otpVerified": "OTP verified successfully",
+    "otpExpired": "OTP has expired. Please request a new one.",
+    "profileFetched": "Profile fetched",
+    "profileUpdated": "Profile updated successfully",
+    "verificationRequired": "Verification is required to change the password",
+    "verificationExpired": "Verification expired or invalid. Please request a new OTP.",
+    "weakPassword": "Password must be at least 8 characters",
+    "invalidEmail": "Invalid email address",
+    "invalidPassword": "Invalid password",
+    "invalidSession": "Invalid or expired session",
+    "userNotFound": "User not found",
+    "emailExists": "Email already registered"
   },
   "dashboard": {
     "welcome": "ಸ್ವಾಗತ",
@@ -458,7 +531,13 @@
     "confirmCancelOrder": "ಆರ್ಡರ್ {{orderNumber}} ರದ್ದುಮಾಡುವುದೇ? ಇದನ್ನು ರದ್ದುಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
     "orderCancelled": "ಆರ್ಡರ್ ಯಶಸ್ವಿಯಾಗಿ ರದ್ದುಮಾಡಲಾಗಿದೆ",
     "failedToCancel": "ಆರ್ಡರ್ ರದ್ದುಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
-    "failedToLoadDashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ"
+    "failedToLoadDashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+    "failedToUpdateProfile": "Failed to update profile",
+    "notifyActive": "✓ Notification Active",
+    "notifyMeWhenAvailable": "🔔 Notify Me When Available",
+    "priceDropped": "Price Dropped",
+    "wishlistEmpty": "Your wishlist is empty",
+    "wishlistEmptyDescription": "Save items you love here to buy them later."
   },
   "product": {
     "inStock": "ಸ್ಟಾಕ್‌ನಲ್ಲಿದೆ",
@@ -492,7 +571,49 @@
     "sale": "ಸೇಲ್",
     "sampleReview": "ಅತ್ಯುತ್ತಮ ಉತ್ಪನ್ನ!",
     "reviewMessage": "ವಿಮರ್ಶೆ ಸಂದೇಶ",
-    "reviewPlaceholder": "ಈ ಉತ್ಪನ್ನದ ಬಗ್ಗೆ ನಿಮ್ಮ ಅನುಭವವನ್ನು ಹಂಚಿಕೊಳ್ಳಿ..."
+    "reviewPlaceholder": "ಈ ಉತ್ಪನ್ನದ ಬಗ್ಗೆ ನಿಮ್ಮ ಅನುಭವವನ್ನು ಹಂಚಿಕೊಳ್ಳಿ...",
+    "lowStock": "Low stock",
+    "colorVariants": "Color variants",
+    "fetched": "Products fetched",
+    "singleFetched": "Product fetched",
+    "notFound": "Product not found",
+    "unableToLoad": "Unable to load product",
+    "unavailable": "This product is currently unavailable.",
+    "signInToNotify": "Sign in to get notified when this product is back in stock.",
+    "systemIndex": "SYSTEM INDEX //",
+    "noDiagram": "[ NO DIAGRAM ATTACHED ]",
+    "thumbnail": "{{name}} Thumbnail {{index}}",
+    "imgFallback": "IMG",
+    "frameInventory": "FRAME INVENTORY: {{current}} OF {{total}}",
+    "reviewCount_one": "{{count}} Review",
+    "reviewCount_other": "{{count}} Reviews",
+    "descriptionFallback": "High-performance solid-state engineering module constructed for automated network infrastructure and resilient sensory deployment environments.",
+    "unitCostMatrix": "Unit Cost Matrix",
+    "originalPrice": "Original: {{price}}",
+    "youSave": "You Save: {{price}} ({{percent}}% OFF)",
+    "incGstLogistics": "Inc. GST Logistics",
+    "defaultArray": "Default Array",
+    "registering": "Registering...",
+    "weWillNotifyYou": "We'll Notify You",
+    "notificationActive": "Notification Active",
+    "notifyMe": "Notify Me",
+    "deployingNode": "Deploying Node...",
+    "genuineTech": "100% Genuine Tech",
+    "expressDelivery": "Express Delivery",
+    "returnGrid": "7-Day Return Grid",
+    "notFoundBody": "The targeted inventory node signature could not be located inside our network clusters. The item might have been unlisted or relocated.",
+    "returnToCatalog": "Return to Network Catalog",
+    "verifiedReview_one": "{{count}} Verified Review",
+    "verifiedReview_other": "{{count}} Verified Reviews",
+    "basedOnReview_one": "Based on {{count}} review",
+    "basedOnReview_other": "Based on {{count}} reviews",
+    "verifiedCustomer": "Verified Customer",
+    "moreFrom": "MORE FROM {{category}}",
+    "thisCategory": "THIS CATEGORY",
+    "categoryFallback": "IoT Component",
+    "purchaseRequired": "You need to purchase this product to write a review.",
+    "itemFallback": "Product #{{id}}",
+    "imagePreview": "Preview"
   },
   "orders": {
     "myOrders": "ನನ್ನ ಆರ್ಡರ್‌ಗಳು",
@@ -542,7 +663,12 @@
     "invoice": "ಸರಕುಪಟ್ಟಿ",
     "loadingDetails": "ಆರ್ಡರ್ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
     "notFound": "ಆರ್ಡರ್ ಕಂಡುಬಂದಿಲ್ಲ",
-    "loadFailed": "ಆರ್ಡರ್ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ"
+    "loadFailed": "ಆರ್ಡರ್ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+    "productCount_one": "{{count}} Product",
+    "productCount_other": "{{count}} Products",
+    "keepOrder": "Keep Order",
+    "inTransit": "ಸಾಗಣೆಯಲ್ಲಿ",
+    "deliveryFailed": "ವಿತರಣೆ ವಿಫಲವಾಗಿದೆ"
   },
   "returns": {
     "requestReturn": "ರಿಟರ್ನ್ ವಿನಂತಿಸಿ",
@@ -580,10 +706,8 @@
     "otpFailure": "ಈ OTP ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸ OTP ವಿನಂತಿಸಿ.",
     "otpWait": "ಮತ್ತೊಂದು OTP ವಿನಂತಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.",
     "invalidOtp": "ಅಮಾನ್ಯ OTP. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-    "currentShort": "ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್ ಅಗತ್ಯವಿದೆ.",
     "mismatch": "ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ.",
     "newMin8": "ಹೊಸ ಪಾಸ್ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು.",
-    "sameAsCurrent": "ಹೊಸ ಪಾಸ್ವರ್ಡ್ ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್‌ಗಿಂತ ಭಿನ್ನವಾಗಿರಬೇಕು.",
     "changed": "ಪಾಸ್ವರ್ಡ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ.",
     "changeFailed": "ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಲು ವಿಫಲವಾಗಿದೆ.",
     "otpSent": "OTP ಅನ್ನು ನಿಮ್ಮ ಇಮೇಲ್ ವಿಳಾಸಕ್ಕೆ ಕಳುಹಿಸಲಾಗಿದೆ.",
@@ -591,14 +715,10 @@
     "enter6Digit": "ದಯವಿಟ್ಟು 6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ.",
     "tooManyAttempts": "ಹಲವು ಪ್ರಯತ್ನಗಳು. ದಯವಿಟ್ಟು OTP ಅನ್ನು ಮರುಕಳುಹಿಸಿ.",
     "verifyFailed": "OTP ಪರಿಶೀಲನೆ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-    "tabCurrent": "ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್",
     "tabOtp": "ಇಮೇಲ್ OTP",
-    "currentPlaceholder": "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ",
     "newPassword": "ಹೊಸ ಪಾಸ್ವರ್ಡ್",
     "confirmNew": "ಹೊಸ ಪಾಸ್ವರ್ಡ್ ದೃಢೀಕರಿಸಿ",
     "hint": "ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳು",
-    "differentFromCurrent": "ಪ್ರಸ್ತುತದಿಂದ ಭಿನ್ನ",
-    "mustDiffer": "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್‌ಗಿಂತ ಭಿನ್ನವಾಗಿರಬೇಕು.",
     "changing": "ಬದಲಾಯಿಸಲಾಗುತ್ತಿದೆ...",
     "changePasswordBtn": "ಪಾಸ್ವರ್ಡ್ ಬದಲಿಸಿ",
     "otpWillBeSentTo": "OTP ಅನ್ನು ಕಳುಹಿಸಲಾಗುವುದು",
@@ -616,7 +736,6 @@
     "verifyOtpBtn": "OTP ಪರಿಶೀಲಿಸಿ",
     "didntReceiveOtp": "OTP ಸಿಗಲಿಲ್ಲವೇ?",
     "resendBtn": "ಮರುಕಳುಹಿಸಿ",
-    "backToCurrent": "ಪ್ರಸ್ತುತ ಪಾಸ್ವರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ",
     "otpExpiredBanner": "ಈ OTP ಅವಧಿ ಮುಗಿದಿದೆ. ಮುಂದುವರಿಸಲು ಹೊಸ OTP ವಿನಂತಿಸಿ.",
     "freshOtp": "ಹೊಸ OTP ಅನ್ನು ನಿಮ್ಮ ಇಮೇಲ್‌ಗೆ ಕಳುಹಿಸಲಾಗುವುದು.",
     "requestNewOtp": "ಹೊಸ OTP ವಿನಂತಿಸಿ",
@@ -738,7 +857,40 @@
     "faqQ7": "ನನ್ನ ಆರ್ಡರ್ ಅನ್ನು ನಾನು ರದ್ದುಮಾಡಬಹುದೇ?",
     "faqA7": "ಹೌದು. ಸಾಗಾಣಿಕೆಗೆ ಮುಂಚಿತವಾಗಿ ಆರ್ಡರ್‌ಗಳನ್ನು ರದ್ದುಮಾಡಬಹುದು. ಅರ್ಹ ಮುಂಗಡ ಪಾವತಿ ಆರ್ಡರ್‌ಗಳಿಗೆ ಮರುಪಾವತಿಗಳನ್ನು ನಮ್ಮ ಮರುಪಾವತಿ ನೀತಿಯ ಪ್ರಕಾರ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತದೆ.",
     "faqQ8": "ನಾನು ನಿಮ್ಮನ್ನು ಹೇಗೆ ಸಂಪರ್ಕಿಸಬಹುದು?",
-    "faqA8": "ನೀವು ಸಂಪರ್ಕ ಪುಟ, WhatsApp, ಇಮೇಲ್, ಅಥವಾ ಫೋನ್ ಬೆಂಬಲ ಮೂಲಕ ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಬಹುದು."
+    "faqA8": "ನೀವು ಸಂಪರ್ಕ ಪುಟ, WhatsApp, ಇಮೇಲ್, ಅಥವಾ ಫೋನ್ ಬೆಂಬಲ ಮೂಲಕ ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಬಹುದು.",
+    "heroTitle": "Powering India's Smart Spaces",
+    "heroSubtitle": "From homes to hotels, offices to industries — we design and deliver intelligent automation that just works.",
+    "whoWeAreTitle": "Who We Are",
+    "missionTitle": "Our Mission",
+    "productsTitle": "What We Build",
+    "whyChooseUsTitle": "Why Choose Us",
+    "timelineTitle": "Our Journey",
+    "statsTitle": "By The Numbers",
+    "testimonialsTitle": "What People Say",
+    "faqTitle": "Frequently Asked Questions",
+    "ctaTitle": "Ready to Automate Your Space?",
+    "ctaText": "Join thousands of customers who've made the switch to smarter living.",
+    "ctaPrimary": "Explore Products",
+    "ctaSecondary": "Contact Us",
+    "premiumQuality": "Premium Quality",
+    "premiumQualityDesc": "Rigorously tested components engineered to outlast industry standards.",
+    "advancedAutomation": "Advanced Automation",
+    "advancedAutomationDesc": "Cutting-edge AI-ready tech that evolves with your space.",
+    "enterpriseSecurity": "Enterprise Security",
+    "enterpriseSecurityDesc": "Military-grade encryption on every connected device.",
+    "alwaysOnSupport": "Always-On Support",
+    "alwaysOnSupportDesc": "Dedicated engineers available around the clock, every day.",
+    "expertGuidance": "Expert Guidance",
+    "expertGuidanceDesc": "White-glove installation and post-setup maintenance support.",
+    "community": "10K+ Community",
+    "communityDesc": "A growing family of homes and businesses that trust Tek Node.",
+    "products": "Products",
+    "homes": "Homes",
+    "offices": "Offices",
+    "hotels": "Hotels",
+    "education": "Education",
+    "industrial": "Industrial",
+    "healthcare": "Healthcare"
   },
   "contact": {
     "letsBuild": "ಬನ್ನಿ ನಿರ್ಮಿಸೋಣ",
@@ -831,7 +983,9 @@
     "addedToCart": "{{name}} ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ",
     "unableToAddToCart": "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ",
     "unableToLoadComparison": "ಹೋಲಿಕೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ",
-    "unableToLoadProducts": "ಉತ್ಪನ್ನಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+    "unableToLoadProducts": "ಉತ್ಪನ್ನಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "selectedCount": "{{count}} selected",
+    "removeProduct": "Remove {{name}}"
   },
   "enquiry": {
     "backHome": "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ",
@@ -857,7 +1011,15 @@
     "phoneLabel": "ಫೋನ್",
     "preferredTimeLabel": "ಆದ್ಯತೆಯ ಸಮಯ",
     "messageLabel": "ಸಂದೇಶ",
-    "requirementsPlaceholder": "ನಿಮ್ಮ ಅವಶ್ಯಕತೆಗಳ ಬಗ್ಗೆ ನಮಗೆ ತಿಳಿಸಿ..."
+    "requirementsPlaceholder": "ನಿಮ್ಮ ಅವಶ್ಯಕತೆಗಳ ಬಗ್ಗೆ ನಮಗೆ ತಿಳಿಸಿ...",
+    "preferredTime": "Preferred Time",
+    "messagePlaceholder": "Tell us about your requirements...",
+    "teamWillContact": "Our team will contact you shortly.",
+    "preferredDateLabel": "Preferred Date",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john@example.com",
+    "phonePlaceholder": "+91 98765 43210",
+    "unableToConnect": "Unable to connect to server."
   },
   "offers": {
     "title": "ಆಫರ್‌ಗಳು ಮತ್ತು ಪ್ರಚಾರಗಳು",
@@ -866,7 +1028,13 @@
     "checkBackSoon": "ರೋಮಾಂಚಕಾರಿ ಡೀಲ್‌ಗಳಿಗಾಗಿ ಶೀಘ್ರದಲ್ಲಿ ಮರಳಿ ಪರಿಶೀಲಿಸಿ!",
     "browseProducts": "ಉತ್ಪನ್ನಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ",
     "minOrder": "ಕನಿಷ್ಠ ಆರ್ಡರ್: ₹{{value}}",
-    "expires": "{{date}} ರಂದು ಅವಧಿ ಮುಗಿಯುತ್ತದೆ"
+    "expires": "{{date}} ರಂದು ಅವಧಿ ಮುಗಿಯುತ್ತದೆ",
+    "fetched": "Offers fetched",
+    "specialOffer": "Special Offer",
+    "limitedTimeOffer": "Limited Time Offer",
+    "shopDeal": "Shop Deal",
+    "shopCategory": "Shop Category",
+    "viewOffer": "View Offer"
   },
   "orderConfirmation": {
     "thankYou": "ನಿಮ್ಮ ಆರ್ಡರ್‌ಗೆ ಧನ್ಯವಾದಗಳು",
@@ -910,7 +1078,11 @@
     "statusShipped": "ಸಾಗಾಣಿಕೆ ಮಾರ್ಗದಲ್ಲಿ",
     "statusOutForDelivery": "ಕೊನೆಯ ಮೈಲಿ ವಿತರಣೆ",
     "statusDelivered": "ಪೂರೈಕೆ ಪೂರ್ಣಗೊಂಡಿದೆ",
-    "statusCancelled": "ಪೈಪ್‌ಲೈನ್ ಅಂತ್ಯಗೊಂಡಿದೆ"
+    "statusCancelled": "ಪೈಪ್‌ಲೈನ್ ಅಂತ್ಯಗೊಂಡಿದೆ",
+    "trackOrder": "Track Order",
+    "continueShopping": "Continue Shopping",
+    "statusInTransit": "ಸಾಗಣೆಯಲ್ಲಿ",
+    "statusDeliveryFailed": "ವಿತರಣೆ ವಿಫಲವಾಗಿದೆ"
   },
   "trackOrder": {
     "secureVerification": "ಸುರಕ್ಷಿತ ಪರಿಶೀಲನೆ",
@@ -970,7 +1142,11 @@
     "stepOutForDelivery": "ವಿತರಣೆಗೆ ಹೊರಟಿದೆ",
     "stepOutForDeliveryDesc": "ಇಂದು ವಿತರಣೆಗೆ ಹೊರಟಿದೆ",
     "stepDelivered": "ವಿತರಿಸಲಾಗಿದೆ",
-    "stepDeliveredDesc": "ಪಾರ್ಸೆಲ್ ವಿತರಿಸಲಾಗಿದೆ"
+    "stepDeliveredDesc": "ಪಾರ್ಸೆಲ್ ವಿತರಿಸಲಾಗಿದೆ",
+    "stepInTransit": "ಸಾಗಣೆಯಲ್ಲಿ",
+    "stepInTransitDesc": "ಪ್ಯಾಕೇಜ್ ಮುಂದಿನ ಹಬ್ ಕಡೆಗೆ ಚಲಿಸುತ್ತಿದೆ",
+    "stepDeliveryFailed": "ವಿತರಣೆ ವಿಫಲವಾಗಿದೆ",
+    "stepDeliveryFailedDesc": "ವಿತರಣೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ"
   },
   "thankYou": {
     "title": "ಧನ್ಯವಾದಗಳು",
@@ -1098,6 +1274,628 @@
     "devMotionSensor": "ಚಲನಾ ಸೆನ್ಸಾರ್",
     "devSmokeSensor": "ಹೊಗೆ ಸೆನ್ಸಾರ್",
     "devCamera": "ಕ್ಯಾಮೆರಾ",
-    "devWifiAp": "Wi-Fi AP"
+    "devWifiAp": "Wi-Fi AP",
+    "sessionFound": "Session found"
+  },
+  "language": {
+    "availableLanguages": "Available languages",
+    "closeSelector": "Close language selector"
+  },
+  "homeApplications": {
+    "smartHome": {
+      "title": "Smart Home",
+      "desc": "Smart switches, digital locks, gateways, sensors and automation devices designed for modern homes."
+    },
+    "office": {
+      "title": "Office Automation",
+      "desc": "Improve productivity and control lighting, access, and energy usage efficiently."
+    },
+    "hotel": {
+      "title": "Hotel Solutions",
+      "desc": "Smart room control, access management and guest convenience automation systems."
+    },
+    "hospital": {
+      "title": "Hospital Automation",
+      "desc": "Reliable automation solutions for healthcare facilities and smart infrastructure management."
+    },
+    "school": {
+      "title": "School & College Solutions",
+      "desc": "Smart classrooms, energy-efficient control systems and secure access management."
+    },
+    "industrial": {
+      "title": "Industrial Automation",
+      "desc": "Advanced control systems, monitoring devices and automation solutions for industrial environments."
+    },
+    "availableCount": "{{count}} {{productLabel}} available"
+  },
+  "homeApp": {
+    "tapCards": "Tap the cards on the phone, every action here is live.",
+    "deviceState": "{{device}} {{state}}",
+    "cameraStreaming": "4K · Streaming",
+    "feedPaused": "Feed paused",
+    "states": {
+      "on": "On",
+      "off": "Off",
+      "locked": "Locked",
+      "unlocked": "Unlocked"
+    },
+    "controls": {
+      "lights": {
+        "label": "Lights",
+        "on": "Lights turned on",
+        "off": "Lights turned off"
+      },
+      "doors": {
+        "label": "Front Door",
+        "on": "Front door locked",
+        "off": "Front door unlocked"
+      },
+      "camera": {
+        "label": "Living Room Cam",
+        "on": "Camera feed resumed",
+        "off": "Camera feed paused"
+      }
+    }
+  },
+  "homeCounter": {
+    "homesAutomated": "Homes Automated",
+    "projects": "Projects",
+    "products": "Products",
+    "customerSatisfaction": "Customer Satisfaction"
+  },
+  "homeScenes": {
+    "active": "Active",
+    "activeScene": "Active - {{scene}}",
+    "morning": {
+      "title": "Morning Mode",
+      "desc": "Curtains open, coffee machine starts, and gentle lights turn on.",
+      "step1": "Curtains open",
+      "step2": "Coffee brews",
+      "step3": "Lights fade in"
+    },
+    "goodNight": {
+      "title": "Good Night",
+      "desc": "Doors lock, lights dim, and AC sets to optimal sleep temperature.",
+      "step1": "Doors lock",
+      "step2": "Lights dim",
+      "step3": "AC sets to sleep temp"
+    },
+    "vacation": {
+      "title": "Vacation Mode",
+      "desc": "Randomized lighting and active security cameras for peace of mind.",
+      "step1": "Lighting randomizes",
+      "step2": "Cameras arm",
+      "step3": "Alerts enabled"
+    },
+    "movie": {
+      "title": "Movie Mode",
+      "desc": "Curtains close, lights dim to 10%, and TV turns on instantly.",
+      "step1": "Curtains close",
+      "step2": "Lights dim to 10%",
+      "step3": "TV powers on"
+    }
+  },
+  "homeFaq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about our smart home ecosystem.",
+    "wiring": {
+      "question": "Do I need special wiring for Automate switches?",
+      "answer": "No, Automate switches are designed to fit into your existing switchboards without requiring neutral wires or re-wiring."
+    },
+    "security": {
+      "question": "Is my data secure?",
+      "answer": "Yes. We use bank-level AES-256 encryption. Your video feeds and data never leave our secure cloud environment."
+    },
+    "internet": {
+      "question": "What happens if the internet goes down?",
+      "answer": "Your smart devices will continue to function normally via physical switches or local network controls if you are connected to the same Wi-Fi router."
+    },
+    "installation": {
+      "question": "Do you offer professional installation?",
+      "answer": "Absolutely. We have certified professionals who can install and configure your smart home in a few hours."
+    },
+    "subscription": {
+      "question": "Is there a monthly subscription fee?",
+      "answer": "Basic app usage and device control is free. Optional premium plans can extend cloud storage for camera feeds."
+    }
+  },
+  "smartHome": {
+    "liveFeed": "Live feed",
+    "liveStatus": "Live status",
+    "status": {
+      "on": "ON",
+      "temperature": "24°C",
+      "openPercent": "60%",
+      "locked": "LOCKED",
+      "live": "LIVE",
+      "automationCount": "3"
+    },
+    "meta": {
+      "brightness": "78% brightness",
+      "autoMode": "Auto mode",
+      "openEast": "Open · east side",
+      "frontDoorSecure": "Front door secure",
+      "camerasStreaming": "4 cameras streaming",
+      "automationsActive": "Automations active"
+    },
+    "planSubmitted": "Your smart home plan has been submitted successfully!",
+    "planFetched": "Plan fetched",
+    "experienceTitle": "Smart Home Experience",
+    "experienceDesc": "Manage your entire home from a single intuitive interface. The Automate app gives you unprecedented control and insight into your living space.",
+    "theAutomateApp": "The Automate App",
+    "controlLights": "Control Lights",
+    "controlAc": "Control AC",
+    "controlCurtains": "Control Curtains",
+    "controlDoorLocks": "Control Door Locks",
+    "monitorCameras": "Monitor Cameras",
+    "scheduleAutomation": "Schedule Automation"
+  },
+  "whyTeknode": {
+    "climate": {
+      "engine": "Climate Engine",
+      "temperature": "Temperature",
+      "cold": "Cold",
+      "mild": "Mild",
+      "hot": "Hot",
+      "cooling": "ZONE-B COOLING",
+      "balanced": "ZONE-A BALANCED",
+      "heating": "ZONE-C HEATING",
+      "winter": "Winter",
+      "ember": "Ember"
+    },
+    "title": "Why Choose Automate?",
+    "subtitle": "Engineered for reliability, security, and elegance.",
+    "support24x7": {
+      "title": "24x7 Support",
+      "desc": "Always here when you need us.",
+      "longDesc": "Our dedicated global support team is available round-the-clock to assist you with any questions, troubleshooting, or configuration support. You can reach us via live chat, phone, or email anytime."
+    },
+    "voiceAssistant": {
+      "title": "Voice Assistant",
+      "desc": "Works with Alexa & Google.",
+      "longDesc": "Seamlessly connect your smart ecosystem with leading voice controllers. Issue voice commands to adjust illumination levels, arm your property, or manage daily multi-device automation routines."
+    },
+    "mobileApp": {
+      "title": "Mobile App Control",
+      "desc": "Manage everything from your phone.",
+      "longDesc": "Take complete control of your environment with our intuitive native iOS and Android application. Customize dashboard shortcuts, monitor system parameters, and modify settings in a unified UI."
+    },
+    "remoteAccess": {
+      "title": "Remote Access",
+      "desc": "Control devices from anywhere.",
+      "longDesc": "Whether you are at the office or travelling abroad, securely check real-time device logs, toggle power grids, and receive critical push alerts instantly over encrypted network tunnels."
+    },
+    "cloudConnectivity": {
+      "title": "Cloud Connectivity",
+      "desc": "Secure & fast data sync.",
+      "longDesc": "Powered by edge computing cluster arrays, device states synchronize instantly with millisecond latency. All cloud metrics are mirrored across decentralized node systems for continuous uptime."
+    },
+    "energySaving": {
+      "title": "Energy Saving",
+      "desc": "Reduce electricity bills easily.",
+      "longDesc": "Gain exhaustive historical utility metrics. Our smart algorithms isolate high-consumption nodes and recommend automated custom schedules to minimize waste and utility expenses."
+    },
+    "easyInstallation": {
+      "title": "Easy Installation",
+      "desc": "Zero damage, quick setup.",
+      "longDesc": "Engineered around zero-invasive mounting interfaces. Our plug-and-play architectural components fit straight cleanly into existing wall matrices without expensive rewiring overhauls."
+    },
+    "advancedSecurity": {
+      "title": "Advanced Security",
+      "desc": "Bank-level encryption standards.",
+      "longDesc": "Equipped with AES-256 bit end-to-end data transport cryptography. Local authentication handshakes ensure external network intrusions cannot compromise the perimeter integrity of your home."
+    }
+  },
+  "coupon": {
+    "label": "Coupon",
+    "availableCoupons": "Available coupons and offers",
+    "percentOff": "{{percent}}% OFF",
+    "amountOff": "{{amount}} OFF",
+    "minOrderShort": "Min. {{amount}}",
+    "locked": "Locked",
+    "addMoreToUnlock": "Add {{amount}} more to unlock",
+    "validOnOrder": "Valid on this order.",
+    "showDetails": "Show details",
+    "upToOff": "Up to {{amount}} off",
+    "applyCoupon": "Apply coupon {{code}}",
+    "copyCoupon": "Copy coupon code {{code}}",
+    "applied": "Coupon applied successfully",
+    "removed": "Coupon removed",
+    "fetched": "Coupons fetched",
+    "availableFetched": "Available coupons fetched",
+    "validated": "Coupon validated",
+    "cartTotals": "Cart totals calculated",
+    "invalid": "Invalid coupon code",
+    "expired": "Coupon has expired",
+    "minimumNotMet": "Minimum order value not met",
+    "myOffersAndCoupons": "My Offers & Coupons",
+    "subtitle": "Redeem your coupons at checkout to unlock exclusive offers.",
+    "activeOffers": "Active Offers",
+    "specialOffer": "Special Offer",
+    "allProducts": "All products",
+    "selectedProducts": "Selected products",
+    "selectedCategory": "Selected category",
+    "selectedProduct": "Selected product",
+    "maxSavings": "Max. savings: ₹{{value}}",
+    "appliesTo": "Applies to: {{value}}",
+    "validTill": "Valid till {{date}}",
+    "applyCouponButton": "Apply Coupon",
+    "myCoupons": "My Coupons",
+    "myCouponsSubtitle": "Coupons available to your account, including redemption history.",
+    "totalCount": "{{count}} total",
+    "filterAvailable": "Available",
+    "filterExpiringSoon": "Expiring Soon",
+    "searchPlaceholder": "Search coupon code…",
+    "checkBackSoon": "Check back soon for new offers.",
+    "expiresInDays_one": "Expires in {{count}} day",
+    "expiresInDays_other": "Expires in {{count}} days",
+    "minimumOrder": "Minimum order",
+    "maxDiscountLabel": "Max. discount",
+    "appliesToScope": "Applies to {{value}}",
+    "productCount_one": "{{count}} product",
+    "productCount_other": "{{count}} products",
+    "categoryCount_one": "{{count}} category",
+    "categoryCount_other": "{{count}} categories",
+    "allProductsScope": "all products",
+    "usedCount_one": "Used {{count}} time",
+    "usedCount_other": "Used {{count}} times",
+    "copied": "Copied",
+    "copyCode": "Copy Code",
+    "details": "Details",
+    "detailsTitle": "Coupon Details",
+    "detailsSubtitle": "Review coupon terms and eligibility.",
+    "minimumCart": "Minimum Cart",
+    "noMinimum": "No minimum",
+    "maximumDiscount": "Maximum Discount",
+    "noLimit": "No limit",
+    "validFrom": "Valid From",
+    "immediately": "Immediately",
+    "expiryDateLabel": "Expiry Date",
+    "eligibleCategories": "Eligible Categories",
+    "allCategories": "All categories",
+    "eligibleProducts": "Eligible Products",
+    "userEligibility": "User Eligibility",
+    "availableForYou": "Available for you",
+    "usageLimitLabel": "Usage Limit",
+    "leftOfPerUser": "{{left}} left of {{limit}} per user",
+    "usesPerUserUnlimited_one": "{{count}} use per user · unlimited total",
+    "usesPerUserUnlimited_other": "{{count}} uses per user · unlimited total",
+    "tcMinOrder": "This coupon is valid only on orders above ₹{{amount}}.",
+    "tcMaxDiscount": "Maximum discount applicable is ₹{{amount}}.",
+    "tcNoStack": "Cannot be combined with another coupon or offer.",
+    "tcStackable": "Can be combined with eligible product offers.",
+    "tcEligibility": "Subject to availability and complete eligibility at checkout.",
+    "emptyCheckBack": "Check back soon for new discounts and special offers."
+  },
+  "order": {
+    "placedSuccess": "Order placed successfully",
+    "fetched": "Order fetched",
+    "updated": "Order updated",
+    "cancelled": "Order cancelled",
+    "notFound": "Order not found",
+    "tracked": "Order tracked",
+    "returnRequested": "Return requested",
+    "refunded": "Order refunded"
+  },
+  "payment": {
+    "orderCreated": "Payment order created",
+    "verified": "Payment verified successfully",
+    "alreadyVerified": "Payment already verified",
+    "detailsFetched": "Payment details fetched",
+    "failed": "Payment failed"
+  },
+  "wishlist": {
+    "fetched": "Wishlist fetched",
+    "itemAdded": "Added to wishlist",
+    "itemRemoved": "Removed from wishlist"
+  },
+  "notifications": {
+    "fetched": "Notifications fetched",
+    "markedRead": "Notification marked as read",
+    "allMarkedRead": "All notifications marked as read",
+    "deleted": "Notification deleted",
+    "cleared": "All notifications cleared",
+    "unreadCountFetched": "Unread count fetched"
+  },
+  "review": {
+    "submitted": "Review submitted successfully",
+    "websiteSubmitted": "Website review submitted successfully. Awaiting admin approval.",
+    "fetched": "Reviews fetched",
+    "countsFetched": "Review counts fetched",
+    "failedToSubmit": "Failed to submit review",
+    "rateYourExperience": "Rate Your Experience",
+    "selectProduct": "Select Product",
+    "noProductsFound": "No reviewable products were found for this order.",
+    "submittedSuccess": "Review Submitted Successfully",
+    "submittingReview": "Submitting Review..."
+  },
+  "category": {
+    "fetched": "Categories fetched"
+  },
+  "demo": {
+    "submitted": "Your demo enquiry has been submitted successfully! We will contact you shortly."
+  },
+  "backInStock": {
+    "subscribed": "We'll notify you when this product is back in stock",
+    "alreadyAvailable": "Product is already in stock",
+    "cancelled": "Notification cancelled"
+  },
+  "recentlyViewed": {
+    "fetched": "Recently viewed products fetched",
+    "recorded": "Recently viewed product recorded",
+    "removed": "Recently viewed product removed",
+    "cleared": "Recently viewed products cleared",
+    "heading": "Pick up where you left off",
+    "compactTitle": "Products you viewed recently.",
+    "emptyDescription": "Products you view will appear here so you can easily find them again.",
+    "removeAria": "Remove {{name}} from recently viewed"
+  },
+  "status": {
+    "order": {
+      "pending": "ಬಾಕಿ",
+      "confirmed": "ದೃಢೀಕೃತ",
+      "processing": "ಪ್ರಕ್ರಿಯೆ",
+      "packed": "ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದೆ",
+      "shipped": "ಕಳುಹಿಸಲಾಗಿದೆ",
+      "outForDelivery": "ವಿತರಣೆಗೆ ಹೊರಟಿದೆ",
+      "delivered": "ವಿತರಿಸಲಾಗಿದೆ",
+      "cancelled": "ರದ್ದಾಗಿದೆ",
+      "returned": "Returned",
+      "refunded": "ಮರುಪಾವತಿಸಲಾಗಿದೆ",
+      "partiallyRefunded": "ಭಾಗಶಃ ಮರುಪಾವತಿಸಲಾಗಿದೆ",
+      "inTransit": "ಸಾಗಣೆಯಲ್ಲಿ",
+      "deliveryFailed": "ವಿತರಣೆ ವಿಫಲವಾಗಿದೆ"
+    },
+    "payment": {
+      "pending": "ಬಾಕಿ",
+      "paid": "ಪಾವತಿಸಲಾಗಿದೆ",
+      "failed": "Failed",
+      "refunded": "ಮರುಪಾವತಿಸಲಾಗಿದೆ",
+      "refundPending": "Refund Pending"
+    },
+    "product": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "outOfStock": "ಸ್ಟಾಕ್ ಮುಗಿದಿದೆ",
+      "inStock": "ಸ್ಟಾಕ್‌ನಲ್ಲಿದೆ",
+      "lowStock": "Low stock"
+    },
+    "return": {
+      "pending": "ಬಾಕಿ",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "processing": "ಪ್ರಕ್ರಿಯೆ",
+      "completed": "Completed"
+    },
+    "review": {
+      "pending": "ಬಾಕಿ",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "refund": {
+      "pending": "ಬಾಕಿ",
+      "processed": "ಮರುಪಾವತಿಸಲಾಗಿದೆ",
+      "failed": "Failed"
+    },
+    "coupon": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "expired": "ಅವಧಿ ಮುಗಿದ",
+      "used": "ಬಳಸಿದ"
+    }
+  },
+  "notificationTypes": {
+    "orderPlaced": "Order Placed",
+    "orderConfirmed": "ದೃಢೀಕೃತ",
+    "orderProcessing": "ಪ್ರಕ್ರಿಯೆ",
+    "orderShipped": "ಕಳುಹಿಸಲಾಗಿದೆ",
+    "orderOutForDelivery": "ವಿತರಣೆಗೆ ಹೊರಟಿದೆ",
+    "orderDelivered": "ವಿತರಿಸಲಾಗಿದೆ",
+    "orderCancelled": "ರದ್ದಾಗಿದೆ",
+    "wishlist": "ನನ್ನ ವಿಶ್‌ಲಿಸ್ಟ್",
+    "offers": "ಆಫರ್‌ಗಳು ಮತ್ತು ಕೂಪನ್‌ಗಳು",
+    "priceDrops": "Price Drops",
+    "backInStock": "Back in Stock",
+    "system": "System",
+    "products": "ಉತ್ಪನ್ನಗಳು",
+    "smartHome": "Smart Home",
+    "all": "ಎಲ್ಲಾ",
+    "unread": "ಓದದೆ",
+    "orderPacked": "ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದೆ",
+    "orderInTransit": "ಸಾಗಣೆಯಲ್ಲಿ",
+    "orderDeliveryFailed": "ವಿತರಣೆ ವಿಫಲವಾಗಿದೆ"
+  },
+  "return": {
+    "submitted": "Return request submitted"
+  },
+  "refund": {
+    "processed": "Refund processed successfully"
+  },
+  "contactPage": {
+    "title": "Get In Touch",
+    "subtitle": "We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+    "formName": "Full Name",
+    "formEmail": "Email Address",
+    "formPhone": "Phone Number",
+    "formMessage": "Message",
+    "formSubmit": "Send Message",
+    "emailUs": "Email Us",
+    "callUs": "Call Us",
+    "visitUs": "Visit Us",
+    "followUs": "Follow Us",
+    "faqTitle": "Common Questions",
+    "messageSent": "Message sent successfully!",
+    "nameRequired": "Full name is required",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Please provide a valid email address",
+    "messageRequired": "Message is required",
+    "sending": "Sending..."
+  },
+  "offersPage": {
+    "title": "Offers & Promotions",
+    "subtitle": "Exclusive deals on smart home products",
+    "noOffers": "No active offers right now",
+    "checkBackSoon": "Check back soon for exciting deals!",
+    "browseProducts": "Browse Products",
+    "minOrder": "Min. order: ₹{{value}}",
+    "expires": "Expires {{date}}"
+  },
+  "howWorks": {
+    "installationPath": "Installation Path",
+    "title": "How It Works",
+    "subtitle": "Four simple steps to transform your home.",
+    "step1": {
+      "title": "Choose Device",
+      "desc": "Select from our premium range."
+    },
+    "step2": {
+      "title": "Professional Installation",
+      "desc": "Expert setup with zero damage."
+    },
+    "step3": {
+      "title": "Connect Mobile App",
+      "desc": "Sync devices seamlessly."
+    },
+    "step4": {
+      "title": "Enjoy Smart Living",
+      "desc": "Experience true automation."
+    }
+  },
+  "readyHome": {
+    "title": "Ready to Transform",
+    "titleHighlight": "Your Home?",
+    "description": "Book your free smart home consultation today. Experience the ultimate comfort, security, and convenience with Automate.",
+    "whatsappMessage": "Hello {{company}}, I am interested in your smart automation solutions."
+  },
+  "cancelSuccess": {
+    "title": "Order Cancelled Successfully",
+    "orderCancelled": "Your order has been cancelled successfully.",
+    "refundInitiated": "Your refund has been initiated and will be credited to your original payment method within {{days}} business days, depending on your bank.",
+    "refundConfirmation": "You will receive a confirmation once the refund is processed.",
+    "noRefundRequired": "Since this order was not prepaid, no refund is required.",
+    "hopeToServeAgain": "We hope to serve you again soon.",
+    "thanksForChoosing": "Thank you for choosing {{brand}}."
+  },
+  "smartSearch": {
+    "trySearching": "Try searching for something else",
+    "viewAllResults": "View All Results ({{total}})",
+    "recentSearches": "Recent Searches",
+    "clearHistory": "Clear",
+    "popularSearches": "Popular Searches",
+    "popularSmartSwitch": "Smart Switch",
+    "popularDigitalLock": "Digital Lock",
+    "popularSmartGateway": "Smart Gateway",
+    "popularWifiSwitch": "WiFi Switch",
+    "popularMotionSensor": "Motion Sensor",
+    "popularSmartHome": "Smart Home"
+  },
+  "pincode": {
+    "invalid": "Invalid Pincode",
+    "unableToFetch": "Unable to fetch location. Please try again."
+  },
+  "proposals": {
+    "title": "Smart Home Proposals",
+    "subtitle": "Manage customer smart home proposals · {{total}} total",
+    "backToDashboard": "Back to Dashboard",
+    "allStatuses": "All Statuses",
+    "statusNew": "New",
+    "statusContacted": "Contacted",
+    "statusUnderReview": "Under Review",
+    "statusQuotationPrepared": "Quotation Prepared",
+    "statusQuotationSent": "Quotation Sent",
+    "statusSiteVisitScheduled": "Site Visit Scheduled",
+    "statusAwaitingApproval": "Awaiting Customer Approval",
+    "statusApproved": "Approved",
+    "statusConvertedToOrder": "Converted to Order",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "searchPlaceholder": "Proposal / name / email / phone / city",
+    "allTypes": "All Types",
+    "sort": "Sort",
+    "sortLatest": "Latest First",
+    "sortOldest": "Oldest First",
+    "sortProposalNumber": "Proposal Number",
+    "fromDate": "From",
+    "toDate": "To",
+    "colProposal": "Proposal",
+    "colCustomer": "Customer",
+    "colContact": "Contact",
+    "colStep": "Step",
+    "colCost": "Cost",
+    "colDate": "Date",
+    "colActions": "Actions",
+    "loading": "Loading proposals...",
+    "empty": "No proposals found",
+    "loadFailed": "Failed to load proposals",
+    "updateStatusFailed": "Failed to update status",
+    "view": "View",
+    "pageOf": "Page {{page}} of {{totalPages}} ({{total}} total)"
+  },
+  "proposalDetail": {
+    "loadFailed": "Failed to load details",
+    "loading": "Loading...",
+    "notFound": "Proposal not found",
+    "backToProposals": "Back to Proposals",
+    "createdAt": "Created {{date}}",
+    "fieldUpdated": "{{field}} updated successfully",
+    "updateFailed": "Failed to update",
+    "statusChangedTo": "Status changed to {{status}}",
+    "statusUpdateFailed": "Status update failed",
+    "confirmConvert": "Confirm conversion to order",
+    "convertedSuccess": "Converted successfully",
+    "conversionFailed": "Conversion failed",
+    "confirmDelete": "Confirm deletion",
+    "deleteFailed": "Failed to delete",
+    "converting": "Converting...",
+    "convertToOrder": "Convert to Order",
+    "deleting": "Deleting...",
+    "convertedOrder": "Converted to Order #{{id}}",
+    "wizardNew": "New",
+    "wizardInProgress": "In Progress",
+    "wizardPending": "Pending",
+    "wizardCompleted": "Completed",
+    "wizardSubmitted": "Submitted",
+    "wizardDraft": "Draft",
+    "progress": "Progress:",
+    "stepsCount": "{{count}}/5 Steps",
+    "completed": "Completed",
+    "customerDetails": "Customer Details",
+    "fullName": "Full Name",
+    "state": "State",
+    "address": "Address",
+    "quickActions": "Quick Actions",
+    "contactCustomer": "Contact Customer",
+    "addNotes": "Add Notes",
+    "assignAdmin": "Assign Admin",
+    "scheduleSiteVisit": "Schedule Site Visit",
+    "uploadQuotation": "Upload Quotation",
+    "markApproved": "Mark Approved",
+    "homeDetails": "Home Details",
+    "totalRooms": "Total Rooms",
+    "estBudget": "Est. Budget",
+    "quotation": "Quotation",
+    "selectedRooms": "Selected Rooms",
+    "selectedDevices": "Selected Devices",
+    "devicesCount": "{{count}} devices",
+    "homeConfiguration": "Home Configuration",
+    "adminNotes": "Admin Notes",
+    "customerNotes": "Customer Notes",
+    "statusTimeline": "Status Timeline",
+    "fromStatus": "from {{status}}",
+    "noHistory": "No history",
+    "nameLabel": "Name",
+    "notProvided": "Not provided",
+    "notesPlaceholder": "Enter notes...",
+    "saveNotes": "Save Notes",
+    "selectVisitDate": "Select visit date",
+    "saveAndUpdateStatus": "Save and Update Status",
+    "setQuotation": "Set Quotation",
+    "enterQuotation": "Enter quotation amount",
+    "enterAmount": "Enter amount",
+    "saveAndMarkPrepared": "Save and Mark Prepared",
+    "assignAdminHint": "Assign an admin to this proposal",
+    "assignAdminPlaceholder": "Select admin...",
+    "assign": "Assign",
+    "selectedRoomsAndDevices": "Selected Rooms & Devices"
   }
 }

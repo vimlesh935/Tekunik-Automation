@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { localizedField } from "../utils/i18nContent.js";
 
 const INITIAL_DISPLAY_COUNT = 8;
 
@@ -18,6 +19,9 @@ const getCategoryImg = (name) => {
 };
 
 function CategoryCard({ cat }) {
+  const { i18n } = useTranslation();
+  const name = localizedField(cat, "name", i18n.language) || cat.name;
+  const description = localizedField(cat, "description", i18n.language) || cat.name;
   return (
     <Link
       to={`/shop?category_id=${cat.id}`}
@@ -29,7 +33,7 @@ function CategoryCard({ cat }) {
         {cat.image_url ? (
           <img
             src={cat.image_url}
-            alt={cat.name}
+            alt={name}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             onError={(e) => {
@@ -40,7 +44,7 @@ function CategoryCard({ cat }) {
         ) : (
           <img
             src={getCategoryImg(cat.name)}
-            alt={cat.name}
+            alt={name}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
@@ -49,10 +53,10 @@ function CategoryCard({ cat }) {
 
       <div className="text-left px-2 pb-1">
         <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors duration-200 line-clamp-1">
-          {cat.name}
+          {name}
         </h3>
-<p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-{cat.description || cat.name}
+        <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+          {description}
         </p>
       </div>
     </Link>

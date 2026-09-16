@@ -16,10 +16,12 @@ import {
   Percent,
   LogOut,
   ClipboardList,
-Settings as SettingsIcon,
+  Settings as SettingsIcon,
   Activity,
   Mail,
   ShoppingBag,
+  RotateCcw,
+  Truck,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -28,6 +30,8 @@ const NAV_ITEMS = [
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/inventory", label: "Inventory", icon: Warehouse },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { to: "/admin/shipping", label: "Shipping", icon: Truck },
+  { to: "/admin/returns", label: "Returns & Refunds", icon: RotateCcw },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/demobooking", label: "Demo Bookings", icon: Calendar },
   { to: "/admin/abandoned-cart", label: "Abandoned Cart", icon: ShoppingBag },
